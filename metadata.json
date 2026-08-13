@@ -1,0 +1,6 @@
+{
+  "name": "مشفى النور - نظام إدارة المستشفيات",
+  "description": "نظام إلكتروني متكامل لإدارة المستشفيات والملفات الطبية والمواعيد والأطباء والمرضى والمخزون والفواتير والتحاليل",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

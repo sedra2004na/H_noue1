@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@media print {
+  /* Hide non-printable app UI elements */
+  aside, header, nav, button, .no-print {
+    display: none !important;
+  }
+
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Make modal content take full page on white background */
+  .fixed.inset-0 {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  .bg-slate-900, .bg-slate-950, .bg-slate-800 {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .text-white, .text-slate-200, .text-slate-300, .text-slate-400 {
+    color: #0f172a !important;
+  }
+}
