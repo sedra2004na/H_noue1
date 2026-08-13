@@ -42,6 +42,7 @@ export function App() {
   const [activeTab, setActiveTab] = useState<string>(() => getStoredData('syrian_hosp_activeTab', 'dashboard'));
   const [userRole, setUserRole] = useState<UserRole>(() => getStoredData('syrian_hosp_userRole', 'admin'));
   const [searchQuery, setSearchQuery] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Emergency SOS State
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
@@ -309,11 +310,16 @@ export function App() {
         }}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        onNavigate={setActiveTab}
+        onNavigate={(tab) => {
+          setActiveTab(tab);
+          setIsMobileMenuOpen(false);
+        }}
         lowStockCount={lowInventoryCount}
         criticalLabCount={criticalLabCount}
         onOpenEmergencyModal={() => setShowEmergencyModal(true)}
         hasActiveSOS={!!activeSOS}
+        isMobileMenuOpen={isMobileMenuOpen}
+        onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
       />
 
       {/* Main Body with Sidebar + Content Area */}
@@ -329,10 +335,12 @@ export function App() {
           doctorsCount={doctors.length}
           appointmentsCount={pendingAppointmentsCount}
           inventoryAlertsCount={lowInventoryCount}
+          isMobileOpen={isMobileMenuOpen}
+          onCloseMobile={() => setIsMobileMenuOpen(false)}
         />
 
         {/* Main Content Workspace */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 space-y-6">
           
           {activeTab === 'dashboard' && (
             <Dashboard

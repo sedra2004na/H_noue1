@@ -18,7 +18,8 @@ import {
   CheckCheck,
   Trash2,
   Calendar,
-  Siren
+  Siren,
+  Menu
 } from 'lucide-react';
 
 export interface NotificationItem {
@@ -46,6 +47,8 @@ interface HeaderProps {
   onSearchChange?: (query: string) => void;
   onOpenEmergencyModal?: () => void;
   hasActiveSOS?: boolean;
+  isMobileMenuOpen?: boolean;
+  onToggleMobileMenu?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -63,6 +66,8 @@ export const Header: React.FC<HeaderProps> = ({
   onSearchChange,
   onOpenEmergencyModal,
   hasActiveSOS = false,
+  isMobileMenuOpen = false,
+  onToggleMobileMenu,
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showRoleMenu, setShowRoleMenu] = useState(false);
@@ -197,15 +202,26 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/90 text-white shadow-2xl">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-2 sm:gap-4">
         
-        {/* Brand & Hospital Title */}
-        <div className="flex items-center gap-3">
+        {/* Brand & Mobile Toggle */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {onToggleMobileMenu && (
+            <button
+              onClick={onToggleMobileMenu}
+              className="md:hidden p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
+              aria-label="القائمة"
+              title="القائمة الرئيسية"
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5 text-rose-400" /> : <Menu className="w-5 h-5 text-sky-400" />}
+            </button>
+          )}
+
           <HospitalLogo size="md" />
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-black text-white tracking-wide">مشفى النور</h1>
-              <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-md bg-sky-500/20 text-sky-300 border border-sky-500/30">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <h1 className="text-base sm:text-xl font-black text-white tracking-wide">مشفى النور</h1>
+              <span className="hidden xs:inline-block px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-extrabold rounded-md bg-sky-500/20 text-sky-300 border border-sky-500/30">
                 Al-Noor Hospital
               </span>
             </div>

@@ -13,7 +13,8 @@ import {
   ShieldCheck,
   Stethoscope,
   UserCheck as StaffIcon,
-  UserCircle2
+  UserCircle2,
+  X
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -27,6 +28,8 @@ interface SidebarProps {
   doctorsCount?: number;
   appointmentsCount?: number;
   inventoryAlertsCount?: number;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -37,6 +40,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   lowStockCount = 0,
   criticalLabCount = 0,
   inventoryAlertsCount = 0,
+  isMobileOpen = false,
+  onCloseMobile,
 }) => {
   const effectiveLowStock = lowStockCount || inventoryAlertsCount;
 
@@ -119,13 +124,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Filter navigation items by allowed tabs for current userRole
   const navItems = allNavItems.filter(item => currentRoleInfo.allowedTabs.includes(item.id));
 
-  const RoleIcon = currentRoleInfo.icon;
+  const handleTabClick = (id: string) => {
+    setActiveTab(id);
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
+  };
 
-  return (
-    <aside className="w-72 bg-slate-900/95 border-l border-slate-800 shrink-0 text-slate-300 flex flex-col min-h-[calc(100vh-5rem)]">
-      
-      {/* Navigation List */}
-      <nav className="p-4 space-y-1.5 flex-1">
+  const renderNavContent = () => (
+    <>
+      <nav className="p-4 space-y-1.5 flex-1 overflow-y-auto">
         <div className="px-3 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
           أقسام النظام المتاحة ({navItems.length})
         </div>
@@ -137,7 +145,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           return (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => handleTabClick(item.id)}
               className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl font-medium text-xs transition-all duration-200 group cursor-pointer ${
                 isActive
                   ? 'bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 text-white shadow-lg shadow-sky-950/50 font-bold border border-sky-400/30'
@@ -164,9 +172,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Hospital System Logout Button */}
       {onLogout && (
-        <div className="p-4 border-t border-slate-800/80 bg-slate-950/40 text-xs">
+        <div className="p-4 border-t border-slate-800/80 bg-slate-950/40 text-xs mt-auto">
           <button
-            onClick={onLogout}
+            onClick={() => {
+              if (onCloseMobile) onCloseMobile();
+              onLogout();
+            }}
             className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-rose-950/60 border border-slate-800 hover:border-rose-700/60 text-slate-300 hover:text-rose-200 transition-all text-xs font-semibold shadow-inner cursor-pointer"
           >
             <LogOut className="w-4 h-4 text-rose-400" />
@@ -174,7 +185,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
       )}
+    </>
+  );
 
-    </aside>
+  return (
+    <>
+      {/* Desktop Sidebar (hidden on mobile) */}
+      <aside className="hidden md:flex w-72 bg-slate-900/95 border-l border-slate-800 shrink-0 text-slate-300 flex-col min-h-[calc(100vh-5rem)]">
+        {renderNavContent()}
+      </aside>
+
+      {/* Mobile Drawer Overlay (shown when isMobileOpen is true) */}
+      {isMobileOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"
+            onClick={onCloseMobile}
+          />
+
+          {/* Drawer Content */}
+          <div className="relative w-80 max-w-[85vw] bg-slate-900 border-l border-slate-800 text-slate-300 flex flex-col h-full z-10 shadow-2xl">
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+              <span className="font-black text-sm text-white">قائمة أقسام المستشفى</span>
+              <button
+                onClick={onCloseMobile}
+                className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+                aria-label="إغلاق"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            {renderNavContent()}
+          </div>
+        </div>
+      )}
+    </>
   );
 };
+
