@@ -279,10 +279,13 @@ export function App() {
   if (!isLoggedIn) {
     return (
       <LandingAndAuthScreen
-        onLogin={(role) => {
+        onLogin={(role, userName) => {
           setUserRole(role);
           setIsLoggedIn(true);
           setActiveTab('dashboard');
+          if (userName) {
+            localStorage.setItem('syrian_hosp_userName', JSON.stringify(userName));
+          }
         }}
       />
     );

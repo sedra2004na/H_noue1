@@ -51,12 +51,8 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
     notes: '',
   });
 
-  // Filter appointments for privacy if user is patient
+  // Filter appointments
   const filteredAppointments = appointments.filter((apt) => {
-    if (userRole === 'patient') {
-      const isMine = apt.patientName === 'محمد عبد الله العتيبي' || apt.patientName.includes('محمد') || apt.patientId === 'pat-1';
-      if (!isMine) return false;
-    }
 
     const query = (searchQuery || '').toLowerCase().trim();
     const matchesSearch = 
@@ -75,9 +71,9 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
   const handleSubmitNew = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const initialPatientName = userRole === 'patient' ? 'محمد عبد الله العتيبي' : formData.patientName;
+    const initialPatientName = formData.patientName.trim() || 'مريض مراجع';
     const matchedPatient = patients.find(p => p.fullName === initialPatientName);
-    const finalPatientName = initialPatientName.trim() || 'محمد عبد الله العتيبي';
+    const finalPatientName = initialPatientName;
     const finalPatientId = matchedPatient ? matchedPatient.id : ('p-' + Date.now());
 
     const matchedDoctor = doctors.find(d => d.name === formData.doctorName);
@@ -308,37 +304,25 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
 
             <form onSubmit={handleSubmitNew} className="space-y-4 text-xs">
               
-              {userRole !== 'patient' ? (
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1">اسم المريض المراجع *</label>
-                  <input
-                    type="text"
-                    required
-                    list="patients-list"
-                    placeholder="اكتب اسم المريض أو اختر من القائمة..."
-                    value={formData.patientName}
-                    onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
-                    className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
-                  />
-                  <datalist id="patients-list">
-                    {patients.map((p) => (
-                      <option key={p.id} value={p.fullName}>
-                        {p.fileNumber}
-                      </option>
-                    ))}
-                  </datalist>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1">صاحب الموعد (اسم المريض)</label>
-                  <input
-                    type="text"
-                    readOnly
-                    value="محمد عبد الله العتيبي"
-                    className="w-full p-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-sky-300 font-bold cursor-not-allowed"
-                  />
-                </div>
-              )}
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">اسم المريض المراجع *</label>
+                <input
+                  type="text"
+                  required
+                  list="patients-list"
+                  placeholder="اكتب اسم المريض الثلاثي/الرباعي هنا..."
+                  value={formData.patientName}
+                  onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
+                  className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 font-medium"
+                />
+                <datalist id="patients-list">
+                  {patients.map((p) => (
+                    <option key={p.id} value={p.fullName}>
+                      {p.fileNumber}
+                    </option>
+                  ))}
+                </datalist>
+              </div>
 
               <div>
                 <label className="block text-slate-300 font-bold mb-1">اسم الطبيب المعالج *</label>

@@ -396,58 +396,12 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Role Switcher Demo Control */}
-          <div className="relative">
-            <button
-              onClick={() => setShowRoleMenu(!showRoleMenu)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${getRoleColor(currentRole)} shadow-inner`}
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <div className="text-right">
-                <span className="block font-bold">{getRoleLabel(currentRole)}</span>
-              </div>
-              <ChevronDown className="w-3.5 h-3.5 opacity-70" />
-            </button>
-
-            {showRoleMenu && (
-              <div className="absolute left-0 mt-3 w-64 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl z-50 p-2 text-right">
-                <div className="px-3 py-2 text-xs font-bold text-slate-400 border-b border-slate-800 mb-1">
-                  تبديل الصلاحية للتجربة (Demo RBAC)
-                </div>
-                
-                <button
-                  onClick={() => { handleRoleChange('admin'); setShowRoleMenu(false); }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium hover:bg-slate-800 transition-colors ${currentRole === 'admin' ? 'bg-purple-900/50 text-purple-200 font-bold' : 'text-slate-200'}`}
-                >
-                  <ShieldCheck className="w-4 h-4 text-purple-400" />
-                  <span>مدير النظام (System Admin)</span>
-                </button>
-
-                <button
-                  onClick={() => { handleRoleChange('doctor'); setShowRoleMenu(false); }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium hover:bg-slate-800 transition-colors ${currentRole === 'doctor' ? 'bg-blue-900/50 text-blue-200 font-bold' : 'text-slate-200'}`}
-                >
-                  <Stethoscope className="w-4 h-4 text-blue-400" />
-                  <span>الطبيب المعالج (Doctor View)</span>
-                </button>
-
-                <button
-                  onClick={() => { handleRoleChange('staff'); setShowRoleMenu(false); }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium hover:bg-slate-800 transition-colors ${currentRole === 'staff' ? 'bg-emerald-900/50 text-emerald-200 font-bold' : 'text-slate-200'}`}
-                >
-                  <UserCheck className="w-4 h-4 text-emerald-400" />
-                  <span>موظف الاستقبال والتسجيل (Staff)</span>
-                </button>
-
-                <button
-                  onClick={() => { handleRoleChange('patient'); setShowRoleMenu(false); }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium hover:bg-slate-800 transition-colors ${currentRole === 'patient' ? 'bg-amber-900/50 text-amber-200 font-bold' : 'text-slate-200'}`}
-                >
-                  <UserCircle2 className="w-4 h-4 text-amber-400" />
-                  <span>بوابة المريض (Patient Portal)</span>
-                </button>
-              </div>
-            )}
+          {/* Authenticated Role Badge */}
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold ${getRoleColor(currentRole)} shadow-inner`}>
+            <ShieldCheck className="w-4 h-4" />
+            <div className="text-right">
+              <span className="block font-bold">{getRoleLabel(currentRole)}</span>
+            </div>
           </div>
 
         </div>

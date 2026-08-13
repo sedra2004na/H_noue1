@@ -14,7 +14,8 @@ import {
   Pill,
   Calendar,
   Users,
-  Home
+  Home,
+  AlertCircle
 } from 'lucide-react';
 import { UserRole } from '../types';
 
@@ -28,10 +29,98 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [selectedRole, setSelectedRole] = useState<UserRole>('admin');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isRoleLocked, setIsRoleLocked] = useState(false);
+  const [lockedRoleLabel, setLockedRoleLabel] = useState('');
+
+  // Load existing accounts dictionary
+  const getRegisteredAccounts = () => {
+    try {
+      const saved = localStorage.getItem('syrian_hosp_accounts');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  };
+
+  const getRoleArabicName = (r: UserRole) => {
+    switch (r) {
+      case 'admin': return 'مدير النظام';
+      case 'doctor': return 'طبيب معالج';
+      case 'staff': return 'موظف استقبال';
+      case 'patient': return 'مريض';
+    }
+  };
+
+  const handleEmailChange = (val: string) => {
+    setEmail(val);
+    const cleanEmail = val.trim().toLowerCase();
+    if (cleanEmail) {
+      const accounts = getRegisteredAccounts();
+      if (accounts[cleanEmail]) {
+        const boundRole: UserRole = accounts[cleanEmail].role;
+        setSelectedRole(boundRole);
+        setIsRoleLocked(true);
+        setLockedRoleLabel(getRoleArabicName(boundRole));
+        if (accounts[cleanEmail].name && !fullName) {
+          setFullName(accounts[cleanEmail].name);
+        }
+      } else {
+        setIsRoleLocked(false);
+        setLockedRoleLabel('');
+      }
+    } else {
+      setIsRoleLocked(false);
+      setLockedRoleLabel('');
+    }
+  };
+
+  const validateEmail = (emailStr: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(emailStr.trim());
+  };
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin(selectedRole, fullName || undefined);
+    setErrorMessage('');
+
+    if (!validateEmail(email)) {
+      setErrorMessage('يرجى إدخال بريد إلكتروني نظامي وصحيح (مثل: name@domain.com)');
+      return;
+    }
+
+    if (password.trim().length < 4) {
+      setErrorMessage('كلمة المرور يجب أن تتكون من 4 خانات أو رموز على الأقل');
+      return;
+    }
+
+    if (activeTab === 'register' && fullName.trim().length < 3) {
+      setErrorMessage('يرجى كتابة الاسم الكامل الرباعي بشكل واضح');
+      return;
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const accounts = getRegisteredAccounts();
+    let finalRole = selectedRole;
+
+    if (accounts[cleanEmail]) {
+      // Account exists, enforce its registered role
+      finalRole = accounts[cleanEmail].role;
+    } else {
+      // New account registration, save email -> role binding
+      accounts[cleanEmail] = {
+        role: selectedRole,
+        name: fullName || email.split('@')[0],
+        registeredAt: new Date().toISOString()
+      };
+      try {
+        localStorage.setItem('syrian_hosp_accounts', JSON.stringify(accounts));
+      } catch (err) {
+        // Fallback
+      }
+    }
+
+    onLogin(finalRole, fullName || email.split('@')[0]);
   };
 
   return (
@@ -164,6 +253,13 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
 
             <form onSubmit={handleFormSubmit} className="space-y-4">
               
+              {errorMessage && (
+                <div className="p-3.5 rounded-xl bg-rose-950/80 border border-rose-500/80 text-rose-200 text-xs flex items-center gap-2 shadow-lg">
+                  <AlertCircle className="w-4.5 h-4.5 text-rose-400 shrink-0" />
+                  <span className="font-semibold">{errorMessage}</span>
+                </div>
+              )}
+              
               {activeTab === 'register' && (
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">الاسم الكامل *</label>
@@ -182,18 +278,23 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">اسم المستخدم / البريد الإلكتروني *</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">البريد الإلكتروني النظامي *</label>
                 <div className="relative">
                   <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <input
-                    type="text"
+                    type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="أدخل البريد الإلكتروني أو اسم المستخدم..."
+                    onChange={(e) => handleEmailChange(e.target.value)}
+                    placeholder="أدخل البريد الإلكتروني (مثال: user@example.com)..."
                     required
                     className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all"
                   />
                 </div>
+                {isRoleLocked && (
+                  <p className="mt-1 text-[11px] text-sky-400 font-medium">
+                    ✓ هذا البريد مسجّل مسبقاً برتبة: <strong className="text-white">{lockedRoleLabel}</strong>. تم تثبيت الحساب على هذه الصفة.
+                  </p>
+                )}
               </div>
 
               <div>
