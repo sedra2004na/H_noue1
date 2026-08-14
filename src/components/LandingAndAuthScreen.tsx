@@ -33,7 +33,7 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
   const [isRoleLocked, setIsRoleLocked] = useState(false);
   const [lockedRoleLabel, setLockedRoleLabel] = useState('');
 
-  // Load existing accounts dictionary
+  // Load existing accounts dictionary from localStorage
   const getRegisteredAccounts = () => {
     try {
       const saved = localStorage.getItem('syrian_hosp_accounts');
@@ -94,33 +94,59 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
       return;
     }
 
-    if (activeTab === 'register' && fullName.trim().length < 3) {
-      setErrorMessage('يرجى كتابة الاسم الكامل الرباعي بشكل واضح');
+    const cleanEmail = email.trim().toLowerCase();
+    const accounts = getRegisteredAccounts();
+
+    // LOGIN LOGIC
+    if (activeTab === 'login') {
+      const existingAccount = accounts[cleanEmail];
+      if (!existingAccount) {
+        setErrorMessage('البريد الإلكتروني غير مسجّل بالنظام! يرجى التأكد من البريد أو إنشاء حساب جديد.');
+        return;
+      }
+
+      // Check password
+      if (existingAccount.pass && existingAccount.pass !== password.trim()) {
+        setErrorMessage('كلمة المرور غير صحيحة لهذا البريد الإلكتروني!');
+        return;
+      }
+
+      // Successful verified login
+      onLogin(existingAccount.role, existingAccount.name || fullName || email.split('@')[0]);
       return;
     }
 
-    const cleanEmail = email.trim().toLowerCase();
-    const accounts = getRegisteredAccounts();
-    let finalRole = selectedRole;
+    // REGISTER LOGIC
+    if (activeTab === 'register') {
+      if (fullName.trim().length < 3) {
+        setErrorMessage('يرجى كتابة الاسم الكامل الرباعي بشكل واضح');
+        return;
+      }
 
-    if (accounts[cleanEmail]) {
-      // Account exists, enforce its registered role
-      finalRole = accounts[cleanEmail].role;
-    } else {
-      // New account registration, save email -> role binding
-      accounts[cleanEmail] = {
+      if (accounts[cleanEmail]) {
+        setErrorMessage('هذا البريد الإلكتروني مسجّل مسبقاً بالنظام! يرجى الانتقال لتسجيل الدخول.');
+        return;
+      }
+
+      // Save new user account to localStorage
+      const userAccountsRaw = localStorage.getItem('syrian_hosp_accounts');
+      const userAccounts = userAccountsRaw ? JSON.parse(userAccountsRaw) : {};
+
+      userAccounts[cleanEmail] = {
         role: selectedRole,
-        name: fullName || email.split('@')[0],
+        name: fullName,
+        pass: password.trim(),
         registeredAt: new Date().toISOString()
       };
+
       try {
-        localStorage.setItem('syrian_hosp_accounts', JSON.stringify(accounts));
+        localStorage.setItem('syrian_hosp_accounts', JSON.stringify(userAccounts));
       } catch (err) {
         // Fallback
       }
-    }
 
-    onLogin(finalRole, fullName || email.split('@')[0]);
+      onLogin(selectedRole, fullName);
+    }
   };
 
   return (
@@ -314,17 +340,20 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
 
               {/* Role Selection Option */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-2">اختر الصفة الوظيفية للدخول:</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-2">
+                  {activeTab === 'register' ? 'حدد الرتبة المطلوبة للحساب:' : 'حدد الصفة المطلوبة للدخول:'}
+                </label>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   
                   <button
                     type="button"
+                    disabled={isRoleLocked}
                     onClick={() => setSelectedRole('admin')}
                     className={`p-3 rounded-xl border text-right transition-all flex items-center gap-2.5 cursor-pointer ${
                       selectedRole === 'admin'
                         ? 'bg-purple-950/80 border-purple-500/80 text-purple-200 ring-1 ring-purple-500'
                         : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
-                    }`}
+                    } ${isRoleLocked && selectedRole !== 'admin' ? 'opacity-40 cursor-not-allowed' : ''}`}
                   >
                     <ShieldCheck className="w-4 h-4 text-purple-400 shrink-0" />
                     <div>
@@ -335,12 +364,13 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
 
                   <button
                     type="button"
+                    disabled={isRoleLocked}
                     onClick={() => setSelectedRole('doctor')}
                     className={`p-3 rounded-xl border text-right transition-all flex items-center gap-2.5 cursor-pointer ${
                       selectedRole === 'doctor'
                         ? 'bg-blue-950/80 border-blue-500/80 text-blue-200 ring-1 ring-blue-500'
                         : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
-                    }`}
+                    } ${isRoleLocked && selectedRole !== 'doctor' ? 'opacity-40 cursor-not-allowed' : ''}`}
                   >
                     <Stethoscope className="w-4 h-4 text-blue-400 shrink-0" />
                     <div>
@@ -351,12 +381,13 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
 
                   <button
                     type="button"
+                    disabled={isRoleLocked}
                     onClick={() => setSelectedRole('staff')}
                     className={`p-3 rounded-xl border text-right transition-all flex items-center gap-2.5 cursor-pointer ${
                       selectedRole === 'staff'
                         ? 'bg-emerald-950/80 border-emerald-500/80 text-emerald-200 ring-1 ring-emerald-500'
                         : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
-                    }`}
+                    } ${isRoleLocked && selectedRole !== 'staff' ? 'opacity-40 cursor-not-allowed' : ''}`}
                   >
                     <UserCheck className="w-4 h-4 text-emerald-400 shrink-0" />
                     <div>
@@ -367,12 +398,13 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
 
                   <button
                     type="button"
+                    disabled={isRoleLocked}
                     onClick={() => setSelectedRole('patient')}
                     className={`p-3 rounded-xl border text-right transition-all flex items-center gap-2.5 cursor-pointer ${
                       selectedRole === 'patient'
                         ? 'bg-amber-950/80 border-amber-500/80 text-amber-200 ring-1 ring-amber-500'
                         : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
-                    }`}
+                    } ${isRoleLocked && selectedRole !== 'patient' ? 'opacity-40 cursor-not-allowed' : ''}`}
                   >
                     <UserCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
                     <div>
@@ -383,6 +415,8 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
 
                 </div>
               </div>
+
+
 
               <button
                 type="submit"
