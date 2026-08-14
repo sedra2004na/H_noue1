@@ -40,6 +40,7 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -70,14 +71,37 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
 
   const handleSubmitNew = (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setBookingError(null);
+
     const initialPatientName = formData.patientName.trim() || 'مريض مراجع';
+    const finalDoctorName = formData.doctorName.trim() || 'د. طبيب ممارس';
+
+    // Check for exact time collision (same doctor at same date/time OR same patient at same date/time)
+    const collision = appointments.find((apt) => 
+      apt.status !== 'ملغى' &&
+      apt.date === formData.date &&
+      apt.time === formData.time &&
+      (
+        (apt.doctorName.toLowerCase() === finalDoctorName.toLowerCase()) ||
+        (apt.patientName.toLowerCase() === initialPatientName.toLowerCase())
+      )
+    );
+
+    if (collision) {
+      const isDoctorBusy = collision.doctorName.toLowerCase() === finalDoctorName.toLowerCase();
+      setBookingError(
+        `تعذّر الحجز: يوجد موعد مسجّل مسبقاً في هذا التاريخ والتوقيت (${formData.time} بتاريخ ${formData.date}) لـ ${
+          isDoctorBusy ? `الطبيب (${collision.doctorName})` : `المريض (${collision.patientName})`
+        }. يرجى اختيار موعد أو توقيت آخر منعاً للتعارض.`
+      );
+      return;
+    }
+    
     const matchedPatient = patients.find(p => p.fullName === initialPatientName);
     const finalPatientName = initialPatientName;
     const finalPatientId = matchedPatient ? matchedPatient.id : ('p-' + Date.now());
 
     const matchedDoctor = doctors.find(d => d.name === formData.doctorName);
-    const finalDoctorName = formData.doctorName.trim() || 'د. طبيب ممارس';
     const finalDoctorId = matchedDoctor ? matchedDoctor.id : ('d-' + Date.now());
     const finalSpecialty = matchedDoctor ? matchedDoctor.specialty : 'طب عام';
     const finalFee = matchedDoctor ? matchedDoctor.consultingFee : 25000;
@@ -104,6 +128,7 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
       type: 'كشف',
       notes: '',
     });
+    setBookingError(null);
     setShowAddModal(false);
   };
 
@@ -297,10 +322,17 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
                 <Plus className="w-5 h-5 text-sky-400" />
                 <span>حجز موعد طبي جديد</span>
               </h3>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => { setShowAddModal(false); setBookingError(null); }} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {bookingError && (
+              <div className="p-3.5 bg-rose-950/80 border border-rose-500/80 rounded-2xl text-rose-200 text-xs flex items-start gap-2.5 shadow-lg">
+                <AlertCircle className="w-4.5 h-4.5 text-rose-400 shrink-0 mt-0.5" />
+                <span className="leading-relaxed font-semibold">{bookingError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSubmitNew} className="space-y-4 text-xs">
               

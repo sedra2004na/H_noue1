@@ -43,19 +43,41 @@ export const DoctorsSection: React.FC<DoctorsSectionProps> = ({
     specialty: 'طب باطني',
     department: 'قسم الباطنية العام',
     experienceYears: 5,
-    consultingFee: 200,
-    phone: '0501234567',
+    consultingFee: 25000,
+    phone: '0933123456',
     roomNumber: 'B-101',
     shift: 'صباحي',
+    email: '',
+    password: '',
   });
 
   const handleAddDoctorSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDocData.name) return;
 
+    const formattedName = newDocData.name.startsWith('د.') ? newDocData.name : `د. ${newDocData.name}`;
+
+    // If an email and password were provided, automatically register the doctor account
+    if (newDocData.email && newDocData.password) {
+      try {
+        const saved = localStorage.getItem('syrian_hosp_accounts');
+        const accounts = saved ? JSON.parse(saved) : {};
+        const cleanEmail = newDocData.email.trim().toLowerCase();
+        accounts[cleanEmail] = {
+          role: 'doctor',
+          name: formattedName,
+          pass: newDocData.password.trim(),
+          registeredAt: new Date().toISOString(),
+        };
+        localStorage.setItem('syrian_hosp_accounts', JSON.stringify(accounts));
+      } catch (err) {
+        console.error('Failed to create doctor login account', err);
+      }
+    }
+
     if (onAddDoctor) {
       onAddDoctor({
-        name: newDocData.name.startsWith('د.') ? newDocData.name : `د. ${newDocData.name}`,
+        name: formattedName,
         specialty: newDocData.specialty,
         department: newDocData.department,
         experienceYears: Number(newDocData.experienceYears),
@@ -74,10 +96,12 @@ export const DoctorsSection: React.FC<DoctorsSectionProps> = ({
       specialty: 'طب باطني',
       department: 'قسم الباطنية العام',
       experienceYears: 5,
-      consultingFee: 200,
-      phone: '0501234567',
+      consultingFee: 25000,
+      phone: '0933123456',
       roomNumber: 'B-101',
       shift: 'صباحي',
+      email: '',
+      password: '',
     });
   };
 
@@ -429,6 +453,36 @@ export const DoctorsSection: React.FC<DoctorsSectionProps> = ({
                   onChange={(e) => setNewDocData({ ...newDocData, phone: e.target.value })}
                   className="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500"
                 />
+              </div>
+
+              {/* Login Account Details for Doctor */}
+              <div className="p-3.5 bg-slate-950/80 rounded-2xl border border-slate-800 space-y-3">
+                <p className="text-[11px] font-bold text-sky-400 flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>بيانات تسجيل الدخول لحساب الطبيب (اختياري)</span>
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-400 text-[10px] mb-1">البريد الإلكتروني</label>
+                    <input
+                      type="email"
+                      placeholder="doctor@hospital.com"
+                      value={newDocData.email}
+                      onChange={(e) => setNewDocData({ ...newDocData, email: e.target.value })}
+                      className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs placeholder-slate-600 focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 text-[10px] mb-1">كلمة المرور</label>
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      value={newDocData.password}
+                      onChange={(e) => setNewDocData({ ...newDocData, password: e.target.value })}
+                      className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs placeholder-slate-600 focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">

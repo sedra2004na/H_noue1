@@ -2,11 +2,7 @@ import React, { useState } from 'react';
 import { HospitalLogo } from './HospitalLogo';
 import { 
   LogIn, 
-  UserPlus, 
   ShieldCheck, 
-  Stethoscope, 
-  UserCheck, 
-  UserCircle2, 
   Mail, 
   Lock, 
   User as UserIcon, 
@@ -23,6 +19,13 @@ interface LandingAndAuthScreenProps {
   onLogin: (role: UserRole, userName?: string) => void;
 }
 
+// Pre-configured official system accounts
+const DEFAULT_ACCOUNTS: Record<string, { role: UserRole; name: string; pass: string }> = {
+  'admin@hospital.com': { role: 'admin', name: 'مدير النظام الرئيسي', pass: 'admin123' },
+  'doctor@hospital.com': { role: 'doctor', name: 'د. أحمد السوري', pass: 'doctor123' },
+  'staff@hospital.com': { role: 'staff', name: 'موظف الاستقبال والتسجيل', pass: 'staff123' },
+};
+
 export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLogin }) => {
   const [activeTab, setActiveTab] = useState<'landing' | 'login' | 'register'>('login');
   const [email, setEmail] = useState('');
@@ -33,13 +36,14 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
   const [isRoleLocked, setIsRoleLocked] = useState(false);
   const [lockedRoleLabel, setLockedRoleLabel] = useState('');
 
-  // Load existing accounts dictionary from localStorage
+  // Load existing accounts dictionary merged with defaults
   const getRegisteredAccounts = () => {
     try {
       const saved = localStorage.getItem('syrian_hosp_accounts');
-      return saved ? JSON.parse(saved) : {};
+      const userAccounts = saved ? JSON.parse(saved) : {};
+      return { ...DEFAULT_ACCOUNTS, ...userAccounts };
     } catch (e) {
-      return {};
+      return DEFAULT_ACCOUNTS;
     }
   };
 
@@ -101,13 +105,13 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
     if (activeTab === 'login') {
       const existingAccount = accounts[cleanEmail];
       if (!existingAccount) {
-        setErrorMessage('البريد الإلكتروني غير مسجّل بالنظام! يرجى التأكد من البريد أو إنشاء حساب جديد.');
+        setErrorMessage('البريد الإلكتروني غير مسجّل بالنظام! يرجى التأكد من البريد أو الانتقال لإنشاء حساب مريض.');
         return;
       }
 
       // Check password
       if (existingAccount.pass && existingAccount.pass !== password.trim()) {
-        setErrorMessage('كلمة المرور غير صحيحة لهذا البريد الإلكتروني!');
+        setErrorMessage('كلمة المرور غير صحيحة لهذا الحساب!');
         return;
       }
 
@@ -116,10 +120,10 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
       return;
     }
 
-    // REGISTER LOGIC
+    // REGISTER LOGIC (Strictly locked to Patient role for public safety)
     if (activeTab === 'register') {
       if (fullName.trim().length < 3) {
-        setErrorMessage('يرجى كتابة الاسم الكامل الرباعي بشكل واضح');
+        setErrorMessage('يرجى كتابة الاسم الكامل للمريض بشكل واضح');
         return;
       }
 
@@ -128,13 +132,13 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
         return;
       }
 
-      // Save new user account to localStorage
+      // Save new user account to localStorage (strictly as patient)
       const userAccountsRaw = localStorage.getItem('syrian_hosp_accounts');
       const userAccounts = userAccountsRaw ? JSON.parse(userAccountsRaw) : {};
 
       userAccounts[cleanEmail] = {
-        role: selectedRole,
-        name: fullName,
+        role: 'patient',
+        name: fullName.trim(),
         pass: password.trim(),
         registeredAt: new Date().toISOString()
       };
@@ -145,7 +149,7 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
         // Fallback
       }
 
-      onLogin(selectedRole, fullName);
+      onLogin('patient', fullName.trim());
     }
   };
 
@@ -175,13 +179,29 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
           </div>
 
           {/* Unified Clean Header Navigation Bar */}
-          <nav className="flex items-center gap-1 bg-slate-950/90 p-1.5 rounded-full border border-slate-800/80 shadow-lg">
+          <nav className="flex items-center gap-1.5 bg-slate-950/90 p-1.5 rounded-full border border-slate-800/80 shadow-lg">
             <button
               onClick={() => setActiveTab('landing')}
-              className="px-4 py-2 rounded-full text-xs font-bold bg-sky-600 text-white shadow-md shadow-sky-900/50 border border-sky-400/30 flex items-center gap-1.5 cursor-pointer"
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'landing' 
+                  ? 'bg-sky-600 text-white shadow-md shadow-sky-900/50 border border-sky-400/30' 
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
             >
               <Home className="w-3.5 h-3.5" />
               <span>الرئيسية</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('login')}
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'login' || activeTab === 'register'
+                  ? 'bg-sky-600 text-white shadow-md shadow-sky-900/50 border border-sky-400/30' 
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>بوابة الدخول</span>
             </button>
           </nav>
 
@@ -210,14 +230,14 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
                 منظومة إلكترونية متكاملة لربط إدارة المرضى، الأطباء، جدولة المواعيد، الصيدلية، المختبر، والفواتير بمرونة وسهولة كاملة.
               </p>
 
-              {/* Action Button */}
+              {/* Action Buttons */}
               <div className="flex items-center justify-center pt-2">
                 <button
                   onClick={() => setActiveTab('login')}
-                  className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-extrabold text-sm shadow-xl shadow-sky-950/80 border border-sky-400/40 transition-all hover:scale-105 flex items-center justify-center gap-3 cursor-pointer"
+                  className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-extrabold text-sm shadow-xl shadow-sky-950/80 border border-sky-400/40 transition-all hover:scale-105 flex items-center justify-center gap-2.5 cursor-pointer"
                 >
-                  <LogIn className="w-5 h-5" />
-                  <span>الانتقال لبوابة الدخول</span>
+                  <LogIn className="w-4.5 h-4.5" />
+                  <span>الانتقال لبوابة تسجيل الدخول</span>
                 </button>
               </div>
             </div>
@@ -253,8 +273,8 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
                 <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center mb-3">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
-                <h3 className="font-bold text-white text-sm mb-1">صلاحيات آمنة (RBAC)</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">دخول مخصص لكل صفة: مدير، طبيب، موظف استقبال ومريض.</p>
+                <h3 className="font-bold text-white text-sm mb-1">أمان وخصوصية تامة</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">عزل كامل لبيانات المرضى، وحصر إدارة الحسابات بإدارة المستشفى.</p>
               </div>
 
             </div>
@@ -273,7 +293,7 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
               <p className="text-xs text-slate-400 mt-1">
                 {activeTab === 'login' 
                   ? 'تسجيل الدخول إلى بوابّة النظام الموحد' 
-                  : 'إنشاء حساب مستخدم جديد في النظام'}
+                  : 'بوابة تسجيل المرضى والمراجعين الجدد'}
               </p>
             </div>
 
@@ -285,10 +305,23 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
                   <span className="font-semibold">{errorMessage}</span>
                 </div>
               )}
+
+              {/* SECURITY NOTICE FOR PATIENT REGISTRATION */}
+              {activeTab === 'register' && (
+                <div className="p-3.5 rounded-2xl bg-sky-500/10 border border-sky-500/30 text-sky-300 text-xs flex items-start gap-2.5">
+                  <ShieldCheck className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-white">تسجيل حساب مريض / مراجع</p>
+                    <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
+                      هذا الحساب مخصص للمرضى لمتابعة مواعيدهم وتقاريرهم الطبية. حسابات الكادر الطبي والإداري تصدر وتدار حصراً من قبل إدارة المستشفى.
+                    </p>
+                  </div>
+                </div>
+              )}
               
               {activeTab === 'register' && (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">الاسم الكامل *</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">الاسم الكامل للمريض *</label>
                   <div className="relative">
                     <UserIcon className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                     <input
@@ -304,7 +337,7 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">البريد الإلكتروني النظامي *</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">البريد الإلكتروني *</label>
                 <div className="relative">
                   <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <input
@@ -316,9 +349,9 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
                     className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all"
                   />
                 </div>
-                {isRoleLocked && (
+                {isRoleLocked && activeTab === 'login' && (
                   <p className="mt-1 text-[11px] text-sky-400 font-medium">
-                    ✓ هذا البريد مسجّل مسبقاً برتبة: <strong className="text-white">{lockedRoleLabel}</strong>. تم تثبيت الحساب على هذه الصفة.
+                    ✓ تم التعرف على الحساب برتبة: <strong className="text-white">{lockedRoleLabel}</strong>.
                   </p>
                 )}
               </div>
@@ -338,92 +371,12 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
                 </div>
               </div>
 
-              {/* Role Selection Option */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-2">
-                  {activeTab === 'register' ? 'حدد الرتبة المطلوبة للحساب:' : 'حدد الصفة المطلوبة للدخول:'}
-                </label>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  
-                  <button
-                    type="button"
-                    disabled={isRoleLocked}
-                    onClick={() => setSelectedRole('admin')}
-                    className={`p-3 rounded-xl border text-right transition-all flex items-center gap-2.5 cursor-pointer ${
-                      selectedRole === 'admin'
-                        ? 'bg-purple-950/80 border-purple-500/80 text-purple-200 ring-1 ring-purple-500'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
-                    } ${isRoleLocked && selectedRole !== 'admin' ? 'opacity-40 cursor-not-allowed' : ''}`}
-                  >
-                    <ShieldCheck className="w-4 h-4 text-purple-400 shrink-0" />
-                    <div>
-                      <span className="block font-bold">مدير النظام</span>
-                      <span className="text-[10px] text-slate-400">تحكم كامل بالنظام</span>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={isRoleLocked}
-                    onClick={() => setSelectedRole('doctor')}
-                    className={`p-3 rounded-xl border text-right transition-all flex items-center gap-2.5 cursor-pointer ${
-                      selectedRole === 'doctor'
-                        ? 'bg-blue-950/80 border-blue-500/80 text-blue-200 ring-1 ring-blue-500'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
-                    } ${isRoleLocked && selectedRole !== 'doctor' ? 'opacity-40 cursor-not-allowed' : ''}`}
-                  >
-                    <Stethoscope className="w-4 h-4 text-blue-400 shrink-0" />
-                    <div>
-                      <span className="block font-bold">طبيب معالج</span>
-                      <span className="text-[10px] text-slate-400">تشخيص ومواعيد ووصفات</span>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={isRoleLocked}
-                    onClick={() => setSelectedRole('staff')}
-                    className={`p-3 rounded-xl border text-right transition-all flex items-center gap-2.5 cursor-pointer ${
-                      selectedRole === 'staff'
-                        ? 'bg-emerald-950/80 border-emerald-500/80 text-emerald-200 ring-1 ring-emerald-500'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
-                    } ${isRoleLocked && selectedRole !== 'staff' ? 'opacity-40 cursor-not-allowed' : ''}`}
-                  >
-                    <UserCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <div>
-                      <span className="block font-bold">موظف استقبال</span>
-                      <span className="text-[10px] text-slate-400">استقبال وتسجيل وفواتير</span>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={isRoleLocked}
-                    onClick={() => setSelectedRole('patient')}
-                    className={`p-3 rounded-xl border text-right transition-all flex items-center gap-2.5 cursor-pointer ${
-                      selectedRole === 'patient'
-                        ? 'bg-amber-950/80 border-amber-500/80 text-amber-200 ring-1 ring-amber-500'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
-                    } ${isRoleLocked && selectedRole !== 'patient' ? 'opacity-40 cursor-not-allowed' : ''}`}
-                  >
-                    <UserCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                    <div>
-                      <span className="block font-bold">مريض</span>
-                      <span className="text-[10px] text-slate-400">عرض الملف والمواعيد</span>
-                    </div>
-                  </button>
-
-                </div>
-              </div>
-
-
-
               <button
                 type="submit"
-                className="w-full py-3.5 px-4 mt-4 rounded-xl bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-sky-950/80 border border-sky-400/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3.5 px-4 mt-2 rounded-xl bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-sky-950/80 border border-sky-400/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <LogIn className="w-4 h-4" />
-                <span>{activeTab === 'login' ? 'تسجيل الدخول للنظام' : 'إنشاء الحساب والدخول'}</span>
+                <span>{activeTab === 'login' ? 'تسجيل الدخول للنظام' : 'إنشاء حساب المريض والدخول'}</span>
               </button>
             </form>
 
@@ -434,7 +387,7 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
                   onClick={() => setActiveTab('register')}
                   className="text-xs text-sky-400 hover:underline font-semibold cursor-pointer"
                 >
-                  ليس لديك حساب؟ اضغط هنا لإنشاء حساب جديد
+                  أنت مريض جديد؟ اضغط هنا لإنشاء حساب مريض
                 </button>
               ) : (
                 <button
