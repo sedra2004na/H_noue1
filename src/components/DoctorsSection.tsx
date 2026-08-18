@@ -12,7 +12,8 @@ import {
   AlertCircle,
   Phone,
   Mail,
-  Trash2
+  Trash2,
+  Plus
 } from 'lucide-react';
 
 interface DoctorsSectionProps {
@@ -138,9 +139,9 @@ export const DoctorsSection: React.FC<DoctorsSectionProps> = ({
           {canManageDoctors && onAddDoctor && (
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-lg shadow-sky-600/30 transition-all flex items-center gap-2 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white font-extrabold text-xs shadow-lg shadow-sky-500/25 transition-all flex items-center gap-2 cursor-pointer hover:scale-[1.02]"
             >
-              <Stethoscope className="w-4 h-4" />
+              <Plus className="w-4 h-4" />
               <span>إضافة طبيب جديد</span>
             </button>
           )}

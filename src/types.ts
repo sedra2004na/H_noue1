@@ -169,3 +169,40 @@ export interface SystemStats {
   monthlyRevenue: number;
   lowStockItemsCount: number;
 }
+
+export interface DischargeMedication {
+  medicineName: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  instructions?: string;
+}
+
+export interface DischargeSummary {
+  id: string;
+  reportNumber: string;
+  patientId: string;
+  patientName: string;
+  fileNumber: string;
+  nationalId: string;
+  age: number;
+  gender: 'ذكر' | 'أنثى';
+  admissionDate: string;
+  dischargeDate: string;
+  department: string;
+  roomBedNumber: string;
+  attendingDoctor: string;
+  specialty: string;
+  admissionDiagnosis: string;
+  dischargeDiagnosis: string;
+  hospitalCourse: string;
+  surgicalProcedures?: string;
+  dischargeCondition: 'شفاء تام' | 'تحسن سريري ممتاز' | 'استقرار مع متابعة منزلية' | 'نقل لمشفى آخر' | 'خروج على مسؤولية المريض';
+  medications: DischargeMedication[];
+  dietAndActivityInstructions: string;
+  dangerSigns: string;
+  followUpDate: string;
+  followUpClinic: string;
+  doctorNotes?: string;
+  createdAt: string;
+}

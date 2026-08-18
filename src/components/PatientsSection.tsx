@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Patient, UserRole } from '../types';
+import { Patient, UserRole, Doctor, DischargeSummary } from '../types';
 import { printAndExportPdf } from '../utils/pdfExport';
+import { DischargeSummaryModal } from './DischargeSummaryModal';
 import { 
   Users, 
   Search, 
@@ -22,7 +23,8 @@ import {
   Download,
   Printer,
   FileUp,
-  Maximize2
+  Maximize2,
+  FileCheck2
 } from 'lucide-react';
 
 export interface MedicalFile {
@@ -37,6 +39,7 @@ export interface MedicalFile {
 interface PatientsSectionProps {
   userRole?: UserRole;
   patients: Patient[];
+  doctors?: Doctor[];
   onAddPatient: (patient: Partial<Patient>) => void;
   onUpdatePatient: (id: string, data: Partial<Patient>) => void;
   onDeletePatient?: (id: string) => void;
@@ -47,6 +50,7 @@ interface PatientsSectionProps {
 export const PatientsSection: React.FC<PatientsSectionProps> = ({
   userRole = 'admin',
   patients,
+  doctors = [],
   onAddPatient,
   onUpdatePatient,
   onDeletePatient,
@@ -58,8 +62,32 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
   const [localSearch, setLocalSearch] = useState('');
   const [selectedBlood, setSelectedBlood] = useState<string>('all');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [selectedDischargePatient, setSelectedDischargePatient] = useState<Patient | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [activeModalTab, setActiveModalTab] = useState<'info' | 'scans'>('info');
+
+  // Stored Discharge Summaries state
+  const [dischargeSummaries, setDischargeSummaries] = useState<Record<string, DischargeSummary>>(() => {
+    try {
+      const saved = localStorage.getItem('syrian_hosp_discharge_summaries');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const handleSaveDischargeSummary = (summary: DischargeSummary) => {
+    setDischargeSummaries((prev) => {
+      const updated = { ...prev, [summary.patientId]: summary };
+      try {
+        localStorage.setItem('syrian_hosp_discharge_summaries', JSON.stringify(updated));
+      } catch (e) {
+        console.error('Failed to save discharge summary in localStorage', e);
+      }
+      return updated;
+    });
+    onShowToast?.(`تم حفظ وتثبيت تقرير الخروج الطبي للمريض (${summary.patientName}) بنجاح`, 'success');
+  };
 
   // Medical Scans and files state per patient
   const [patientFiles, setPatientFiles] = useState<Record<string, MedicalFile[]>>({
@@ -427,13 +455,29 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
                     </td>
 
                     <td className="p-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex items-center justify-center gap-1.5">
                         <button
                           onClick={() => setSelectedPatient(patient)}
-                          className="px-3 py-1.5 rounded-lg bg-sky-600/20 hover:bg-sky-600 text-sky-300 hover:text-white border border-sky-500/30 font-semibold transition-all flex items-center gap-1"
+                          className="px-2.5 py-1.5 rounded-lg bg-sky-600/20 hover:bg-sky-600 text-sky-300 hover:text-white border border-sky-500/30 font-semibold transition-all flex items-center gap-1 text-xs cursor-pointer"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           <span>الملف الطبي</span>
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedDischargePatient(patient);
+                          }}
+                          className={`px-2.5 py-1.5 rounded-lg border font-semibold transition-all flex items-center gap-1 text-xs cursor-pointer ${
+                            dischargeSummaries[patient.id]
+                              ? 'bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border-emerald-500/40'
+                              : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700'
+                          }`}
+                          title="تقرير الخروج الطبي (Discharge Summary)"
+                        >
+                          <FileCheck2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>{dischargeSummaries[patient.id] ? 'تقرير خروج ✓' : 'تقرير خروج'}</span>
                         </button>
 
                         {onDeletePatient && (
@@ -508,14 +552,25 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
                 </button>
               </div>
 
-              <button
-                type="button"
-                onClick={() => handleExportPDF(selectedPatient)}
-                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 font-bold text-xs flex items-center justify-center gap-2 transition-all hover:border-sky-500/50 cursor-pointer"
-              >
-                <Download className="w-4 h-4" />
-                <span>تصدير الملف الطبي PDF</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setSelectedDischargePatient(selectedPatient)}
+                  className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md"
+                >
+                  <FileCheck2 className="w-4 h-4 text-emerald-400" />
+                  <span>{dischargeSummaries[selectedPatient.id] ? 'تقرير الخروج الطبي (معتمد ✓)' : 'إنشاء تقرير خروج طبي'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleExportPDF(selectedPatient)}
+                  className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 font-bold text-xs flex items-center justify-center gap-2 transition-all hover:border-sky-500/50 cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>تصدير الملف الطبي PDF</span>
+                </button>
+              </div>
             </div>
 
             {/* TAB 1: CLINICAL INFO & VITALS */}
@@ -886,6 +941,17 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
 
           </div>
         </div>
+      )}
+
+      {/* Discharge Summary Modal */}
+      {selectedDischargePatient && (
+        <DischargeSummaryModal
+          patient={selectedDischargePatient}
+          doctors={doctors}
+          existingSummary={dischargeSummaries[selectedDischargePatient.id] || null}
+          onSaveSummary={handleSaveDischargeSummary}
+          onClose={() => setSelectedDischargePatient(null)}
+        />
       )}
 
     </div>

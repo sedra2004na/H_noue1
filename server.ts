@@ -2,7 +2,11 @@ import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
-import { mockPatients, mockDoctors, mockAppointments, mockInventory, mockLabResults, mockPrescriptions, mockInvoices, mockShifts } from './src/data/mockData.js';
+import { mockPatients, mockDoctors, mockAppointments, mockInventory, mockLabResults, mockPrescriptions, mockInvoices, mockShifts } from './src/data/mockData.ts';
+import { db } from './src/db/index.ts';
+import * as schema from './src/db/schema.ts';
+import { eq, desc } from 'drizzle-orm';
+import { seedDatabaseIfEmpty } from './src/db/seed.ts';
 
 dotenv.config();
 
@@ -12,7 +16,7 @@ async function startServer() {
 
   app.use(express.json({ limit: '10mb' }));
 
-  // In-memory data store initialized with mock data
+  // In-memory fallback dataset
   let patientsData = [...mockPatients];
   let doctorsData = [...mockDoctors];
   let appointmentsData = [...mockAppointments];
@@ -22,17 +26,33 @@ async function startServer() {
   let invoicesData = [...mockInvoices];
   let shiftsData = [...mockShifts];
 
+  // Try seed database if PostgreSQL / Cloud SQL is connected
+  seedDatabaseIfEmpty().catch(e => console.warn('Seed error (safe fallback):', e));
+
   // API Routes
   app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', serverTime: new Date().toISOString(), system: 'Care Hospital Management System' });
+    res.json({ 
+      status: 'ok', 
+      serverTime: new Date().toISOString(), 
+      system: 'Care Hospital Management System',
+      database: process.env.SQL_HOST ? 'Cloud SQL (PostgreSQL / Relational)' : 'In-Memory / Local Storage'
+    });
   });
 
-  // Patients
-  app.get('/api/patients', (req, res) => {
+  // =================== PATIENTS ===================
+  app.get('/api/patients', async (req, res) => {
+    if (process.env.SQL_HOST) {
+      try {
+        const rows = await db.select().from(schema.patients);
+        if (rows.length > 0) return res.json(rows);
+      } catch (err) {
+        console.warn('DB read failed, falling back to memory:', err);
+      }
+    }
     res.json(patientsData);
   });
 
-  app.post('/api/patients', (req, res) => {
+  app.post('/api/patients', async (req, res) => {
     const newPatient = {
       id: `pat-${Date.now()}`,
       fileNumber: `MED-2026-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -42,12 +62,47 @@ async function startServer() {
       vitals: req.body.vitals || { bloodPressure: '120/80', heartRate: 75, temperature: 37.0, weight: 70 },
       ...req.body,
     };
+
+    if (process.env.SQL_HOST) {
+      try {
+        await db.insert(schema.patients).values({
+          id: newPatient.id,
+          fullName: newPatient.fullName,
+          age: Number(newPatient.age) || 30,
+          gender: newPatient.gender || 'ذكر',
+          phone: newPatient.phone || '',
+          bloodType: newPatient.bloodType || 'A+',
+          nationalId: newPatient.nationalId || '',
+          roomNumber: newPatient.roomNumber || '',
+          status: newPatient.status || 'مستقر',
+          assignedDoctor: newPatient.assignedDoctor || '',
+          notes: newPatient.notes || '',
+          admissionDate: newPatient.admissionDate || new Date().toISOString().split('T')[0],
+        }).onConflictDoNothing();
+      } catch (err) {
+        console.warn('DB insert failed:', err);
+      }
+    }
+
     patientsData.unshift(newPatient);
     res.status(201).json(newPatient);
   });
 
-  app.put('/api/patients/:id', (req, res) => {
+  app.put('/api/patients/:id', async (req, res) => {
     const { id } = req.params;
+    if (process.env.SQL_HOST) {
+      try {
+        await db.update(schema.patients).set({
+          fullName: req.body.fullName,
+          status: req.body.status,
+          phone: req.body.phone,
+          notes: req.body.notes,
+        }).where(eq(schema.patients.id, id));
+      } catch (err) {
+        console.warn('DB update failed:', err);
+      }
+    }
+
     const index = patientsData.findIndex(p => p.id === id);
     if (index !== -1) {
       patientsData[index] = { ...patientsData[index], ...req.body };
@@ -57,42 +112,109 @@ async function startServer() {
     }
   });
 
-  // Doctors
-  app.get('/api/doctors', (req, res) => {
+  // =================== DOCTORS ===================
+  app.get('/api/doctors', async (req, res) => {
+    if (process.env.SQL_HOST) {
+      try {
+        const rows = await db.select().from(schema.doctors);
+        if (rows.length > 0) return res.json(rows);
+      } catch (err) {
+        console.warn('DB read failed:', err);
+      }
+    }
     res.json(doctorsData);
   });
 
-  app.put('/api/doctors/:id/status', (req, res) => {
-    const { id } = req.params;
-    const { status } = req.body;
-    const doc = doctorsData.find(d => d.id === id);
-    if (doc) {
-      doc.status = status;
-      res.json(doc);
-    } else {
-      res.status(404).json({ error: 'الطبيب غير موجود' });
+  app.post('/api/doctors', async (req, res) => {
+    const newDoc = {
+      id: `doc-${Date.now()}`,
+      status: 'active',
+      rating: 5.0,
+      ...req.body,
+    };
+
+    if (process.env.SQL_HOST) {
+      try {
+        await db.insert(schema.doctors).values({
+          id: newDoc.id,
+          name: newDoc.name,
+          specialty: newDoc.specialty,
+          department: newDoc.department,
+          experienceYears: Number(newDoc.experienceYears) || 5,
+          consultingFee: Number(newDoc.consultingFee) || 25000,
+          phone: newDoc.phone,
+          roomNumber: newDoc.roomNumber,
+          shift: newDoc.shift || 'صباحي',
+          status: newDoc.status,
+          rating: String(newDoc.rating),
+        }).onConflictDoNothing();
+      } catch (err) {
+        console.warn('DB insert failed:', err);
+      }
     }
+
+    doctorsData.unshift(newDoc);
+    res.status(201).json(newDoc);
   });
 
-  // Appointments
-  app.get('/api/appointments', (req, res) => {
+  // =================== APPOINTMENTS ===================
+  app.get('/api/appointments', async (req, res) => {
+    if (process.env.SQL_HOST) {
+      try {
+        const rows = await db.select().from(schema.appointments);
+        if (rows.length > 0) return res.json(rows);
+      } catch (err) {
+        console.warn('DB read failed:', err);
+      }
+    }
     res.json(appointmentsData);
   });
 
-  app.post('/api/appointments', (req, res) => {
+  app.post('/api/appointments', async (req, res) => {
     const newApt = {
       id: `apt-${Date.now()}`,
       status: 'مؤكد',
-      fee: req.body.fee || 350,
+      fee: req.body.fee || 25000,
       ...req.body,
     };
+
+    if (process.env.SQL_HOST) {
+      try {
+        await db.insert(schema.appointments).values({
+          id: newApt.id,
+          patientId: newApt.patientId || 'p-1',
+          patientName: newApt.patientName,
+          doctorId: newApt.doctorId || 'd-1',
+          doctorName: newApt.doctorName,
+          specialty: newApt.specialty || 'طب عام',
+          date: newApt.date,
+          time: newApt.time,
+          type: newApt.type || 'كشف',
+          status: newApt.status,
+          fee: Number(newApt.fee) || 25000,
+          notes: newApt.notes || '',
+        }).onConflictDoNothing();
+      } catch (err) {
+        console.warn('DB appointment insert failed:', err);
+      }
+    }
+
     appointmentsData.unshift(newApt);
     res.status(201).json(newApt);
   });
 
-  app.put('/api/appointments/:id/status', (req, res) => {
+  app.put('/api/appointments/:id/status', async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
+
+    if (process.env.SQL_HOST) {
+      try {
+        await db.update(schema.appointments).set({ status }).where(eq(schema.appointments.id, id));
+      } catch (err) {
+        console.warn('DB appointment status update failed:', err);
+      }
+    }
+
     const apt = appointmentsData.find(a => a.id === id);
     if (apt) {
       apt.status = status;
@@ -102,7 +224,7 @@ async function startServer() {
     }
   });
 
-  // Inventory
+  // =================== INVENTORY ===================
   app.get('/api/inventory', (req, res) => {
     res.json(inventoryData);
   });
@@ -123,7 +245,7 @@ async function startServer() {
     res.status(201).json(newItem);
   });
 
-  // Lab Results
+  // =================== LAB RESULTS ===================
   app.get('/api/lab-results', (req, res) => {
     res.json(labResultsData);
   });
@@ -138,7 +260,7 @@ async function startServer() {
     res.status(201).json(newLab);
   });
 
-  // Prescriptions
+  // =================== PRESCRIPTIONS ===================
   app.get('/api/prescriptions', (req, res) => {
     res.json(prescriptionsData);
   });
@@ -153,14 +275,14 @@ async function startServer() {
     res.status(201).json(newRx);
   });
 
-  // Invoices
+  // =================== INVOICES ===================
   app.get('/api/invoices', (req, res) => {
     res.json(invoicesData);
   });
 
   app.post('/api/invoices', (req, res) => {
     const subtotal = Number(req.body.subtotal) || 0;
-    const tax = subtotal * 0.15; // 15% VAT
+    const tax = subtotal * 0.15;
     const insCovered = Number(req.body.insuranceCovered) || 0;
     const netAmount = Math.max(0, subtotal + tax - insCovered);
 

@@ -305,19 +305,6 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
                   <span className="font-semibold">{errorMessage}</span>
                 </div>
               )}
-
-              {/* SECURITY NOTICE FOR PATIENT REGISTRATION */}
-              {activeTab === 'register' && (
-                <div className="p-3.5 rounded-2xl bg-sky-500/10 border border-sky-500/30 text-sky-300 text-xs flex items-start gap-2.5">
-                  <ShieldCheck className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-bold text-white">تسجيل حساب مريض / مراجع</p>
-                    <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
-                      هذا الحساب مخصص للمرضى لمتابعة مواعيدهم وتقاريرهم الطبية. حسابات الكادر الطبي والإداري تصدر وتدار حصراً من قبل إدارة المستشفى.
-                    </p>
-                  </div>
-                </div>
-              )}
               
               {activeTab === 'register' && (
                 <div>
@@ -344,16 +331,11 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
                     type="email"
                     value={email}
                     onChange={(e) => handleEmailChange(e.target.value)}
-                    placeholder="أدخل البريد الإلكتروني (مثال: user@example.com)..."
+                    placeholder="أدخل البريد الإلكتروني (مثال: admin@hospital.com)..."
                     required
                     className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all"
                   />
                 </div>
-                {isRoleLocked && activeTab === 'login' && (
-                  <p className="mt-1 text-[11px] text-sky-400 font-medium">
-                    ✓ تم التعرف على الحساب برتبة: <strong className="text-white">{lockedRoleLabel}</strong>.
-                  </p>
-                )}
               </div>
 
               <div>
@@ -387,7 +369,7 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
                   onClick={() => setActiveTab('register')}
                   className="text-xs text-sky-400 hover:underline font-semibold cursor-pointer"
                 >
-                  أنت مريض جديد؟ اضغط هنا لإنشاء حساب مريض
+                  إنشاء حساب مريض جديد
                 </button>
               ) : (
                 <button
@@ -395,7 +377,7 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
                   onClick={() => setActiveTab('login')}
                   className="text-xs text-sky-400 hover:underline font-semibold cursor-pointer"
                 >
-                  لديك حساب بالفعل؟ اضغط هنا لتسجيل الدخول
+                  لديك حساب بالفعل؟ تسجيل الدخول
                 </button>
               )}
             </div>

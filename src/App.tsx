@@ -363,6 +363,7 @@ export function App() {
             <PatientsSection
               userRole={userRole}
               patients={patients}
+              doctors={doctors}
               onAddPatient={handleAddPatient}
               onUpdatePatient={handleUpdatePatient}
               onDeletePatient={handleDeletePatient}
