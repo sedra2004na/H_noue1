@@ -173,7 +173,7 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
           >
             <HospitalLogo size="md" />
             <div>
-              <h1 className="text-lg font-black text-white tracking-wide group-hover:text-sky-400 transition-colors">مشفى النور</h1>
+              <h1 className="text-lg font-black text-white tracking-wide group-hover:text-sky-400 transition-colors">مشفى الرحمة</h1>
               <p className="text-[11px] text-slate-400">النظام الطبي الموحد لإدارة الرعاية الصحيّة</p>
             </div>
           </div>
@@ -222,11 +222,11 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
                 <span>نظام إدارة المشافي والعيادات الموحد</span>
               </div>
 
-              <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight tracking-tight">
-                منظومة <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-blue-400 to-indigo-400">مشفى النور الطبية</span>
+              <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-tight tracking-tight">
+                منظومة <span className="text-sky-600">مشفى الرحمة الطبية</span>
               </h2>
 
-              <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
+              <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
                 منظومة إلكترونية متكاملة لربط إدارة المرضى، الأطباء، جدولة المواعيد، الصيدلية، المختبر، والفواتير بمرونة وسهولة كاملة.
               </p>
 
@@ -234,7 +234,7 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
               <div className="flex items-center justify-center pt-2">
                 <button
                   onClick={() => setActiveTab('login')}
-                  className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-extrabold text-sm shadow-xl shadow-sky-950/80 border border-sky-400/40 transition-all hover:scale-105 flex items-center justify-center gap-2.5 cursor-pointer"
+                  className="px-8 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-sm shadow-md shadow-sky-600/30 transition-all hover:scale-105 flex items-center justify-center gap-2.5 cursor-pointer"
                 >
                   <LogIn className="w-4.5 h-4.5" />
                   <span>الانتقال لبوابة تسجيل الدخول</span>
@@ -289,7 +289,7 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
             {/* Official Logo Displayed Prominently at top of Form Card */}
             <div className="flex flex-col items-center text-center pb-6 border-b border-slate-800/80 mb-6">
               <HospitalLogo size="xl" />
-              <h2 className="text-2xl font-black text-white mt-3">مشفى النور الطبي</h2>
+              <h2 className="text-2xl font-black text-white mt-3">مشفى الرحمة الطبي</h2>
               <p className="text-xs text-slate-400 mt-1">
                 {activeTab === 'login' 
                   ? 'تسجيل الدخول إلى بوابّة النظام الموحد' 
@@ -355,7 +355,7 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
 
               <button
                 type="submit"
-                className="w-full py-3.5 px-4 mt-2 rounded-xl bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-sky-950/80 border border-sky-400/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3.5 px-4 mt-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-sm shadow-md shadow-sky-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <LogIn className="w-4 h-4" />
                 <span>{activeTab === 'login' ? 'تسجيل الدخول للنظام' : 'إنشاء حساب المريض والدخول'}</span>
@@ -390,7 +390,7 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
       {/* Footer */}
       <footer className="border-t border-slate-800/80 bg-slate-950/90 py-4 text-center text-xs text-slate-500 relative z-10">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>مشفى النور</span>
+          <span>مشفى الرحمة</span>
           <span className="text-[11px] text-slate-400">نظام طبي موحد وآمن وفق أعلى المعايير القياسية</span>
         </div>
       </footer>

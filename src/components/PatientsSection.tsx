@@ -24,7 +24,12 @@ import {
   Printer,
   FileUp,
   Maximize2,
-  FileCheck2
+  FileCheck2,
+  ChevronDown,
+  ChevronUp,
+  Thermometer,
+  Weight,
+  Archive
 } from 'lucide-react';
 
 export interface MedicalFile {
@@ -43,6 +48,7 @@ interface PatientsSectionProps {
   onAddPatient: (patient: Partial<Patient>) => void;
   onUpdatePatient: (id: string, data: Partial<Patient>) => void;
   onDeletePatient?: (id: string) => void;
+  onArchivePatient?: (patientId: string) => void;
   searchQuery: string;
   onShowToast?: (msg: string, type?: 'success' | 'info' | 'warning' | 'error' | 'download') => void;
 }
@@ -54,6 +60,7 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
   onAddPatient,
   onUpdatePatient,
   onDeletePatient,
+  onArchivePatient,
   searchQuery,
   onShowToast
 }) => {
@@ -63,6 +70,7 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
   const [selectedBlood, setSelectedBlood] = useState<string>('all');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [selectedDischargePatient, setSelectedDischargePatient] = useState<Patient | null>(null);
+  const [expandedPatientId, setExpandedPatientId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [activeModalTab, setActiveModalTab] = useState<'info' | 'scans'>('info');
 
@@ -393,6 +401,7 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
           <table className="w-full text-right text-xs text-slate-300">
             <thead className="bg-slate-800 text-slate-400 font-bold border-b border-slate-700">
               <tr>
+                <th className="p-4 w-10 text-center">#</th>
                 <th className="p-4">رقم الملف الطبي</th>
                 <th className="p-4">اسم المريض</th>
                 <th className="p-4">الهوية / الإقامة</th>
@@ -407,97 +416,211 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
             <tbody className="divide-y divide-slate-800">
               {filteredPatients.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="p-8 text-center text-slate-400">
+                  <td colSpan={10} className="p-8 text-center text-slate-400">
                     لا يوجد مرضى مطابقين لشرط البحث حالياً.
                   </td>
                 </tr>
               ) : (
-                filteredPatients.map((patient) => (
-                  <tr key={patient.id} className="hover:bg-slate-800/50 transition-colors">
-                    
-                    <td className="p-4 font-mono font-bold text-sky-400">
-                      {patient.fileNumber}
-                    </td>
-
-                    <td className="p-4 font-bold text-white">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-sky-300">
-                          {patient.fullName.charAt(0)}
-                        </div>
-                        <span>{patient.fullName}</span>
-                      </div>
-                    </td>
-
-                    <td className="p-4 font-mono text-slate-400">
-                      {patient.nationalId}
-                    </td>
-
-                    <td className="p-4">
-                      {patient.age} سنة ({patient.gender})
-                    </td>
-
-                    <td className="p-4">
-                      <span className="px-2.5 py-1 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold">
-                        {patient.bloodType}
-                      </span>
-                    </td>
-
-                    <td className="p-4 font-mono text-slate-300">
-                      {patient.phone}
-                    </td>
-
-                    <td className="p-4 text-slate-300">
-                      {patient.insuranceProvider || 'سداد نقدي'}
-                    </td>
-
-                    <td className="p-4 text-slate-400">
-                      {patient.lastVisitDate}
-                    </td>
-
-                    <td className="p-4 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <button
-                          onClick={() => setSelectedPatient(patient)}
-                          className="px-2.5 py-1.5 rounded-lg bg-sky-600/20 hover:bg-sky-600 text-sky-300 hover:text-white border border-sky-500/30 font-semibold transition-all flex items-center gap-1 text-xs cursor-pointer"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>الملف الطبي</span>
-                        </button>
-
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedDischargePatient(patient);
-                          }}
-                          className={`px-2.5 py-1.5 rounded-lg border font-semibold transition-all flex items-center gap-1 text-xs cursor-pointer ${
-                            dischargeSummaries[patient.id]
-                              ? 'bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border-emerald-500/40'
-                              : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700'
-                          }`}
-                          title="تقرير الخروج الطبي (Discharge Summary)"
-                        >
-                          <FileCheck2 className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>{dischargeSummaries[patient.id] ? 'تقرير خروج ✓' : 'تقرير خروج'}</span>
-                        </button>
-
-                        {onDeletePatient && (
+                filteredPatients.map((patient) => {
+                  const isExpanded = expandedPatientId === patient.id;
+                  return (
+                    <React.Fragment key={patient.id}>
+                      <tr 
+                        onClick={() => setExpandedPatientId(isExpanded ? null : patient.id)}
+                        className={`hover:bg-slate-800/60 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-800/40 border-l-4 border-sky-500' : ''}`}
+                      >
+                        <td className="p-4 text-center text-slate-400">
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              onDeletePatient(patient.id);
+                              setExpandedPatientId(isExpanded ? null : patient.id);
                             }}
-                            className="p-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 transition-all cursor-pointer"
-                            title="حذف الملف الطبي"
+                            className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-sky-400 transition-colors"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            {isExpanded ? <ChevronUp className="w-4 h-4 text-sky-400" /> : <ChevronDown className="w-4 h-4" />}
                           </button>
-                        )}
-                      </div>
-                    </td>
+                        </td>
 
-                  </tr>
-                ))
+                        <td className="p-4 font-mono font-bold text-sky-400">
+                          {patient.fileNumber}
+                        </td>
+
+                        <td className="p-4 font-bold text-white">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-sky-300 text-xs">
+                              {patient.fullName.charAt(0)}
+                            </div>
+                            <span>{patient.fullName}</span>
+                          </div>
+                        </td>
+
+                        <td className="p-4 font-mono text-slate-400">
+                          {patient.nationalId}
+                        </td>
+
+                        <td className="p-4">
+                          {patient.age} سنة ({patient.gender})
+                        </td>
+
+                        <td className="p-4">
+                          <span className="px-2.5 py-1 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold">
+                            {patient.bloodType}
+                          </span>
+                        </td>
+
+                        <td className="p-4 font-mono text-slate-300">
+                          {patient.phone}
+                        </td>
+
+                        <td className="p-4 text-slate-300">
+                          {patient.insuranceProvider || 'سداد نقدي'}
+                        </td>
+
+                        <td className="p-4 text-slate-400">
+                          {patient.lastVisitDate}
+                        </td>
+
+                        <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => setSelectedPatient(patient)}
+                              className="px-2.5 py-1.5 rounded-lg bg-sky-600/20 hover:bg-sky-600 text-sky-300 hover:text-white border border-sky-500/30 font-semibold transition-all flex items-center gap-1 text-xs cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>الملف</span>
+                            </button>
+
+                            <button
+                              onClick={() => setSelectedDischargePatient(patient)}
+                              className={`px-2.5 py-1.5 rounded-lg border font-semibold transition-all flex items-center gap-1 text-xs cursor-pointer ${
+                                dischargeSummaries[patient.id]
+                                  ? 'bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border-emerald-500/40'
+                                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700'
+                              }`}
+                              title="تقرير الخروج الطبي (Discharge Summary)"
+                            >
+                              <FileCheck2 className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>{dischargeSummaries[patient.id] ? 'تقرير ✓' : 'تقرير خروج'}</span>
+                            </button>
+
+                            {onArchivePatient && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm(`هل ترغب في نقل ملف المريض (${patient.fullName}) إلى الأرشيف والتخزين البارد؟`)) {
+                                    onArchivePatient(patient.id);
+                                  }
+                                }}
+                                className="p-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 transition-all cursor-pointer"
+                                title="نقل الملف للأرشيف والتخزين البارد (Cold Storage)"
+                              >
+                                <Archive className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+
+                            {onDeletePatient && (
+                              <button
+                                type="button"
+                                onClick={() => onDeletePatient(patient.id)}
+                                className="p-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 transition-all cursor-pointer"
+                                title="حذف الملف الطبي"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Expandable Quick Drawer */}
+                      {isExpanded && (
+                        <tr className="bg-slate-950/70 border-b-2 border-sky-500/30">
+                          <td colSpan={10} className="p-4 sm:p-5">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                              
+                              {/* Vitals */}
+                              <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                                <h4 className="font-bold text-sky-400 flex items-center gap-1.5">
+                                  <Activity className="w-4 h-4" />
+                                  <span>العلامات الحيوية الأخيرة</span>
+                                </h4>
+                                <div className="grid grid-cols-2 gap-2 text-slate-300">
+                                  <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800">
+                                    <span className="text-slate-400 block text-[11px]">ضغط الدم:</span>
+                                    <strong className="font-mono text-emerald-400">{patient.bloodPressure || '120/80 mmHg'}</strong>
+                                  </div>
+                                  <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800">
+                                    <span className="text-slate-400 block text-[11px]">النبض:</span>
+                                    <strong className="font-mono text-sky-400">{patient.heartRate || '74 bpm'}</strong>
+                                  </div>
+                                  <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800">
+                                    <span className="text-slate-400 block text-[11px]">الحرارة:</span>
+                                    <strong className="font-mono text-amber-400">{patient.temperature || '37.0 °C'}</strong>
+                                  </div>
+                                  <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800">
+                                    <span className="text-slate-400 block text-[11px]">الوزن والطول:</span>
+                                    <strong className="font-mono text-indigo-300">{patient.weight || '72'} كغ / {patient.height || '175'} سم</strong>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Medical Alert & Allergies */}
+                              <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                                <h4 className="font-bold text-rose-400 flex items-center gap-1.5">
+                                  <ShieldAlert className="w-4 h-4" />
+                                  <span>الحساسية والأمراض المزمنة</span>
+                                </h4>
+                                <div className="space-y-1.5">
+                                  <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800">
+                                    <span className="text-slate-400 block text-[11px]">الأمراض المزمنة:</span>
+                                    <p className="text-slate-200">{patient.chronicDiseases?.join('، ') || 'لا توجد أمراض مزمنة مسجلة'}</p>
+                                  </div>
+                                  <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800">
+                                    <span className="text-slate-400 block text-[11px]">الحساسية الدوائية:</span>
+                                    <p className="text-rose-300 font-semibold">{patient.allergies?.join('، ') || 'لا توجد حساسية معروفة'}</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Quick Actions & Follow up */}
+                              <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2 flex flex-col justify-between">
+                                <div>
+                                  <h4 className="font-bold text-purple-400 flex items-center gap-1.5 mb-2">
+                                    <MapPin className="w-4 h-4" />
+                                    <span>الموقع والتواصل العائلي</span>
+                                  </h4>
+                                  <p className="text-slate-300 text-[11px] mb-1">
+                                    <strong className="text-slate-400">العنوان:</strong> {patient.address || 'دمشق - سوريا'}
+                                  </p>
+                                  <p className="text-slate-300 text-[11px]">
+                                    <strong className="text-slate-400">طوارئ الأقارب:</strong> {patient.emergencyContact || '0944112233 (أحد الأقارب)'}
+                                  </p>
+                                </div>
+
+                                <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
+                                  <button
+                                    onClick={() => setSelectedPatient(patient)}
+                                    className="flex-1 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-center transition-colors cursor-pointer"
+                                  >
+                                    معاينة السجل الشامل
+                                  </button>
+                                  <button
+                                    onClick={() => setSelectedDischargePatient(patient)}
+                                    className="py-1.5 px-3 rounded-lg bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 font-bold transition-colors cursor-pointer"
+                                  >
+                                    تعديل تقرير الخروج
+                                  </button>
+                                </div>
+                              </div>
+
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })
               )}
             </tbody>
           </table>

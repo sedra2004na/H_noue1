@@ -327,7 +327,7 @@ export const BillingSection: React.FC<BillingSectionProps> = ({
                   <Building2 className="w-7 h-7" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-slate-900">مشفى النور الطبي - دمشق</h2>
+                  <h2 className="text-xl font-black text-slate-900">مشفى الرحمة الطبي - دمشق</h2>
                   <p className="text-xs text-slate-600">فاتورة ضريبية مبسطة وسند مالية</p>
                 </div>
               </div>

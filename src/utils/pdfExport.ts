@@ -278,7 +278,7 @@ export function printAndExportPdf(docData: PrintDocumentData) {
               ${AL_NOOR_LOGO_SVG_STRING}
             </div>
             <div class="hospital-info">
-              <h1>مشفى النور الطبي - Al-Noor Hospital</h1>
+              <h1>مشفى الرحمة الطبي - Al-Rahma Hospital</h1>
               <p>الجمهورية العربية السورية - دمشق | هاتف: +963 11 234 5678</p>
             </div>
           </div>
@@ -320,8 +320,8 @@ export function printAndExportPdf(docData: PrintDocumentData) {
               <div style="width: 50px; height: 22px; margin: 0 auto 2px auto;">
                 ${AL_NOOR_LOGO_SVG_STRING}
               </div>
-              <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.5px; color: #0284c7;">مشفى النور</span>
-              <span style="font-size: 8px; font-weight: 800; color: #0369a1; text-transform: uppercase;">AL-NOOR HOSPITAL</span>
+              <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.5px; color: #0284c7;">مشفى الرحمة</span>
+              <span style="font-size: 8px; font-weight: 800; color: #0369a1; text-transform: uppercase;">AL-RAHMA HOSPITAL</span>
               <span style="font-size: 8px; color: #0284c7; margin-top: 2px;">★ الختم الرسمي ★</span>
             </div>
           </div>

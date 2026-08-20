@@ -25,6 +25,9 @@ export interface Doctor {
   roomNumber: string;
   consultingFee: number;
   rating: number;
+  clinicHours?: string;
+  clinicDays?: string[];
+  availableServices?: string[];
 }
 
 export interface Patient {
@@ -54,7 +57,18 @@ export interface Patient {
   };
 }
 
-export type AppointmentType = 'كشف' | 'استشارة' | 'متابعة' | 'طوارئ';
+export type AppointmentType = 
+  | 'كشف عيادة خارجية' 
+  | 'استشارة متخصصة' 
+  | 'متابعة دورية' 
+  | 'عملية جراحية' 
+  | 'كشف أسنان' 
+  | 'فحص وقائي' 
+  | 'طوارئ عاجلة' 
+  | 'كشف' 
+  | 'استشارة' 
+  | 'متابعة' 
+  | 'طوارئ';
 export type AppointmentStatus = 'مؤكد' | 'معلق' | 'مكتمل' | 'ملغى';
 
 export interface Appointment {
@@ -206,3 +220,85 @@ export interface DischargeSummary {
   doctorNotes?: string;
   createdAt: string;
 }
+
+// Bed & Ward Real-time Tracking
+export type BedStatus = 'available' | 'occupied' | 'cleaning' | 'reserved' | 'maintenance';
+
+export interface Bed {
+  id: string;
+  bedNumber: string; // e.g. 'ICU-101', 'SURG-204'
+  wardId: string;
+  wardName: string;
+  roomNumber: string;
+  department: string;
+  status: BedStatus;
+  patientId?: string;
+  patientName?: string;
+  admissionDate?: string;
+  attendingDoctorName?: string;
+  diagnosis?: string;
+  priority?: 'critical' | 'stable' | 'observation' | 'urgent';
+  cleaningStartedAt?: string;
+  reservedFor?: string; // e.g. 'عملية قسطرة قلبية'
+  reservedUntil?: string;
+  oxygenEquipped?: boolean;
+  ventilatorEquipped?: boolean;
+  notes?: string;
+}
+
+export interface Ward {
+  id: string;
+  name: string;
+  department: string;
+  floor: string;
+  totalBeds: number;
+  headNurse: string;
+  color: string;
+}
+
+// Cold Storage & Data Partitioning Archive
+export interface ArchivedRecord {
+  id: string;
+  originalPatientId: string;
+  fileNumber: string;
+  nationalId: string;
+  fullName: string;
+  age: number;
+  gender: 'ذكر' | 'أنثى';
+  bloodType: string;
+  phone: string;
+  admissionDate: string;
+  dischargeDate: string;
+  archivedDate: string;
+  archiveReason: 'تخريج واستقرار' | 'نقل لمشفى آخر' | 'وفاة' | 'أرشفة دورية قديمة';
+  department: string;
+  attendingDoctor: string;
+  dischargeDiagnosis: string;
+  medicalSummary: string;
+  totalInvoicesAmount?: number;
+  dischargeSummaryReportNumber?: string;
+  storageTier: 'cold_storage' | 'glacier_deep_archive';
+  fileSizeKb: number;
+}
+
+// Doctor Clinical Workspace & Abnormal Labs
+export interface AbnormalLabFlag {
+  id: string;
+  labResultId?: string;
+  patientId: string;
+  patientName: string;
+  patientFileNumber?: string;
+  roomBedNumber?: string;
+  testName: string;
+  testDate: string;
+  resultValue: string;
+  normalRange: string;
+  unit: string;
+  severity: 'critical' | 'warning' | 'alert';
+  flagDescription: string;
+  suggestedAction: string;
+  acknowledgedByDoctor?: boolean;
+  doctorNotes?: string;
+  doctorName: string;
+}
+

@@ -73,8 +73,8 @@ export const HospitalLogo: React.FC<HospitalLogoProps> = ({
       {showText && (
         <div>
           <h1 className="text-lg font-black text-white tracking-wide flex items-center gap-1.5">
-            <span>مشفى النور</span>
-            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/30">AL-NOOR</span>
+            <span>مشفى الرحمة</span>
+            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/30">AL-RAHMA</span>
           </h1>
           <p className="text-[11px] text-slate-400">نظام الإدارة الطبي التخصصي الموحد</p>
         </div>

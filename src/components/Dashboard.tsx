@@ -155,13 +155,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
     <div className="space-y-6">
       
       {/* Top Banner / Welcome Bar */}
-      <div className="relative rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 p-6 sm:p-8 border border-slate-800 text-white shadow-2xl overflow-hidden">
-        <div className="absolute left-0 top-0 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="relative rounded-3xl bg-slate-900 p-6 sm:p-8 border border-slate-800 shadow-lg overflow-hidden">
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div>
-
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-wide">
-              {userRole === 'patient' ? 'أهلاً بك في بوابتك الطبية بمشفى النور' : 'أهلاً بك في نظام إدارة "مشفى النور"'}
+              {userRole === 'patient' ? 'أهلاً بك في بوابتك الطبية بمشفى الرحمة' : 'أهلاً بك في نظام إدارة "مشفى الرحمة"'}
             </h2>
             <p className="text-sm text-slate-300 mt-2 max-w-2xl leading-relaxed">
               {userRole === 'patient' 
@@ -174,7 +172,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => openQuickModal('appointment')}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-lg shadow-sky-600/30 transition-all hover:scale-105"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md shadow-sky-600/30 transition-all hover:scale-105"
             >
               <PlusCircle className="w-4 h-4" />
               <span>حجز موعد جديد</span>
@@ -438,6 +436,83 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </>
       )}
+
+      {/* Outpatient Specialists & Clinic Hours Showcase */}
+      <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-sky-400" />
+              <h3 className="font-bold text-base text-slate-100">دليل أطباء العيادات الخارجية ومواعيد الاستشارات</h3>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              استعراض مباشر للأطباء الاختصاصيين، مواعيد العيادات الصباحية والمسائية، والحجز المباشر للمعاينة
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('doctors')}
+            className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 font-bold text-xs flex items-center gap-1.5 transition-all w-fit cursor-pointer"
+          >
+            <span>عرض دليل الأطباء والورديات الكامل</span>
+            <ArrowRight className="w-3.5 h-3.5 rotate-180" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {doctors.slice(0, 4).map((doc) => (
+            <div
+              key={doc.id}
+              className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-sky-500/40 transition-all flex flex-col justify-between group"
+            >
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-xl bg-sky-600/20 text-sky-400 flex items-center justify-center font-bold text-xs border border-sky-500/30">
+                      {doc.name.charAt(3) || 'د'}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-xs text-white group-hover:text-sky-400 transition-colors">{doc.name}</h4>
+                      <span className="text-[11px] text-sky-400 font-medium block">{doc.specialty}</span>
+                    </div>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                    doc.status === 'active' ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+                  }`}>
+                    {doc.status === 'active' ? 'متاح بالعيادة' : 'إجازة'}
+                  </span>
+                </div>
+
+                <div className="space-y-1 text-[11px] text-slate-300 mt-2.5 pt-2 border-t border-slate-800/80">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">العيادة:</span>
+                    <span className="font-semibold text-slate-200">{doc.roomNumber}</span>
+                  </div>
+                  {doc.clinicHours && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">أوقات المعاينة:</span>
+                      <span className="font-semibold text-sky-300">{doc.clinicHours}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">الكشفية:</span>
+                    <span className="font-bold text-emerald-400 font-mono">{doc.consultingFee.toLocaleString('ar-SY')} ل.س</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  openQuickModal('appointment');
+                }}
+                className="mt-3 w-full py-1.5 rounded-lg bg-sky-600/20 hover:bg-sky-600 text-sky-300 hover:text-white font-bold text-xs border border-sky-500/30 transition-all flex items-center justify-center gap-1 cursor-pointer"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>حجز موعد بالعيادة</span>
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Dynamic Activity & Visits Table */}
       <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-4">

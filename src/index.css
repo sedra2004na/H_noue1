@@ -1,7 +1,373 @@
 @import "tailwindcss";
 
+:root {
+  font-family: 'Cairo', 'Tajawal', system-ui, -apple-system, sans-serif;
+  color-scheme: light;
+}
+
+/* Custom Smooth Clean Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* =========================================================================
+   PURE CLINICAL LIGHT THEME (Clean, Airy, High-Contrast Medical Design)
+   ========================================================================= */
+.theme-light,
+.theme-light body,
+body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Main Background and Containers */
+.theme-light .bg-slate-950,
+.theme-light .bg-slate-950\/95,
+.theme-light .bg-slate-950\/90,
+.theme-light .bg-slate-950\/80,
+.theme-light .bg-slate-950\/60,
+.theme-light .bg-slate-950\/40 {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+.theme-light .bg-slate-900,
+.theme-light .bg-slate-900\/95,
+.theme-light .bg-slate-900\/90,
+.theme-light .bg-slate-900\/80,
+.theme-light .bg-slate-900\/70 {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Sub-containers, table cells, secondary cards */
+.theme-light .bg-slate-800,
+.theme-light .bg-slate-800\/90,
+.theme-light .bg-slate-800\/80,
+.theme-light .bg-slate-800\/70,
+.theme-light .bg-slate-800\/60,
+.theme-light .bg-slate-800\/50,
+.theme-light .bg-slate-800\/40 {
+  background-color: #f8fafc !important;
+  color: #1e293b !important;
+  border-color: #e2e8f0 !important;
+}
+
+.theme-light .hover\:bg-slate-800\/50:hover,
+.theme-light .hover\:bg-slate-800\/60:hover,
+.theme-light .hover\:bg-slate-800\/80:hover,
+.theme-light .hover\:bg-slate-800:hover,
+.theme-light .hover\:bg-slate-900:hover {
+  background-color: #e2e8f0 !important;
+}
+
+/* Borders */
+.theme-light .border-slate-800,
+.theme-light .border-slate-700,
+.theme-light .border-slate-700\/80,
+.theme-light .border-slate-700\/70,
+.theme-light .border-slate-700\/60,
+.theme-light .border-slate-800\/90,
+.theme-light .border-slate-800\/80 {
+  border-color: #e2e8f0 !important;
+}
+
+.theme-light .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
+.theme-light .divide-slate-700 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e2e8f0 !important;
+}
+
+/* Typography Overrides for Light Mode */
+.theme-light h1, 
+.theme-light h2, 
+.theme-light h3, 
+.theme-light h4,
+.theme-light h5,
+.theme-light h6 {
+  color: #0f172a !important;
+}
+
+.theme-light .text-slate-100,
+.theme-light .text-slate-200 {
+  color: #1e293b !important;
+}
+
+.theme-light .text-slate-300 {
+  color: #334155 !important;
+}
+
+.theme-light .text-slate-400 {
+  color: #64748b !important;
+}
+
+.theme-light .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+/* Medical Accent Typography in Light Mode (High Contrast & Clear) */
+.theme-light .text-sky-400,
+.theme-light .text-sky-300 {
+  color: #0284c7 !important;
+}
+
+.theme-light .text-teal-400,
+.theme-light .text-teal-300 {
+  color: #0d9488 !important;
+}
+
+.theme-light .text-emerald-400,
+.theme-light .text-emerald-300 {
+  color: #059669 !important;
+}
+
+.theme-light .text-amber-400,
+.theme-light .text-amber-300 {
+  color: #d97706 !important;
+}
+
+.theme-light .text-rose-400,
+.theme-light .text-rose-300 {
+  color: #e11d48 !important;
+}
+
+.theme-light .text-purple-400,
+.theme-light .text-purple-300 {
+  color: #7c3aed !important;
+}
+
+.theme-light .text-indigo-400,
+.theme-light .text-indigo-300 {
+  color: #4f46e5 !important;
+}
+
+.theme-light .text-blue-400,
+.theme-light .text-blue-300 {
+  color: #2563eb !important;
+}
+
+/* =========================================================================
+   BUTTONS AND SOLID ACCENT PROTECTION (Pure White Text on Solid Buttons)
+   ========================================================================= */
+.theme-light .text-white {
+  color: #0f172a;
+}
+
+/* Ensure solid colored buttons and tags always have pure white text and icons */
+.theme-light .bg-sky-600,
+.theme-light .bg-sky-500,
+.theme-light .bg-blue-600,
+.theme-light .bg-emerald-600,
+.theme-light .bg-rose-600,
+.theme-light .bg-rose-500,
+.theme-light .bg-teal-600,
+.theme-light .bg-indigo-600,
+.theme-light .bg-purple-600,
+.theme-light .bg-red-600 {
+  color: #ffffff !important;
+}
+
+.theme-light .bg-sky-600 *,
+.theme-light .bg-sky-500 *,
+.theme-light .bg-blue-600 *,
+.theme-light .bg-emerald-600 *,
+.theme-light .bg-rose-600 *,
+.theme-light .bg-rose-500 *,
+.theme-light .bg-teal-600 *,
+.theme-light .bg-indigo-600 *,
+.theme-light .bg-purple-600 *,
+.theme-light .bg-red-600 *,
+.theme-light button.bg-sky-600,
+.theme-light button.bg-sky-500,
+.theme-light button.bg-emerald-600,
+.theme-light button.bg-rose-600,
+.theme-light button.bg-rose-500 {
+  color: #ffffff !important;
+}
+
+/* =========================================================================
+   HEADER & NAVIGATION IN LIGHT MODE
+   ========================================================================= */
+.theme-light header {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+.theme-light header .text-white {
+  color: #0f172a !important;
+}
+
+.theme-light header .bg-slate-950,
+.theme-light header .bg-slate-950\/80 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.theme-light header .bg-slate-900 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Sidebar in Light Mode */
+.theme-light aside {
+  background-color: #ffffff !important;
+  border-left: 1px solid #e2e8f0 !important;
+  box-shadow: -1px 0 3px 0 rgba(0, 0, 0, 0.02) !important;
+}
+
+.theme-light aside .text-white {
+  color: #0f172a !important;
+}
+
+.theme-light aside button.bg-sky-600 {
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+.theme-light aside button.bg-sky-600 * {
+  color: #ffffff !important;
+}
+
+/* =========================================================================
+   INPUTS, DROPDOWNS & FORM CONTROLS
+   ========================================================================= */
+.theme-light input,
+.theme-light select,
+.theme-light textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+.theme-light input::placeholder,
+.theme-light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+.theme-light input:focus,
+.theme-light select:focus,
+.theme-light textarea:focus {
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15) !important;
+}
+
+/* =========================================================================
+   TABLES IN LIGHT MODE
+   ========================================================================= */
+.theme-light thead,
+.theme-light thead tr,
+.theme-light table thead {
+  background-color: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.theme-light thead th {
+  color: #475569 !important;
+  font-weight: 700 !important;
+}
+
+.theme-light tbody tr {
+  border-bottom-color: #f1f5f9 !important;
+}
+
+.theme-light tbody tr:hover {
+  background-color: #f8fafc !important;
+}
+
+.theme-light tbody td {
+  color: #1e293b !important;
+}
+
+/* =========================================================================
+   MODAL DIALOGS & BACKDROPS
+   ========================================================================= */
+.theme-light .fixed.inset-0.bg-slate-950\/80,
+.theme-light .fixed.inset-0.bg-slate-950\/90,
+.theme-light .fixed.inset-0.bg-black\/80 {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+/* =========================================================================
+   PASTEL MEDICAL BADGES & TINTS (Harmonious & Soothing)
+   ========================================================================= */
+.theme-light .bg-sky-500\/10,
+.theme-light .bg-sky-500\/20,
+.theme-light .bg-sky-950\/40,
+.theme-light .bg-sky-950\/60 {
+  background-color: #f0f9ff !important;
+  border-color: #bae6fd !important;
+  color: #0369a1 !important;
+}
+
+.theme-light .bg-emerald-500\/10,
+.theme-light .bg-emerald-500\/20,
+.theme-light .bg-emerald-950\/40,
+.theme-light .bg-emerald-950\/60 {
+  background-color: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #047857 !important;
+}
+
+.theme-light .bg-amber-500\/10,
+.theme-light .bg-amber-500\/20,
+.theme-light .bg-amber-950\/40,
+.theme-light .bg-amber-950\/60 {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #b45309 !important;
+}
+
+.theme-light .bg-rose-500\/10,
+.theme-light .bg-rose-500\/20,
+.theme-light .bg-rose-950\/40,
+.theme-light .bg-rose-950\/60,
+.theme-light .bg-rose-950\/80 {
+  background-color: #fff1f2 !important;
+  border-color: #fecdd3 !important;
+  color: #be123c !important;
+}
+
+.theme-light .bg-purple-500\/10,
+.theme-light .bg-purple-500\/20,
+.theme-light .bg-purple-950\/40,
+.theme-light .bg-purple-950\/60 {
+  background-color: #faf5ff !important;
+  border-color: #e9d5ff !important;
+  color: #7e22ce !important;
+}
+
+.theme-light .bg-teal-500\/10,
+.theme-light .bg-teal-500\/20,
+.theme-light .bg-teal-950\/40,
+.theme-light .bg-teal-950\/60 {
+  background-color: #f0fdfa !important;
+  border-color: #99f6e4 !important;
+  color: #0f766e !important;
+}
+
+/* =========================================================================
+   PRINT STYLES
+   ========================================================================= */
 @media print {
-  /* Hide non-printable app UI elements */
   aside, header, nav, button, .no-print {
     display: none !important;
   }
@@ -11,7 +377,6 @@
     color: #000000 !important;
   }
 
-  /* Make modal content take full page on white background */
   .fixed.inset-0 {
     position: static !important;
     background: transparent !important;

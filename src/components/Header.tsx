@@ -19,7 +19,9 @@ import {
   Trash2,
   Calendar,
   Siren,
-  Menu
+  Menu,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 export interface NotificationItem {
@@ -35,6 +37,8 @@ export interface NotificationItem {
 interface HeaderProps {
   currentUser?: User;
   userRole?: UserRole;
+  theme?: 'dark' | 'light';
+  onToggleTheme?: () => void;
   onSwitchRole?: (role: UserRole) => void;
   onRoleChange?: (role: UserRole) => void;
   inventoryAlerts?: InventoryItem[];
@@ -54,6 +58,8 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   currentUser,
   userRole,
+  theme = 'dark',
+  onToggleTheme,
   onSwitchRole,
   onRoleChange,
   inventoryAlerts = [],
@@ -179,10 +185,10 @@ export const Header: React.FC<HeaderProps> = ({
 
   const getRoleColor = (role: UserRole) => {
     switch (role) {
-      case 'admin': return 'bg-purple-950/80 text-purple-200 border-purple-700/60 hover:bg-purple-900';
-      case 'doctor': return 'bg-blue-950/80 text-blue-200 border-blue-700/60 hover:bg-blue-900';
-      case 'staff': return 'bg-emerald-950/80 text-emerald-200 border-emerald-700/60 hover:bg-emerald-900';
-      case 'patient': return 'bg-amber-950/80 text-amber-200 border-amber-700/60 hover:bg-amber-900';
+      case 'admin': return 'bg-sky-950/60 text-sky-200 border-sky-700/50';
+      case 'doctor': return 'bg-teal-950/60 text-teal-200 border-teal-700/50';
+      case 'staff': return 'bg-slate-800/80 text-slate-200 border-slate-700/60';
+      case 'patient': return 'bg-slate-800/80 text-slate-200 border-slate-700/60';
     }
   };
 
@@ -220,12 +226,12 @@ export const Header: React.FC<HeaderProps> = ({
           <HospitalLogo size="md" />
           <div>
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <h1 className="text-base sm:text-xl font-black text-white tracking-wide">مشفى النور</h1>
+              <h1 className="text-base sm:text-xl font-black text-white tracking-wide">مشفى الرحمة</h1>
               <span className="hidden xs:inline-block px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-extrabold rounded-md bg-sky-500/20 text-sky-300 border border-sky-500/30">
-                Al-Noor Hospital
+                Al-Rahma Hospital
               </span>
             </div>
-            <p className="text-xs text-slate-400 hidden sm:block">Al-Noor Medical Center - المركز الطبي التخصصي الموحد</p>
+            <p className="text-xs text-slate-400 hidden sm:block">Al-Rahma Medical Center - المركز الطبي التخصصي الموحد</p>
           </div>
         </div>
 
@@ -254,6 +260,22 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             <span className="text-[11px] text-slate-400 font-medium">{formattedDate}</span>
           </div>
+
+          {/* Theme Toggle (Light / Dark Mode) */}
+          {onToggleTheme && (
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-amber-300 hover:text-amber-200 transition-all shadow-inner cursor-pointer group"
+              title={theme === 'dark' ? 'التحويل إلى النمط الفاتح (Clinical Light)' : 'التحويل إلى النمط الليلي (Dark Luxury)'}
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-5 h-5 text-amber-400 group-hover:rotate-90 transition-transform duration-300" />
+              ) : (
+                <Moon className="w-5 h-5 text-indigo-400 group-hover:-rotate-12 transition-transform duration-300" />
+              )}
+            </button>
+          )}
 
           {/* Emergency SOS Quick Button */}
           {onOpenEmergencyModal && (

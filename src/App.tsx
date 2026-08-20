@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserRole } from './types';
+import { UserRole, Bed, Ward, ArchivedRecord, AbnormalLabFlag } from './types';
 import { 
   mockPatients, 
   mockDoctors, 
@@ -8,7 +8,11 @@ import {
   mockLabResults, 
   mockPrescriptions, 
   mockInvoices, 
-  mockShifts 
+  mockShifts,
+  mockWards,
+  mockBeds,
+  mockArchivedRecords,
+  mockAbnormalLabFlags
 } from './data/mockData';
 
 import { Header } from './components/Header';
@@ -20,9 +24,13 @@ import { AppointmentsSection } from './components/AppointmentsSection';
 import { InventorySection } from './components/InventorySection';
 import { LabPrescriptionsSection } from './components/LabPrescriptionsSection';
 import { BillingSection } from './components/BillingSection';
+import { BedsManagementSection } from './components/BedsManagementSection';
+import { MedicalArchiveSection } from './components/MedicalArchiveSection';
+import { DoctorClinicalDashboard } from './components/DoctorClinicalDashboard';
 import { LandingAndAuthScreen } from './components/LandingAndAuthScreen';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { EmergencyModal } from './components/EmergencyModal';
+import { HospitalPulseBar } from './components/HospitalPulseBar';
 
 function getStoredData<T>(key: string, defaultValue: T): T {
   try {
@@ -43,6 +51,35 @@ export function App() {
   const [userRole, setUserRole] = useState<UserRole>(() => getStoredData('syrian_hosp_userRole', 'admin'));
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Theme State: 'light' | 'dark' (Default to pure clinical light)
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('syrian_hosp_theme');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return 'light';
+      }
+    }
+    return 'light';
+  });
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    localStorage.setItem('syrian_hosp_theme', JSON.stringify(nextTheme));
+  };
+
+  useEffect(() => {
+    if (theme === 'light') {
+      document.documentElement.classList.add('theme-light');
+      document.body.classList.add('theme-light');
+    } else {
+      document.documentElement.classList.remove('theme-light');
+      document.body.classList.remove('theme-light');
+    }
+  }, [theme]);
 
   // Emergency SOS State
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
@@ -85,26 +122,50 @@ export function App() {
   };
 
   // Domain Data State initialized from LocalStorage (persists deletions, additions, edits)
-  const [patients, setPatients] = useState(() => getStoredData('syrian_hosp_patients', mockPatients));
-  const [doctors, setDoctors] = useState(() => getStoredData('syrian_hosp_doctors', mockDoctors));
+  const [patients, setPatients] = useState<any[]>(() => getStoredData('syrian_hosp_patients', mockPatients));
+  const [doctors, setDoctors] = useState(() => {
+    const stored = getStoredData('syrian_hosp_doctors', mockDoctors);
+    if (Array.isArray(stored) && stored.length < mockDoctors.length) {
+      const existingIds = new Set(stored.map((d: any) => d.id));
+      const missing = mockDoctors.filter(d => !existingIds.has(d.id));
+      return [...stored, ...missing];
+    }
+    return stored;
+  });
   const [appointments, setAppointments] = useState(() => getStoredData('syrian_hosp_appointments', mockAppointments));
   const [inventory, setInventory] = useState(() => getStoredData('syrian_hosp_inventory', mockInventory));
   const [labResults, setLabResults] = useState(() => getStoredData('syrian_hosp_labResults', mockLabResults));
   const [prescriptions, setPrescriptions] = useState(() => getStoredData('syrian_hosp_prescriptions', mockPrescriptions));
   const [invoices, setInvoices] = useState(() => getStoredData('syrian_hosp_invoices', mockInvoices));
-  const [shifts, setShifts] = useState(() => getStoredData('syrian_hosp_shifts', mockShifts));
+  const [shifts, setShifts] = useState(() => {
+    const stored = getStoredData('syrian_hosp_shifts', mockShifts);
+    if (Array.isArray(stored) && stored.length < mockShifts.length) {
+      const existingIds = new Set(stored.map((s: any) => s.id));
+      const missing = mockShifts.filter(s => !existingIds.has(s.id));
+      return [...stored, ...missing];
+    }
+    return stored;
+  });
+
+  // Advanced Clinical & Inpatient Domain State
+  const [wards, setWards] = useState<Ward[]>(() => getStoredData('syrian_hosp_wards', mockWards));
+  const [beds, setBeds] = useState<Bed[]>(() => getStoredData('syrian_hosp_beds', mockBeds));
+  const [archivedRecords, setArchivedRecords] = useState<ArchivedRecord[]>(() => getStoredData('syrian_hosp_archivedRecords', mockArchivedRecords));
+  const [abnormalFlags, setAbnormalFlags] = useState<AbnormalLabFlag[]>(() => getStoredData('syrian_hosp_abnormalFlags', mockAbnormalLabFlags));
+
+  // Role Tab Authorization Map
+  const roleTabsMap = {
+    admin: ['dashboard', 'doctor_portal', 'beds', 'patients', 'archive', 'doctors', 'appointments', 'inventory', 'lab', 'billing'],
+    doctor: ['doctor_portal', 'dashboard', 'beds', 'patients', 'archive', 'doctors', 'appointments', 'lab'],
+    staff: ['dashboard', 'beds', 'patients', 'archive', 'appointments', 'inventory', 'billing'],
+    patient: ['dashboard', 'appointments', 'lab', 'billing'],
+  };
 
   // Auto-switch away from restricted tabs when userRole or activeTab changes
   useEffect(() => {
-    const roleTabsMap = {
-      admin: ['dashboard', 'patients', 'doctors', 'appointments', 'inventory', 'lab', 'billing'],
-      doctor: ['dashboard', 'patients', 'doctors', 'appointments', 'lab'],
-      staff: ['dashboard', 'patients', 'appointments', 'inventory', 'billing'],
-      patient: ['dashboard', 'appointments', 'lab', 'billing'],
-    };
     const allowed = roleTabsMap[userRole] || roleTabsMap.admin;
     if (!allowed.includes(activeTab)) {
-      setActiveTab('dashboard');
+      setActiveTab(userRole === 'doctor' ? 'doctor_portal' : 'dashboard');
     }
   }, [userRole, activeTab]);
 
@@ -116,6 +177,121 @@ export function App() {
   useEffect(() => { localStorage.setItem('syrian_hosp_prescriptions', JSON.stringify(prescriptions)); }, [prescriptions]);
   useEffect(() => { localStorage.setItem('syrian_hosp_invoices', JSON.stringify(invoices)); }, [invoices]);
   useEffect(() => { localStorage.setItem('syrian_hosp_shifts', JSON.stringify(shifts)); }, [shifts]);
+  useEffect(() => { localStorage.setItem('syrian_hosp_wards', JSON.stringify(wards)); }, [wards]);
+  useEffect(() => { localStorage.setItem('syrian_hosp_beds', JSON.stringify(beds)); }, [beds]);
+  useEffect(() => { localStorage.setItem('syrian_hosp_archivedRecords', JSON.stringify(archivedRecords)); }, [archivedRecords]);
+  useEffect(() => { localStorage.setItem('syrian_hosp_abnormalFlags', JSON.stringify(abnormalFlags)); }, [abnormalFlags]);
+
+  // Handlers for Bed Management
+  const handleUpdateBed = (bedId: string, updates: Partial<Bed>) => {
+    setBeds(prev => prev.map(b => b.id === bedId ? { ...b, ...updates } : b));
+  };
+
+  const handleAddBed = (bedData: Omit<Bed, 'id'>) => {
+    const newBed: Bed = {
+      id: 'bed-' + (beds.length + 1) + '-' + Math.floor(Math.random() * 1000),
+      ...bedData,
+    };
+    setBeds(prev => [...prev, newBed]);
+    showToast(`تمت إضافة السرير (${newBed.bedNumber}) في ${newBed.wardName} بنجاح`, 'success');
+  };
+
+  const handleDeleteBed = (bedId: string) => {
+    const target = beds.find(b => b.id === bedId);
+    setBeds(prev => prev.filter(b => b.id !== bedId));
+    showToast(`تم حذف السرير (${target?.bedNumber || bedId}) من الجناح`, 'warning');
+  };
+
+  // Handlers for Cold Storage Archive (Data Partitioning)
+  const handleArchivePatient = (patientId: string, reason?: ArchivedRecord['archiveReason'], notes?: string) => {
+    const targetPatient = patients.find(p => p.id === patientId);
+    if (!targetPatient) return;
+
+    const newArchivedRecord: ArchivedRecord = {
+      id: 'ARC-2026-' + Math.floor(1000 + Math.random() * 9000),
+      originalPatientId: targetPatient.id,
+      fileNumber: targetPatient.fileNumber || 'MED-2026',
+      fullName: targetPatient.fullName,
+      nationalId: targetPatient.nationalId || '01020304050',
+      age: targetPatient.age || 40,
+      gender: targetPatient.gender || 'ذكر',
+      phone: targetPatient.phone || '0944000000',
+      bloodType: targetPatient.bloodType || 'O+',
+      admissionDate: targetPatient.createdDate || '2025-01-10',
+      dischargeDate: targetPatient.lastVisitDate || new Date().toISOString().split('T')[0],
+      archivedDate: new Date().toISOString().split('T')[0],
+      department: targetPatient.doctorName ? 'الأقسام السريرية' : 'الطب العام والتنويم',
+      attendingDoctor: targetPatient.doctorName || 'د. سارة السعيد',
+      dischargeDiagnosis: targetPatient.diagnosis || 'تخريج واستقرار الحالة السريرية',
+      medicalSummary: notes || `تم علاج المريض ومتابعته بالكامل. الحالة مستقرة ومؤرشفة في قاعدة التخزين الباردة.`,
+      archiveReason: reason || 'تخريج واستقرار',
+      storageTier: 'cold_storage',
+      fileSizeKb: 1240,
+    };
+
+    // Free any bed assigned to this patient and set it to cleaning
+    setBeds(prev => prev.map(b => {
+      if (b.patientId === patientId || b.patientName === targetPatient.fullName) {
+        return {
+          ...b,
+          status: 'cleaning' as const,
+          patientId: undefined,
+          patientName: undefined,
+          diagnosis: undefined,
+          priority: undefined,
+          admissionDate: undefined,
+        };
+      }
+      return b;
+    }));
+
+    // Add to cold archive
+    setArchivedRecords(prev => [newArchivedRecord, ...prev]);
+
+    // Remove from active daily patients pool to speed up daily query performance
+    setPatients(prev => prev.filter(p => p.id !== patientId));
+
+    showToast(`تم أرشفة ونقل ملف المريض (${targetPatient.fullName}) بنجاح إلى التخزين البارد (Cold Storage Partition)`, 'success');
+  };
+
+  const handleRestorePatient = (archiveId: string) => {
+    const archived = archivedRecords.find(r => r.id === archiveId);
+    if (!archived) return;
+
+    const restoredPatient = {
+      id: archived.originalPatientId || 'pat-' + Date.now(),
+      fileNumber: archived.fileNumber,
+      fullName: archived.fullName,
+      nationalId: archived.nationalId,
+      age: archived.age,
+      gender: archived.gender,
+      phone: archived.phone,
+      bloodType: archived.bloodType,
+      diagnosis: archived.dischargeDiagnosis,
+      doctorName: archived.attendingDoctor,
+      createdDate: archived.admissionDate,
+      lastVisitDate: new Date().toISOString().split('T')[0],
+      status: 'active' as const,
+    };
+
+    setPatients(prev => [restoredPatient, ...prev]);
+    setArchivedRecords(prev => prev.filter(r => r.id !== archiveId));
+    showToast(`تم استرجاع وإعادة تنشيط ملف المريض (${archived.fullName}) في النظام اليومي بنجاح`, 'success');
+  };
+
+  // Handlers for Doctor Abnormal Lab Flags
+  const handleUpdateAbnormalFlag = (flagId: string, acknowledged: boolean, notes?: string) => {
+    setAbnormalFlags(prev => prev.map(f => {
+      if (f.id === flagId) {
+        return {
+          ...f,
+          acknowledgedByDoctor: acknowledged,
+          doctorNotes: notes || f.doctorNotes,
+        };
+      }
+      return f;
+    }));
+  };
 
   // Handlers for Patient Management
   const handleAddPatient = (patientData: any) => {
@@ -271,10 +447,12 @@ export function App() {
     showToast('تم إلغاء وحذف الفاتورة المالية', 'warning');
   };
 
-  // Badge counts calculations for sidebar
+  // Badge counts calculations for sidebar and header
   const pendingAppointmentsCount = appointments.filter(a => a.status === 'معلق' || a.status === 'مؤكد').length;
   const lowInventoryCount = inventory.filter(i => i.status === 'منخفض' || i.quantity <= i.minStockAlert).length;
   const criticalLabCount = labResults.filter(l => l.status === 'حرج').length;
+  const availableBedsCount = beds.filter(b => b.status === 'available').length;
+  const abnormalFlagsCount = abnormalFlags.filter(f => !f.acknowledgedByDoctor).length;
 
   if (!isLoggedIn) {
     return (
@@ -282,7 +460,7 @@ export function App() {
         onLogin={(role, userName) => {
           setUserRole(role);
           setIsLoggedIn(true);
-          setActiveTab('dashboard');
+          setActiveTab(role === 'doctor' ? 'doctor_portal' : 'dashboard');
           if (userName) {
             localStorage.setItem('syrian_hosp_userName', JSON.stringify(userName));
           }
@@ -297,18 +475,13 @@ export function App() {
       {/* Top Navigation Header */}
       <Header
         userRole={userRole}
+        theme={theme}
+        onToggleTheme={toggleTheme}
         onRoleChange={(newRole) => {
           setUserRole(newRole);
-          // Auto-switch to dashboard if active tab is restricted for the new role
-          const roleTabsMap = {
-            admin: ['dashboard', 'patients', 'doctors', 'appointments', 'inventory', 'lab', 'billing'],
-            doctor: ['dashboard', 'patients', 'doctors', 'appointments', 'lab'],
-            staff: ['dashboard', 'patients', 'appointments', 'inventory', 'billing'],
-            patient: ['dashboard', 'appointments', 'lab', 'billing'],
-          };
           const allowed = roleTabsMap[newRole] || roleTabsMap.admin;
           if (!allowed.includes(activeTab)) {
-            setActiveTab('dashboard');
+            setActiveTab(newRole === 'doctor' ? 'doctor_portal' : 'dashboard');
           }
         }}
         searchQuery={searchQuery}
@@ -325,6 +498,22 @@ export function App() {
         onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
       />
 
+      {/* Hospital Live Pulse Bar */}
+      <HospitalPulseBar
+        patients={patients}
+        doctors={doctors}
+        appointments={appointments}
+        inventory={inventory}
+        labResults={labResults}
+        beds={beds}
+        activeSOS={!!activeSOS}
+        onOpenEmergency={() => setShowEmergencyModal(true)}
+        onNavigate={(tab) => {
+          setActiveTab(tab);
+          setIsMobileMenuOpen(false);
+        }}
+      />
+
       {/* Main Body with Sidebar + Content Area */}
       <div className="flex-1 flex overflow-hidden">
         
@@ -338,6 +527,8 @@ export function App() {
           doctorsCount={doctors.length}
           appointmentsCount={pendingAppointmentsCount}
           inventoryAlertsCount={lowInventoryCount}
+          availableBedsCount={availableBedsCount}
+          abnormalFlagsCount={abnormalFlagsCount}
           isMobileOpen={isMobileMenuOpen}
           onCloseMobile={() => setIsMobileMenuOpen(false)}
         />
@@ -359,6 +550,38 @@ export function App() {
             />
           )}
 
+          {activeTab === 'doctor_portal' && (
+            <DoctorClinicalDashboard
+              userRole={userRole}
+              doctors={doctors}
+              patients={patients}
+              beds={beds}
+              abnormalFlags={abnormalFlags}
+              appointments={appointments}
+              labResults={labResults}
+              prescriptions={prescriptions}
+              onAddPrescription={handleAddPrescription}
+              onAddLabResult={handleAddLabResult}
+              onUpdateAbnormalFlag={handleUpdateAbnormalFlag}
+              onShowToast={showToast}
+              onNavigate={setActiveTab}
+            />
+          )}
+
+          {activeTab === 'beds' && (
+            <BedsManagementSection
+              userRole={userRole}
+              wards={wards}
+              beds={beds}
+              patients={patients}
+              doctors={doctors}
+              onUpdateBed={handleUpdateBed}
+              onAddBed={handleAddBed}
+              onDeleteBed={handleDeleteBed}
+              onShowToast={showToast}
+            />
+          )}
+
           {activeTab === 'patients' && (
             <PatientsSection
               userRole={userRole}
@@ -367,7 +590,20 @@ export function App() {
               onAddPatient={handleAddPatient}
               onUpdatePatient={handleUpdatePatient}
               onDeletePatient={handleDeletePatient}
+              onArchivePatient={handleArchivePatient}
               searchQuery={searchQuery}
+              onShowToast={showToast}
+            />
+          )}
+
+          {activeTab === 'archive' && (
+            <MedicalArchiveSection
+              userRole={userRole}
+              archivedRecords={archivedRecords}
+              activePatients={patients}
+              doctors={doctors}
+              onArchivePatient={handleArchivePatient}
+              onRestorePatient={handleRestorePatient}
               onShowToast={showToast}
             />
           )}
@@ -380,6 +616,11 @@ export function App() {
               onToggleStatus={handleToggleDoctorStatus}
               onDeleteDoctor={handleDeleteDoctor}
               onAddDoctor={handleAddDoctor}
+              onNavigate={setActiveTab}
+              onSelectDoctorForBooking={(doc) => {
+                setActiveTab('appointments');
+                showToast(`تم التوجيه لحجز موعد في عيادة ${doc.name} (${doc.specialty})`, 'info');
+              }}
             />
           )}
 

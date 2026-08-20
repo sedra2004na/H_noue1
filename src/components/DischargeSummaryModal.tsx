@@ -86,7 +86,7 @@ export const DischargeSummaryModal: React.FC<DischargeSummaryModalProps> = ({
         }
       ],
       dietAndActivityInstructions: 'حمية قليلة الملح والدهون، الإكثار من شرب السوائل الصحية، تجنب الإجهاد البدني العنيف لمدة أسبوعين، والالتزام بتمارين المشي الخفيف اليومي لمدة 20 دقيقة.',
-      dangerSigns: 'في حال حدوث ألم صدري مفاجئ ضاغط، ضيق تنفس شديد، دوار شديد مع تعرق بارد، أو خفقان سريع مستمر، يجب مراجعة قسم طوارئ مشفى النور فوراً دون تأخير.',
+      dangerSigns: 'في حال حدوث ألم صدري مفاجئ ضاغط، ضيق تنفس شديد، دوار شديد مع تعرق بارد، أو خفقان سريع مستمر، يجب مراجعة قسم طوارئ مشفى الرحمة فوراً دون تأخير.',
       followUpDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
       followUpClinic: 'عيادة أمراض القلب والباطنية - مبنى العيادات الخارجية عيادة 101',
       doctorNotes: 'المريض متعاون، المؤشرات الحيوية طبيعية عند الخروج (BP: 120/80, HR: 74 bpm, SPO2: 99%).',
@@ -485,8 +485,8 @@ export const DischargeSummaryModal: React.FC<DischargeSummaryModalProps> = ({
                 <div className="flex items-center gap-3">
                   <HospitalLogo size="md" />
                   <div>
-                    <h1 className="text-xl font-black text-slate-900 tracking-tight">مشفى النور التخصصي</h1>
-                    <p className="text-xs text-slate-600 font-medium">Al-Noor Specialized Hospital</p>
+                    <h1 className="text-xl font-black text-slate-900 tracking-tight">مشفى الرحمة التخصصي</h1>
+                    <p className="text-xs text-slate-600 font-medium">Al-Rahma Specialized Hospital</p>
                     <p className="text-[10px] text-slate-500">الجمهورية العربية السورية - وزارة الصحة</p>
                   </div>
                 </div>
@@ -652,7 +652,7 @@ export const DischargeSummaryModal: React.FC<DischargeSummaryModalProps> = ({
 
                 <div className="flex flex-col items-center justify-center">
                   <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-400 flex items-center justify-center p-2 text-center text-[10px] text-slate-500 font-serif">
-                    ختم مشفى النور المعتمد
+                    ختم مشفى الرحمة المعتمد
                   </div>
                   <span className="text-[10px] text-slate-400 mt-1">Official Hospital Seal</span>
                 </div>
@@ -667,7 +667,7 @@ export const DischargeSummaryModal: React.FC<DischargeSummaryModalProps> = ({
 
               {/* Watermark / Footer */}
               <div className="mt-6 pt-3 border-t border-slate-200 text-center text-[10px] text-slate-400 flex items-center justify-between">
-                <span>وثيقة طبية رسمية صادرة إلكترونياً عن نظام مشفى النور الموحد</span>
+                <span>وثيقة طبية رسمية صادرة إلكترونياً عن نظام مشفى الرحمة الموحد</span>
                 <span className="font-mono">{formData.reportNumber} | {new Date().toLocaleDateString('ar-SY')}</span>
               </div>
 

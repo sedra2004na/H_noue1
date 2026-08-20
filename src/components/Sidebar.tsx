@@ -14,7 +14,10 @@ import {
   Stethoscope,
   UserCheck as StaffIcon,
   UserCircle2,
-  X
+  X,
+  Bed as BedIcon,
+  Archive,
+  HeartPulse
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -28,6 +31,8 @@ interface SidebarProps {
   doctorsCount?: number;
   appointmentsCount?: number;
   inventoryAlertsCount?: number;
+  availableBedsCount?: number;
+  abnormalFlagsCount?: number;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
 }
@@ -40,6 +45,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   lowStockCount = 0,
   criticalLabCount = 0,
   inventoryAlertsCount = 0,
+  availableBedsCount,
+  abnormalFlagsCount = 0,
   isMobileOpen = false,
   onCloseMobile,
 }) => {
@@ -50,19 +57,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: 'مدير النظام (كامل الصلاحيات)',
       icon: ShieldCheck,
       color: 'text-purple-400 bg-purple-500/10 border-purple-500/30',
-      allowedTabs: ['dashboard', 'patients', 'doctors', 'appointments', 'inventory', 'lab', 'billing'],
+      allowedTabs: ['dashboard', 'doctor_portal', 'beds', 'patients', 'archive', 'doctors', 'appointments', 'inventory', 'lab', 'billing'],
     },
     doctor: {
       title: 'الطبيب المعالج (ملفات وعيادات)',
       icon: Stethoscope,
       color: 'text-blue-400 bg-blue-500/10 border-blue-500/30',
-      allowedTabs: ['dashboard', 'patients', 'doctors', 'appointments', 'lab'],
+      allowedTabs: ['doctor_portal', 'dashboard', 'beds', 'patients', 'archive', 'doctors', 'appointments', 'lab'],
     },
     staff: {
       title: 'موظف استقبال (تسجيل وفواتير)',
       icon: StaffIcon,
       color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
-      allowedTabs: ['dashboard', 'patients', 'appointments', 'inventory', 'billing'],
+      allowedTabs: ['dashboard', 'beds', 'patients', 'archive', 'appointments', 'inventory', 'billing'],
     },
     patient: {
       title: 'بوابة الخدمة المباشرة للمريض',
@@ -77,14 +84,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const allNavItems = [
     {
       id: 'dashboard',
-      label: 'لوحة التحكم الرئيسية',
+      label: 'لوحة التحكم العامة',
       icon: LayoutDashboard,
       badge: null,
+    },
+    {
+      id: 'doctor_portal',
+      label: 'لوحة الطبيب السريرية',
+      icon: Stethoscope,
+      badge: abnormalFlagsCount > 0 ? `${abnormalFlagsCount} تنبيه مخبري` : null,
+      badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+    },
+    {
+      id: 'beds',
+      label: 'تتبع حالات الأسِرّة والأجنحة',
+      icon: BedIcon,
+      badge: availableBedsCount !== undefined ? `${availableBedsCount} شاغر` : null,
+      badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
     },
     {
       id: 'patients',
       label: 'إدارة المرضى والملفات الطبية',
       icon: Users,
+      badge: null,
+    },
+    {
+      id: 'archive',
+      label: 'أرشيف السجلات القديمة (Cold)',
+      icon: Archive,
       badge: null,
     },
     {
@@ -146,14 +173,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               key={item.id}
               onClick={() => handleTabClick(item.id)}
-              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl font-medium text-xs transition-all duration-200 group cursor-pointer ${
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-xs transition-all duration-150 group cursor-pointer ${
                 isActive
-                  ? 'bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 text-white shadow-lg shadow-sky-950/50 font-bold border border-sky-400/30'
-                  : 'hover:bg-slate-800/80 text-slate-300 hover:text-white'
+                  ? 'bg-sky-600 text-white font-bold shadow-sm'
+                  : 'hover:bg-slate-800/60 text-slate-300 hover:text-white'
               }`}
             >
               <div className="flex items-center gap-3">
-                <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-sky-400'}`} />
+                <Icon className={`w-4 h-4 transition-transform group-hover:scale-105 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-sky-400'}`} />
                 <span className="truncate">{item.label}</span>
               </div>
 

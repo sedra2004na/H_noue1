@@ -422,8 +422,8 @@ export const LabPrescriptionsSection: React.FC<LabPrescriptionsProps> = ({
                   <Building2 className="w-7 h-7" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-slate-900">مشفى النور الطبي</h2>
-                  <p className="text-xs text-slate-600">Al-Noor Hospital - الوصفة الطبية المعتمدة</p>
+                  <h2 className="text-xl font-black text-slate-900">مشفى الرحمة الطبي</h2>
+                  <p className="text-xs text-slate-600">Al-Rahma Hospital - الوصفة الطبية المعتمدة</p>
                 </div>
               </div>
 
@@ -489,7 +489,7 @@ export const LabPrescriptionsSection: React.FC<LabPrescriptionsProps> = ({
               <div className="text-center">
                 <div className="w-24 h-24 border-2 border-dashed border-sky-600 rounded-full flex flex-col items-center justify-center text-[10px] text-sky-800 font-bold p-1">
                   <span>خاتم الطبيب المعالج</span>
-                  <span className="text-[9px]">مشفى النور</span>
+                  <span className="text-[9px]">مشفى الرحمة</span>
                   <CheckCircle className="w-4 h-4 text-sky-600 mt-1" />
                 </div>
               </div>
