@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Invoice, Patient, UserRole } from '../types';
 import { printAndExportPdf } from '../utils/pdfExport';
+import { validateInvoiceForm } from '../utils/validation';
 import { 
   Receipt, 
   DollarSign, 
@@ -17,7 +18,8 @@ import {
   Copy,
   Check,
   ShieldCheck,
-  Coins
+  Coins,
+  AlertTriangle
 } from 'lucide-react';
 
 interface BillingSectionProps {
@@ -55,6 +57,7 @@ export const BillingSection: React.FC<BillingSectionProps> = ({
     paymentMethod: 'تأمين طبي' as Invoice['paymentMethod'],
     description: 'كشفية عيادة + تحاليل دقيقة + أشعة',
   });
+  const [invoiceErrors, setInvoiceErrors] = useState<Record<string, string>>({});
 
   const isPatientRole = userRole === 'patient';
   const displayedInvoices = isPatientRole
@@ -126,6 +129,19 @@ export const BillingSection: React.FC<BillingSectionProps> = ({
 
   const handleSubmitNew = (e: React.FormEvent) => {
     e.preventDefault();
+    setInvoiceErrors({});
+
+    const validation = validateInvoiceForm({
+      patientName: formData.patientName,
+      subtotal: Number(formData.subtotal),
+      insuranceCovered: Number(formData.insuranceCovered),
+      description: formData.description,
+    });
+
+    if (!validation.isValid) {
+      setInvoiceErrors(validation.errors);
+      return;
+    }
     
     const matchedPatient = patients.find(p => p.fullName === formData.patientName);
     const finalPatientName = formData.patientName.trim() || 'مريض جديد';
@@ -148,6 +164,7 @@ export const BillingSection: React.FC<BillingSectionProps> = ({
       ]
     });
 
+    setInvoiceErrors({});
     setShowAddModal(false);
   };
 
@@ -425,6 +442,20 @@ export const BillingSection: React.FC<BillingSectionProps> = ({
             </div>
 
             <form onSubmit={handleSubmitNew} className="space-y-3">
+              {Object.keys(invoiceErrors).length > 0 && (
+                <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 flex items-start gap-2 text-xs">
+                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold block">يرجى تصحيح أخطاء الفاتورة:</span>
+                    <ul className="list-disc list-inside mt-0.5 text-[11px] text-rose-200">
+                      {Object.values(invoiceErrors).map((err, idx) => (
+                        <li key={idx}>{err}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block font-bold mb-1">اسم المريض *</label>
                 <input
@@ -433,8 +464,13 @@ export const BillingSection: React.FC<BillingSectionProps> = ({
                   list="billing-patients-list"
                   placeholder="اكتب اسم المريض أو اختر من القائمة..."
                   value={formData.patientName}
-                  onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
+                  onChange={(e) => {
+                    setFormData({ ...formData, patientName: e.target.value });
+                    if (invoiceErrors.patientName) setInvoiceErrors({ ...invoiceErrors, patientName: '' });
+                  }}
+                  className={`w-full p-2.5 rounded-xl bg-slate-800 border ${
+                    invoiceErrors.patientName ? 'border-rose-500 bg-rose-500/5' : 'border-slate-700'
+                  } text-white placeholder-slate-500 focus:outline-none focus:border-sky-500`}
                 />
                 <datalist id="billing-patients-list">
                   {patients.map((p) => (
@@ -443,21 +479,65 @@ export const BillingSection: React.FC<BillingSectionProps> = ({
                     </option>
                   ))}
                 </datalist>
+                {invoiceErrors.patientName && (
+                  <span className="text-[11px] text-rose-400 mt-1 block">{invoiceErrors.patientName}</span>
+                )}
               </div>
 
               <div>
                 <label className="block font-bold mb-1">وصف الخدمة أو الإجراء الطبي *</label>
-                <input type="text" required value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full p-2.5 bg-slate-800 rounded-xl border border-slate-700" />
+                <input 
+                  type="text" 
+                  required 
+                  value={formData.description} 
+                  onChange={(e) => {
+                    setFormData({...formData, description: e.target.value});
+                    if (invoiceErrors.description) setInvoiceErrors({ ...invoiceErrors, description: '' });
+                  }} 
+                  className={`w-full p-2.5 bg-slate-800 rounded-xl border ${
+                    invoiceErrors.description ? 'border-rose-500' : 'border-slate-700'
+                  }`} 
+                />
+                {invoiceErrors.description && (
+                  <span className="text-[11px] text-rose-400 mt-1 block">{invoiceErrors.description}</span>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold mb-1">المبلغ قبل الضريبة (ل.س) *</label>
-                  <input type="number" required value={formData.subtotal} onChange={(e) => setFormData({...formData, subtotal: Number(e.target.value)})} className="w-full p-2.5 bg-slate-800 rounded-xl border border-slate-700 font-mono" />
+                  <input 
+                    type="number" 
+                    required 
+                    value={formData.subtotal} 
+                    onChange={(e) => {
+                      setFormData({...formData, subtotal: Number(e.target.value)});
+                      if (invoiceErrors.subtotal) setInvoiceErrors({ ...invoiceErrors, subtotal: '' });
+                    }} 
+                    className={`w-full p-2.5 bg-slate-800 rounded-xl border ${
+                      invoiceErrors.subtotal ? 'border-rose-500' : 'border-slate-700'
+                    } font-mono`} 
+                  />
+                  {invoiceErrors.subtotal && (
+                    <span className="text-[11px] text-rose-400 mt-1 block">{invoiceErrors.subtotal}</span>
+                  )}
                 </div>
                 <div>
                   <label className="block font-bold mb-1">تغطية شركة التأمين (ل.س)</label>
-                  <input type="number" value={formData.insuranceCovered} onChange={(e) => setFormData({...formData, insuranceCovered: Number(e.target.value)})} className="w-full p-2.5 bg-slate-800 rounded-xl border border-slate-700 font-mono" />
+                  <input 
+                    type="number" 
+                    value={formData.insuranceCovered} 
+                    onChange={(e) => {
+                      setFormData({...formData, insuranceCovered: Number(e.target.value)});
+                      if (invoiceErrors.insuranceCovered) setInvoiceErrors({ ...invoiceErrors, insuranceCovered: '' });
+                    }} 
+                    className={`w-full p-2.5 bg-slate-800 rounded-xl border ${
+                      invoiceErrors.insuranceCovered ? 'border-rose-500' : 'border-slate-700'
+                    } font-mono`} 
+                  />
+                  {invoiceErrors.insuranceCovered && (
+                    <span className="text-[11px] text-rose-400 mt-1 block">{invoiceErrors.insuranceCovered}</span>
+                  )}
                 </div>
               </div>
 

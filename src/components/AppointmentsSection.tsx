@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Appointment, Patient, Doctor, UserRole } from '../types';
+import { validateAppointmentForm } from '../utils/validation';
 import { 
   Calendar, 
   Clock, 
@@ -14,7 +15,9 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
-  FileText
+  FileText,
+  AlertTriangle,
+  ShieldAlert
 } from 'lucide-react';
 
 interface AppointmentsSectionProps {
@@ -46,19 +49,20 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
   const [expandedAptId, setExpandedAptId] = useState<string | null>(null);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
-  // Form state
+  // Form state & Validation
   const [formData, setFormData] = useState({
     patientName: '',
     doctorName: '',
-    date: '2026-08-09',
+    date: new Date().toISOString().split('T')[0],
     time: '11:00',
     type: 'كشف' as Appointment['type'],
     notes: '',
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [fieldWarnings, setFieldWarnings] = useState<Record<string, string>>({});
 
   // Filter appointments
   const filteredAppointments = appointments.filter((apt) => {
-
     const query = (searchQuery || '').toLowerCase().trim();
     const matchesSearch = 
       !query ||
@@ -73,34 +77,35 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
     return matchesSearch && matchesStatus && matchesType;
   });
 
+  const selectedPatientData = patients.find(p => p.fullName.trim().toLowerCase() === formData.patientName.trim().toLowerCase());
+
   const handleSubmitNew = (e: React.FormEvent) => {
     e.preventDefault();
     setBookingError(null);
+    setFieldErrors({});
+    setFieldWarnings({});
 
     const initialPatientName = formData.patientName.trim() || 'مريض مراجع';
     const finalDoctorName = formData.doctorName.trim() || 'د. طبيب ممارس';
 
-    // Check for exact time collision (same doctor at same date/time OR same patient at same date/time)
-    const collision = appointments.find((apt) => 
-      apt.status !== 'ملغى' &&
-      apt.date === formData.date &&
-      apt.time === formData.time &&
-      (
-        (apt.doctorName.toLowerCase() === finalDoctorName.toLowerCase()) ||
-        (apt.patientName.toLowerCase() === initialPatientName.toLowerCase())
-      )
+    const validation = validateAppointmentForm(
+      {
+        patientName: initialPatientName,
+        doctorName: finalDoctorName,
+        date: formData.date,
+        time: formData.time,
+        type: formData.type,
+      },
+      appointments
     );
 
-    if (collision) {
-      const isDoctorBusy = collision.doctorName.toLowerCase() === finalDoctorName.toLowerCase();
-      setBookingError(
-        `تعذّر الحجز: يوجد موعد مسجّل مسبقاً في هذا التاريخ والتوقيت (${formData.time} بتاريخ ${formData.date}) لـ ${
-          isDoctorBusy ? `الطبيب (${collision.doctorName})` : `المريض (${collision.patientName})`
-        }. يرجى اختيار موعد أو توقيت آخر منعاً للتعارض.`
-      );
+    if (!validation.isValid) {
+      setFieldErrors(validation.errors);
+      if (validation.warnings) setFieldWarnings(validation.warnings);
+      setBookingError(Object.values(validation.errors)[0]);
       return;
     }
-    
+
     const matchedPatient = patients.find(p => p.fullName === initialPatientName);
     const finalPatientName = initialPatientName;
     const finalPatientId = matchedPatient ? matchedPatient.id : ('p-' + Date.now());
@@ -127,12 +132,14 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
     setFormData({
       patientName: '',
       doctorName: '',
-      date: '2026-08-09',
+      date: new Date().toISOString().split('T')[0],
       time: '11:00',
       type: 'كشف',
       notes: '',
     });
     setBookingError(null);
+    setFieldErrors({});
+    setFieldWarnings({});
     setShowAddModal(false);
   };
 
@@ -383,24 +390,51 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
 
             <form onSubmit={handleSubmitNew} className="space-y-4 text-xs">
               
+              {/* Patient Selector & Medical Safety Info */}
               <div>
                 <label className="block text-slate-300 font-bold mb-1">اسم المريض المراجع *</label>
                 <input
                   type="text"
                   required
                   list="patients-list"
-                  placeholder="اكتب اسم المريض الثلاثي/الرباعي هنا..."
+                  placeholder="اكتب اسم المريض أو اختر من القائمة..."
                   value={formData.patientName}
-                  onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 font-medium"
+                  onChange={(e) => {
+                    setFormData({ ...formData, patientName: e.target.value });
+                    if (fieldErrors.patientName) setFieldErrors({ ...fieldErrors, patientName: '' });
+                  }}
+                  className={`w-full p-2.5 rounded-xl bg-slate-800 border ${
+                    fieldErrors.patientName ? 'border-rose-500 bg-rose-500/5' : 'border-slate-700'
+                  } text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 font-medium`}
                 />
                 <datalist id="patients-list">
                   {patients.map((p) => (
                     <option key={p.id} value={p.fullName}>
-                      {p.fileNumber}
+                      {p.fileNumber} - فصيلة: {p.bloodType}
                     </option>
                   ))}
                 </datalist>
+                {fieldErrors.patientName && (
+                  <span className="text-[11px] text-rose-400 mt-1 block">{fieldErrors.patientName}</span>
+                )}
+
+                {/* Patient Safety Preview Alert */}
+                {selectedPatientData && (
+                  <div className="mt-2 p-2.5 bg-slate-800/80 border border-slate-700 rounded-xl flex items-center justify-between text-[11px]">
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-400">الملف: <strong className="text-white font-mono">{selectedPatientData.fileNumber}</strong></span>
+                      <span className="text-slate-400">فصيلة الدم: <strong className="text-sky-400 font-bold">{selectedPatientData.bloodType}</strong></span>
+                    </div>
+                    {selectedPatientData.activeAllergies && selectedPatientData.activeAllergies.length > 0 && selectedPatientData.activeAllergies[0] !== 'لا يوجد حساسية معروفة' ? (
+                      <div className="flex items-center gap-1.5 text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30">
+                        <ShieldAlert className="w-3.5 h-3.5" />
+                        <span>حساسية: {selectedPatientData.activeAllergies.join(', ')}</span>
+                      </div>
+                    ) : (
+                      <span className="text-emerald-400">لا توجد تحذيرات حساسية</span>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -411,16 +445,24 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
                   list="doctors-list"
                   placeholder="اكتب اسم الطبيب أو اختر من القائمة..."
                   value={formData.doctorName}
-                  onChange={(e) => setFormData({ ...formData, doctorName: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
+                  onChange={(e) => {
+                    setFormData({ ...formData, doctorName: e.target.value });
+                    if (fieldErrors.doctorName) setFieldErrors({ ...fieldErrors, doctorName: '' });
+                  }}
+                  className={`w-full p-2.5 rounded-xl bg-slate-800 border ${
+                    fieldErrors.doctorName ? 'border-rose-500 bg-rose-500/5' : 'border-slate-700'
+                  } text-white placeholder-slate-500 focus:outline-none focus:border-sky-500`}
                 />
                 <datalist id="doctors-list">
                   {doctors.map((d) => (
                     <option key={d.id} value={d.name}>
-                      {d.specialty}
+                      {d.specialty} ({d.consultingFee.toLocaleString()} ل.س)
                     </option>
                   ))}
                 </datalist>
+                {fieldErrors.doctorName && (
+                  <span className="text-[11px] text-rose-400 mt-1 block">{fieldErrors.doctorName}</span>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -430,9 +472,17 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
                     type="date"
                     required
                     value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500 font-mono"
+                    onChange={(e) => {
+                      setFormData({ ...formData, date: e.target.value });
+                      if (fieldErrors.date) setFieldErrors({ ...fieldErrors, date: '' });
+                    }}
+                    className={`w-full p-2.5 rounded-xl bg-slate-800 border ${
+                      fieldErrors.date ? 'border-rose-500' : 'border-slate-700'
+                    } text-white focus:outline-none focus:border-sky-500 font-mono`}
                   />
+                  {fieldErrors.date && (
+                    <span className="text-[11px] text-rose-400 mt-1 block">{fieldErrors.date}</span>
+                  )}
                 </div>
 
                 <div>
@@ -441,9 +491,17 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
                     type="time"
                     required
                     value={formData.time}
-                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                    className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500 font-mono"
+                    onChange={(e) => {
+                      setFormData({ ...formData, time: e.target.value });
+                      if (fieldErrors.time) setFieldErrors({ ...fieldErrors, time: '' });
+                    }}
+                    className={`w-full p-2.5 rounded-xl bg-slate-800 border ${
+                      fieldErrors.time ? 'border-rose-500' : 'border-slate-700'
+                    } text-white focus:outline-none focus:border-sky-500 font-mono`}
                   />
+                  {fieldErrors.time && (
+                    <span className="text-[11px] text-rose-400 mt-1 block">{fieldErrors.time}</span>
+                  )}
                 </div>
               </div>
 

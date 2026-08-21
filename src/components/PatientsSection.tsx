@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Patient, UserRole, Doctor, DischargeSummary } from '../types';
 import { printAndExportPdf } from '../utils/pdfExport';
+import { validatePatientForm, ValidationResult } from '../utils/validation';
 import { DischargeSummaryModal } from './DischargeSummaryModal';
 import { 
   Users, 
@@ -29,7 +30,8 @@ import {
   ChevronUp,
   Thermometer,
   Weight,
-  Archive
+  Archive,
+  AlertTriangle
 } from 'lucide-react';
 
 export interface MedicalFile {
@@ -121,7 +123,7 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  // New Patient Form state
+  // New Patient Form state & validation
   const [formData, setFormData] = useState({
     fullName: '',
     nationalId: '',
@@ -136,6 +138,7 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
     medicalHistoryInput: '',
     allergiesInput: '',
   });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const query = (localSearch || searchQuery).toLowerCase();
 
@@ -295,30 +298,49 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
 
   const handleSubmitNewPatient = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.fullName || !formData.phone || !formData.nationalId) {
-      alert('يرجى تعبئة الحقول الأساسية: الاسم الرباعي، رقم الهوية، ورقم التواصل');
+    setFormErrors({});
+
+    const validation = validatePatientForm(
+      {
+        fullName: formData.fullName,
+        nationalId: formData.nationalId,
+        age: formData.age,
+        gender: formData.gender,
+        bloodType: formData.bloodType,
+        phone: formData.phone,
+        insuranceNumber: formData.insuranceNumber,
+        allergiesInput: formData.allergiesInput,
+      },
+      patients
+    );
+
+    if (!validation.isValid) {
+      setFormErrors(validation.errors);
+      const firstError = Object.values(validation.errors)[0];
+      onShowToast?.(`تنبيه التحقق من البيانات: ${firstError}`, 'error');
       return;
     }
 
     onAddPatient({
-      fullName: formData.fullName,
-      nationalId: formData.nationalId,
+      fullName: formData.fullName.trim(),
+      nationalId: formData.nationalId.trim(),
       age: Number(formData.age),
       gender: formData.gender,
       bloodType: formData.bloodType,
-      phone: formData.phone,
-      address: formData.address,
-      emergencyContact: formData.emergencyContact,
-      insuranceProvider: formData.insuranceProvider,
-      insuranceNumber: formData.insuranceNumber,
-      medicalHistory: formData.medicalHistoryInput ? formData.medicalHistoryInput.split(',').map(s => s.trim()) : ['لا يوجد تدوين'],
-      activeAllergies: formData.allergiesInput ? formData.allergiesInput.split(',').map(s => s.trim()) : ['لا يوجد حساسية معروفة'],
+      phone: formData.phone.trim(),
+      address: formData.address.trim(),
+      emergencyContact: formData.emergencyContact.trim(),
+      insuranceProvider: formData.insuranceProvider.trim(),
+      insuranceNumber: formData.insuranceNumber.trim(),
+      medicalHistory: formData.medicalHistoryInput ? formData.medicalHistoryInput.split(',').map(s => s.trim()).filter(Boolean) : ['لا يوجد تدوين'],
+      activeAllergies: formData.allergiesInput ? formData.allergiesInput.split(',').map(s => s.trim()).filter(Boolean) : ['لا يوجد حساسية معروفة'],
       vitals: { bloodPressure: '120/80', heartRate: 75, temperature: 37.0, weight: 70 },
     });
 
-    onShowToast?.(`تم تسجيل المريض (${formData.fullName}) وإنشاء الملف الطبي بنجاح!`, 'success');
+    onShowToast?.(`تم تسجيل المريض (${formData.fullName}) بنجاح والتحقق من سلامة كافة البيانات!`, 'success');
 
     setShowAddModal(false);
+    setFormErrors({});
     setFormData({
       fullName: '',
       nationalId: '',
@@ -928,6 +950,21 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
 
             <form onSubmit={handleSubmitNewPatient} className="space-y-4 text-xs">
               
+              {/* Validation Warning Alert if Errors exist */}
+              {Object.keys(formErrors).length > 0 && (
+                <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold block text-xs">يرجى تصحيح الأخطاء التالية لحفظ الملف:</span>
+                    <ul className="list-disc list-inside mt-1 space-y-0.5 text-[11px] text-rose-200">
+                      {Object.values(formErrors).map((err, i) => (
+                        <li key={i}>{err}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-slate-300 font-bold mb-1">الاسم الرباعي للمريض *</label>
@@ -936,9 +973,17 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
                     required
                     placeholder="مثال: عبد الله خالد العتيبي"
                     value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500"
+                    onChange={(e) => {
+                      setFormData({ ...formData, fullName: e.target.value });
+                      if (formErrors.fullName) setFormErrors({ ...formErrors, fullName: '' });
+                    }}
+                    className={`w-full p-2.5 rounded-xl bg-slate-800 border ${
+                      formErrors.fullName ? 'border-rose-500 bg-rose-500/5' : 'border-slate-700'
+                    } text-white focus:outline-none focus:border-sky-500`}
                   />
+                  {formErrors.fullName && (
+                    <span className="text-[11px] text-rose-400 mt-1 block">{formErrors.fullName}</span>
+                  )}
                 </div>
 
                 <div>
@@ -948,9 +993,17 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
                     required
                     placeholder="10XXXXXXXX"
                     value={formData.nationalId}
-                    onChange={(e) => setFormData({ ...formData, nationalId: e.target.value })}
-                    className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500 font-mono"
+                    onChange={(e) => {
+                      setFormData({ ...formData, nationalId: e.target.value });
+                      if (formErrors.nationalId) setFormErrors({ ...formErrors, nationalId: '' });
+                    }}
+                    className={`w-full p-2.5 rounded-xl bg-slate-800 border ${
+                      formErrors.nationalId ? 'border-rose-500 bg-rose-500/5' : 'border-slate-700'
+                    } text-white focus:outline-none focus:border-sky-500 font-mono`}
                   />
+                  {formErrors.nationalId && (
+                    <span className="text-[11px] text-rose-400 mt-1 block">{formErrors.nationalId}</span>
+                  )}
                 </div>
               </div>
 
@@ -961,9 +1014,17 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
                     type="number"
                     required
                     value={formData.age}
-                    onChange={(e) => setFormData({ ...formData, age: Number(e.target.value) })}
-                    className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500"
+                    onChange={(e) => {
+                      setFormData({ ...formData, age: Number(e.target.value) });
+                      if (formErrors.age) setFormErrors({ ...formErrors, age: '' });
+                    }}
+                    className={`w-full p-2.5 rounded-xl bg-slate-800 border ${
+                      formErrors.age ? 'border-rose-500 bg-rose-500/5' : 'border-slate-700'
+                    } text-white focus:outline-none focus:border-sky-500`}
                   />
+                  {formErrors.age && (
+                    <span className="text-[11px] text-rose-400 mt-1 block">{formErrors.age}</span>
+                  )}
                 </div>
 
                 <div>
@@ -983,7 +1044,7 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
                   <select
                     value={formData.bloodType}
                     onChange={(e) => setFormData({ ...formData, bloodType: e.target.value as any })}
-                    className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500"
+                    className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500 font-bold text-sky-400"
                   >
                     <option value="A+">A+</option>
                     <option value="A-">A-</option>
@@ -1003,11 +1064,19 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="+966 5X XXX XXXX"
+                    placeholder="09XXXXXXXX"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500 font-mono"
+                    onChange={(e) => {
+                      setFormData({ ...formData, phone: e.target.value });
+                      if (formErrors.phone) setFormErrors({ ...formErrors, phone: '' });
+                    }}
+                    className={`w-full p-2.5 rounded-xl bg-slate-800 border ${
+                      formErrors.phone ? 'border-rose-500 bg-rose-500/5' : 'border-slate-700'
+                    } text-white focus:outline-none focus:border-sky-500 font-mono`}
                   />
+                  {formErrors.phone && (
+                    <span className="text-[11px] text-rose-400 mt-1 block">{formErrors.phone}</span>
+                  )}
                 </div>
 
                 <div>
@@ -1023,10 +1092,10 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 font-bold mb-1">التاريخ المرضي الساق (مفصولة بفاصلة)</label>
+                <label className="block text-slate-300 font-bold mb-1">التاريخ المرضي السابق (مفصولة بفاصلة)</label>
                 <input
                   type="text"
-                  placeholder="مثال: ضغط دم، عمليات جراحية سابقة"
+                  placeholder="مثال: ضغط دم، سكري، عمليات جراحية سابقة"
                   value={formData.medicalHistoryInput}
                   onChange={(e) => setFormData({ ...formData, medicalHistoryInput: e.target.value })}
                   className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500"
@@ -1034,13 +1103,16 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 font-bold mb-1">الحساسية الدوائية الحالية</label>
+                <label className="block text-slate-300 font-bold mb-1 flex items-center justify-between">
+                  <span>الحساسية الدوائية الحالية (تحذير سريري)</span>
+                  <span className="text-[11px] text-amber-400 font-normal">يمنع صرف أدوية تتعارض معها</span>
+                </label>
                 <input
                   type="text"
-                  placeholder="مثال: البنسلين، الأسبرين..."
+                  placeholder="مثال: بنسلين (Penicillin)، أسبرين، سلفا..."
                   value={formData.allergiesInput}
                   onChange={(e) => setFormData({ ...formData, allergiesInput: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500"
+                  className="w-full p-2.5 rounded-xl bg-slate-800 border border-amber-500/40 text-amber-200 focus:outline-none focus:border-amber-400"
                 />
               </div>
 

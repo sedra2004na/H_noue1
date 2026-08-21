@@ -31,6 +31,7 @@ import { LandingAndAuthScreen } from './components/LandingAndAuthScreen';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { EmergencyModal } from './components/EmergencyModal';
 import { HospitalPulseBar } from './components/HospitalPulseBar';
+import { DatabaseManagerModal } from './components/DatabaseManagerModal';
 
 function getStoredData<T>(key: string, defaultValue: T): T {
   try {
@@ -83,6 +84,7 @@ export function App() {
 
   // Emergency SOS State
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
+  const [showDatabaseManager, setShowDatabaseManager] = useState(false);
   const [activeSOS, setActiveSOS] = useState<{
     id: string;
     patientName: string;
@@ -447,6 +449,40 @@ export function App() {
     showToast('تم إلغاء وحذف الفاتورة المالية', 'warning');
   };
 
+  // Database Full Restore and Reset Handlers
+  const handleRestoreDatabase = (restoredData: any) => {
+    if (!restoredData || typeof restoredData !== 'object') return;
+    if (Array.isArray(restoredData.patients)) setPatients(restoredData.patients);
+    if (Array.isArray(restoredData.doctors)) setDoctors(restoredData.doctors);
+    if (Array.isArray(restoredData.appointments)) setAppointments(restoredData.appointments);
+    if (Array.isArray(restoredData.inventory)) setInventory(restoredData.inventory);
+    if (Array.isArray(restoredData.labResults)) setLabResults(restoredData.labResults);
+    if (Array.isArray(restoredData.prescriptions)) setPrescriptions(restoredData.prescriptions);
+    if (Array.isArray(restoredData.invoices)) setInvoices(restoredData.invoices);
+    if (Array.isArray(restoredData.shifts)) setShifts(restoredData.shifts);
+    if (Array.isArray(restoredData.wards)) setWards(restoredData.wards);
+    if (Array.isArray(restoredData.beds)) setBeds(restoredData.beds);
+    if (Array.isArray(restoredData.archivedRecords)) setArchivedRecords(restoredData.archivedRecords);
+    if (Array.isArray(restoredData.abnormalFlags)) setAbnormalFlags(restoredData.abnormalFlags);
+    showToast('تم استعادة بيانات المستشفى وقاعدة البيانات بنجاح', 'success');
+  };
+
+  const handleResetDatabaseToDefault = () => {
+    setPatients(mockPatients);
+    setDoctors(mockDoctors);
+    setAppointments(mockAppointments);
+    setInventory(mockInventory);
+    setLabResults(mockLabResults);
+    setPrescriptions(mockPrescriptions);
+    setInvoices(mockInvoices);
+    setShifts(mockShifts);
+    setWards(mockWards);
+    setBeds(mockBeds);
+    setArchivedRecords(mockArchivedRecords);
+    setAbnormalFlags(mockAbnormalLabFlags);
+    showToast('تمت إعادة تعيين قاعدة البيانات إلى السجلات النموذجية الافتراضية', 'info');
+  };
+
   // Badge counts calculations for sidebar and header
   const pendingAppointmentsCount = appointments.filter(a => a.status === 'معلق' || a.status === 'مؤكد').length;
   const lowInventoryCount = inventory.filter(i => i.status === 'منخفض' || i.quantity <= i.minStockAlert).length;
@@ -493,6 +529,7 @@ export function App() {
         lowStockCount={lowInventoryCount}
         criticalLabCount={criticalLabCount}
         onOpenEmergencyModal={() => setShowEmergencyModal(true)}
+        onOpenDatabaseManager={() => setShowDatabaseManager(true)}
         hasActiveSOS={!!activeSOS}
         isMobileMenuOpen={isMobileMenuOpen}
         onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -688,6 +725,29 @@ export function App() {
         activeSOS={activeSOS}
         onTriggerSOS={handleTriggerSOS}
         onResolveSOS={handleResolveSOS}
+        onShowToast={showToast}
+      />
+
+      {/* Database & Data Integrity Manager Modal */}
+      <DatabaseManagerModal
+        isOpen={showDatabaseManager}
+        onClose={() => setShowDatabaseManager(false)}
+        allData={{
+          patients,
+          doctors,
+          appointments,
+          inventory,
+          labResults,
+          prescriptions,
+          invoices,
+          shifts,
+          wards,
+          beds,
+          archivedRecords,
+          abnormalFlags,
+        }}
+        onRestoreData={handleRestoreDatabase}
+        onResetToDefault={handleResetDatabaseToDefault}
         onShowToast={showToast}
       />
 

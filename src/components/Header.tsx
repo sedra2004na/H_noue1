@@ -21,7 +21,8 @@ import {
   Siren,
   Menu,
   Sun,
-  Moon
+  Moon,
+  Database
 } from 'lucide-react';
 
 export interface NotificationItem {
@@ -50,6 +51,7 @@ interface HeaderProps {
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
   onOpenEmergencyModal?: () => void;
+  onOpenDatabaseManager?: () => void;
   hasActiveSOS?: boolean;
   isMobileMenuOpen?: boolean;
   onToggleMobileMenu?: () => void;
@@ -71,6 +73,7 @@ export const Header: React.FC<HeaderProps> = ({
   searchQuery = '',
   onSearchChange,
   onOpenEmergencyModal,
+  onOpenDatabaseManager,
   hasActiveSOS = false,
   isMobileMenuOpen = false,
   onToggleMobileMenu,
@@ -274,6 +277,19 @@ export const Header: React.FC<HeaderProps> = ({
               ) : (
                 <Moon className="w-5 h-5 text-indigo-400 group-hover:-rotate-12 transition-transform duration-300" />
               )}
+            </button>
+          )}
+
+          {/* Database Health & Validation Manager Button */}
+          {onOpenDatabaseManager && (userRole === 'admin' || userRole === 'staff') && (
+            <button
+              type="button"
+              onClick={onOpenDatabaseManager}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-600/50 text-emerald-300 hover:text-white transition-all shadow-md text-xs font-bold cursor-pointer"
+              title="فحص وتدقيق سلامة قاعدة البيانات والنسخ الاحتياطي"
+            >
+              <Database className="w-4 h-4 text-emerald-400" />
+              <span className="hidden lg:inline">إدارة وتدقيق البيانات</span>
             </button>
           )}
 
