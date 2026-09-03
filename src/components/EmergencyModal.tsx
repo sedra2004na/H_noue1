@@ -55,7 +55,7 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({
   onShowToast,
 }) => {
   const [erRooms, setErRooms] = useState<ERRoom[]>([
-    { id: 'er-1', name: 'غرفة طوارئ 1 (إنعاش جراحي)', status: 'available', equipment: ['جهاز صدمات قلب', 'جهاز تنفس اصطناعي', 'مراقبة علامات'] },
+    { id: 'er-1', name: 'غرفة طوارئ 1 (إنعاش جراحي)', status: 'available', equipment: ['جهاز صدمات قلب', 'مراقبة علامات حيوية'] },
     { id: 'er-2', name: 'غرفة طوارئ 2 (قلبية وحرجة)', status: 'occupied', assignedPatient: 'خالد السعيد', assignedDoctor: 'د. أحمد الخطيب', equipment: ['تخطيط قلب سريع', 'مضخة إنفزيون'] },
     { id: 'er-3', name: 'غرفة طوارئ 3 (إصابات وباطنية)', status: 'available', equipment: ['أكسجين مركز', 'معدات تخثير سريعة'] },
     { id: 'er-4', name: 'غرفة طوارئ 4 (عناية سريعة)', status: 'preparing', equipment: ['تعقيم وتجهيز دوري'] },

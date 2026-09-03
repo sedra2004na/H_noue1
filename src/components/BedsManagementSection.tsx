@@ -494,12 +494,6 @@ export const BedsManagementSection: React.FC<BedsManagementSectionProps> = ({
                       <span>أكسجين</span>
                     </span>
                   )}
-                  {bed.ventilatorEquipped && (
-                    <span className="px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-[10px] text-purple-400 flex items-center gap-1" title="مجهز بجهاز تنفس اصطناعي">
-                      <Activity className="w-3 h-3" />
-                      <span>تنفس صناعي</span>
-                    </span>
-                  )}
                 </div>
 
                 {/* Center Content depending on status */}

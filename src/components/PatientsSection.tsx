@@ -28,6 +28,7 @@ import {
   FileCheck2,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
   Thermometer,
   Weight,
   Archive,
@@ -124,6 +125,7 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   // New Patient Form state & validation
+  const [formStep, setFormStep] = useState<1 | 2 | 3>(1);
   const [formData, setFormData] = useState({
     fullName: '',
     nationalId: '',
@@ -933,18 +935,100 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
         </div>
       )}
 
-      {/* Add New Patient Modal */}
+      {/* Add New Patient Multi-Step Wizard Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl text-right p-6 space-y-6 text-slate-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl text-right p-6 space-y-6 text-slate-800 dark:text-slate-100">
             
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Plus className="w-5 h-5 text-sky-400" />
-                <span>تسجيل ملف مريض جديد</span>
-              </h3>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Plus className="w-5 h-5 text-sky-500" />
+                  <span>تسجيل ملف مريض جديد (معالج الإدخال المنظم)</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  إدخال بيانات المريض عبر 3 خطوات سهلة للتحقق من الدقة الطبية
+                </p>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowAddModal(false);
+                  setFormStep(1);
+                  setFormErrors({});
+                }} 
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg"
+              >
                 <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Stepper Progress Bar */}
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setFormStep(1)}
+                className={`p-2.5 rounded-xl border text-start transition-all ${
+                  formStep === 1
+                    ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 font-bold'
+                    : formStep > 1
+                      ? 'border-emerald-500/40 bg-emerald-50/40 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300'
+                      : 'border-slate-200 dark:border-slate-800 text-slate-400'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    formStep === 1 ? 'bg-sky-500 text-white' : formStep > 1 ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600'
+                  }`}>
+                    {formStep > 1 ? '✓' : '1'}
+                  </span>
+                  <span className="text-xs truncate">1. البيانات الشخصية</span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (formData.fullName && formData.nationalId && formData.phone) setFormStep(2);
+                  else handleSubmitNewPatient({ preventDefault: () => {} } as any);
+                }}
+                className={`p-2.5 rounded-xl border text-start transition-all ${
+                  formStep === 2
+                    ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 font-bold'
+                    : formStep > 2
+                      ? 'border-emerald-500/40 bg-emerald-50/40 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300'
+                      : 'border-slate-200 dark:border-slate-800 text-slate-400'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    formStep === 2 ? 'bg-sky-500 text-white' : formStep > 2 ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600'
+                  }`}>
+                    {formStep > 2 ? '✓' : '2'}
+                  </span>
+                  <span className="text-xs truncate">2. السجل الطبي</span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (formData.fullName && formData.nationalId && formData.phone) setFormStep(3);
+                }}
+                className={`p-2.5 rounded-xl border text-start transition-all ${
+                  formStep === 3
+                    ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 font-bold'
+                    : 'border-slate-200 dark:border-slate-800 text-slate-400'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    formStep === 3 ? 'bg-sky-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600'
+                  }`}>
+                    3
+                  </span>
+                  <span className="text-xs truncate">3. التأمين والمراجعة</span>
+                </div>
               </button>
             </div>
 
@@ -952,11 +1036,11 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
               
               {/* Validation Warning Alert if Errors exist */}
               {Object.keys(formErrors).length > 0 && (
-                <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 flex items-start gap-2.5">
-                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-xl text-rose-700 dark:text-rose-300 flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
                   <div>
-                    <span className="font-bold block text-xs">يرجى تصحيح الأخطاء التالية لحفظ الملف:</span>
-                    <ul className="list-disc list-inside mt-1 space-y-0.5 text-[11px] text-rose-200">
+                    <span className="font-bold block text-xs">يرجى تصحيح الأخطاء التالية للمتابعة:</span>
+                    <ul className="list-disc list-inside mt-1 space-y-0.5 text-[11px] text-rose-600 dark:text-rose-200">
                       {Object.values(formErrors).map((err, i) => (
                         <li key={i}>{err}</li>
                       ))}
@@ -965,171 +1049,254 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1">الاسم الرباعي للمريض *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="مثال: عبد الله خالد العتيبي"
-                    value={formData.fullName}
-                    onChange={(e) => {
-                      setFormData({ ...formData, fullName: e.target.value });
-                      if (formErrors.fullName) setFormErrors({ ...formErrors, fullName: '' });
-                    }}
-                    className={`w-full p-2.5 rounded-xl bg-slate-800 border ${
-                      formErrors.fullName ? 'border-rose-500 bg-rose-500/5' : 'border-slate-700'
-                    } text-white focus:outline-none focus:border-sky-500`}
-                  />
-                  {formErrors.fullName && (
-                    <span className="text-[11px] text-rose-400 mt-1 block">{formErrors.fullName}</span>
-                  )}
-                </div>
+              {/* STEP 1: Basic Info */}
+              {formStep === 1 && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">الاسم الرباعي للمريض *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="مثال: عبد الله خالد العتيبي"
+                        value={formData.fullName}
+                        onChange={(e) => {
+                          setFormData({ ...formData, fullName: e.target.value });
+                          if (formErrors.fullName) setFormErrors({ ...formErrors, fullName: '' });
+                        }}
+                        className={`w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border ${
+                          formErrors.fullName ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700'
+                        } text-slate-900 dark:text-white focus:outline-none focus:border-sky-500`}
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1">رقم الهوية / الإقامة *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="10XXXXXXXX"
-                    value={formData.nationalId}
-                    onChange={(e) => {
-                      setFormData({ ...formData, nationalId: e.target.value });
-                      if (formErrors.nationalId) setFormErrors({ ...formErrors, nationalId: '' });
-                    }}
-                    className={`w-full p-2.5 rounded-xl bg-slate-800 border ${
-                      formErrors.nationalId ? 'border-rose-500 bg-rose-500/5' : 'border-slate-700'
-                    } text-white focus:outline-none focus:border-sky-500 font-mono`}
-                  />
-                  {formErrors.nationalId && (
-                    <span className="text-[11px] text-rose-400 mt-1 block">{formErrors.nationalId}</span>
-                  )}
-                </div>
-              </div>
+                    <div>
+                      <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">رقم الهوية / الإقامة *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="10XXXXXXXX"
+                        value={formData.nationalId}
+                        onChange={(e) => {
+                          setFormData({ ...formData, nationalId: e.target.value });
+                          if (formErrors.nationalId) setFormErrors({ ...formErrors, nationalId: '' });
+                        }}
+                        className={`w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border ${
+                          formErrors.nationalId ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700'
+                        } text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 font-mono`}
+                      />
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1">العمر *</label>
-                  <input
-                    type="number"
-                    required
-                    value={formData.age}
-                    onChange={(e) => {
-                      setFormData({ ...formData, age: Number(e.target.value) });
-                      if (formErrors.age) setFormErrors({ ...formErrors, age: '' });
-                    }}
-                    className={`w-full p-2.5 rounded-xl bg-slate-800 border ${
-                      formErrors.age ? 'border-rose-500 bg-rose-500/5' : 'border-slate-700'
-                    } text-white focus:outline-none focus:border-sky-500`}
-                  />
-                  {formErrors.age && (
-                    <span className="text-[11px] text-rose-400 mt-1 block">{formErrors.age}</span>
-                  )}
-                </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">العمر *</label>
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        max="120"
+                        value={formData.age}
+                        onChange={(e) => {
+                          setFormData({ ...formData, age: Number(e.target.value) });
+                          if (formErrors.age) setFormErrors({ ...formErrors, age: '' });
+                        }}
+                        className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1">الجنس *</label>
-                  <select
-                    value={formData.gender}
-                    onChange={(e) => setFormData({ ...formData, gender: e.target.value as any })}
-                    className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500"
+                    <div>
+                      <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">الجنس *</label>
+                      <select
+                        value={formData.gender}
+                        onChange={(e) => setFormData({ ...formData, gender: e.target.value as any })}
+                        className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                      >
+                        <option value="ذكر">ذكر</option>
+                        <option value="أنثى">أنثى</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">رقم الهاتف والتواصل *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="09XXXXXXXX"
+                        value={formData.phone}
+                        onChange={(e) => {
+                          setFormData({ ...formData, phone: e.target.value });
+                          if (formErrors.phone) setFormErrors({ ...formErrors, phone: '' });
+                        }}
+                        className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">العنوان السكني</label>
+                    <input
+                      type="text"
+                      placeholder="المدينة، الحي، رقم المبنى..."
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 2: Medical & Allergies */}
+              {formStep === 2 && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div>
+                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">فصيلة الدم *</label>
+                    <select
+                      value={formData.bloodType}
+                      onChange={(e) => setFormData({ ...formData, bloodType: e.target.value as any })}
+                      className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sky-600 dark:text-sky-400 font-black text-sm focus:outline-none focus:border-sky-500"
+                    >
+                      <option value="A+">A+ (موجب)</option>
+                      <option value="A-">A- (سالب)</option>
+                      <option value="B+">B+ (موجب)</option>
+                      <option value="B-">B- (سالب)</option>
+                      <option value="AB+">AB+ (موجب)</option>
+                      <option value="AB-">AB- (سالب)</option>
+                      <option value="O+">O+ (موجب)</option>
+                      <option value="O-">O- (سالب)</option>
+                    </select>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 space-y-2">
+                    <label className="block text-amber-800 dark:text-amber-300 font-bold flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4 text-amber-500" />
+                        <span>الحساسية الدوائية والغذائية (تحذير سريري حرج)</span>
+                      </span>
+                      <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">يمنع صرف أدوية تتعارض معها</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="مثال: بنسلين (Penicillin)، أسبرين، سلفا، مشتقات القمح..."
+                      value={formData.allergiesInput}
+                      onChange={(e) => setFormData({ ...formData, allergiesInput: e.target.value })}
+                      className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">التاريخ المرضي والعمليات السابقة (مفصولة بفاصلة)</label>
+                    <input
+                      type="text"
+                      placeholder="مثال: ارتفاع ضغط الدم، سكري نوع 2، استئصال زائدة 2021"
+                      value={formData.medicalHistoryInput}
+                      onChange={(e) => setFormData({ ...formData, medicalHistoryInput: e.target.value })}
+                      className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 3: Insurance, Emergency & Summary Review */}
+              {formStep === 3 && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">شركة التأمين الطبي</label>
+                      <input
+                        type="text"
+                        placeholder="مثال: التعاونية للتأمين، بوبا، التكافل..."
+                        value={formData.insuranceProvider}
+                        onChange={(e) => setFormData({ ...formData, insuranceProvider: e.target.value })}
+                        className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">رقم بطاقة التأمين</label>
+                      <input
+                        type="text"
+                        placeholder="مثال: INS-984210"
+                        value={formData.insuranceNumber}
+                        onChange={(e) => setFormData({ ...formData, insuranceNumber: e.target.value })}
+                        className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">جهة الاتصال للطوارئ (الاسم ورقم الهاتف)</label>
+                    <input
+                      type="text"
+                      placeholder="مثال: الأخ / خالد العتيبي - 0988776655"
+                      value={formData.emergencyContact}
+                      onChange={(e) => setFormData({ ...formData, emergencyContact: e.target.value })}
+                      className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+
+                  {/* Summary Card Before Submission */}
+                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1.5 text-xs">
+                    <span className="text-[10px] font-bold text-sky-600 dark:text-sky-400 block uppercase">ملخص المريض قبل الحفظ</span>
+                    <div className="grid grid-cols-2 gap-2 text-slate-700 dark:text-slate-200">
+                      <div><strong>الاسم:</strong> {formData.fullName || '—'}</div>
+                      <div><strong>الهوية:</strong> {formData.nationalId || '—'}</div>
+                      <div><strong>الهاتف:</strong> {formData.phone || '—'}</div>
+                      <div><strong>فصيلة الدم:</strong> {formData.bloodType}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Wizard Navigation Footer */}
+              <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+                {formStep > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => setFormStep((prev) => (prev - 1) as any)}
+                    className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold"
                   >
-                    <option value="ذكر">ذكر</option>
-                    <option value="أنثى">أنثى</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1">فصيلة الدم *</label>
-                  <select
-                    value={formData.bloodType}
-                    onChange={(e) => setFormData({ ...formData, bloodType: e.target.value as any })}
-                    className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500 font-bold text-sky-400"
-                  >
-                    <option value="A+">A+</option>
-                    <option value="A-">A-</option>
-                    <option value="B+">B+</option>
-                    <option value="B-">B-</option>
-                    <option value="AB+">AB+</option>
-                    <option value="AB-">AB-</option>
-                    <option value="O+">O+</option>
-                    <option value="O-">O-</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1">رقم الجوال والتواصل *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="09XXXXXXXX"
-                    value={formData.phone}
-                    onChange={(e) => {
-                      setFormData({ ...formData, phone: e.target.value });
-                      if (formErrors.phone) setFormErrors({ ...formErrors, phone: '' });
+                    السابق
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddModal(false);
+                      setFormStep(1);
                     }}
-                    className={`w-full p-2.5 rounded-xl bg-slate-800 border ${
-                      formErrors.phone ? 'border-rose-500 bg-rose-500/5' : 'border-slate-700'
-                    } text-white focus:outline-none focus:border-sky-500 font-mono`}
-                  />
-                  {formErrors.phone && (
-                    <span className="text-[11px] text-rose-400 mt-1 block">{formErrors.phone}</span>
-                  )}
-                </div>
+                    className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold"
+                  >
+                    إلغاء
+                  </button>
+                )}
 
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1">شركة التأمين الطبي</label>
-                  <input
-                    type="text"
-                    placeholder="مثال: التعاونية، بوبا، التكافل..."
-                    value={formData.insuranceProvider}
-                    onChange={(e) => setFormData({ ...formData, insuranceProvider: e.target.value })}
-                    className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">التاريخ المرضي السابق (مفصولة بفاصلة)</label>
-                <input
-                  type="text"
-                  placeholder="مثال: ضغط دم، سكري، عمليات جراحية سابقة"
-                  value={formData.medicalHistoryInput}
-                  onChange={(e) => setFormData({ ...formData, medicalHistoryInput: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-bold mb-1 flex items-center justify-between">
-                  <span>الحساسية الدوائية الحالية (تحذير سريري)</span>
-                  <span className="text-[11px] text-amber-400 font-normal">يمنع صرف أدوية تتعارض معها</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="مثال: بنسلين (Penicillin)، أسبرين، سلفا..."
-                  value={formData.allergiesInput}
-                  onChange={(e) => setFormData({ ...formData, allergiesInput: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-slate-800 border border-amber-500/40 text-amber-200 focus:outline-none focus:border-amber-400"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold shadow-lg shadow-sky-600/30"
-                >
-                  حفظ وتسجيل المريض
-                </button>
+                {formStep < 3 ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (formStep === 1) {
+                        if (!formData.fullName.trim() || !formData.nationalId.trim() || !formData.phone.trim()) {
+                          handleSubmitNewPatient({ preventDefault: () => {} } as any);
+                          return;
+                        }
+                      }
+                      setFormStep((prev) => (prev + 1) as any);
+                    }}
+                    className="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold shadow-md shadow-sky-600/30 flex items-center gap-1.5"
+                  >
+                    <span>التالي</span>
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    className="px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-600/30 flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>تأكيد وحفظ ملف المريض</span>
+                  </button>
+                )}
               </div>
 
             </form>

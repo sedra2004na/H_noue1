@@ -829,7 +829,7 @@ export const mockBeds: Bed[] = [
     reservedUntil: '14:00 اليوم',
     oxygenEquipped: true,
     ventilatorEquipped: true,
-    notes: 'جاهز لاستقبال المريض بعد انتهاء الجراحة مع جهاز تنفس اصطناعي.',
+    notes: 'جاهز لاستقبال المريض بعد انتهاء الجراحة.',
   },
   {
     id: 'bed-104',

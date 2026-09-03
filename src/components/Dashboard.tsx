@@ -6,34 +6,31 @@ import {
   UserCheck, 
   AlertTriangle, 
   TrendingUp, 
-  PlusCircle, 
-  Sparkles, 
-  ArrowUpRight,
-  Pill,
-  Clock,
-  ArrowRight,
-  Search,
-  Filter,
-  CheckCircle2,
-  XCircle,
-  Plus,
-  Trash2,
-  ChevronDown
+  Clock, 
+  Search, 
+  Check, 
+  Bed, 
+  Stethoscope, 
+  FlaskConical, 
+  Siren, 
+  Plus, 
+  ChevronLeft,
+  Activity,
+  BarChart3
 } from 'lucide-react';
 import { 
-  PieChart, 
-  Pie, 
-  Cell, 
-  ResponsiveContainer, 
-  BarChart, 
-  Bar, 
+  AreaChart, 
+  Area, 
   XAxis, 
   YAxis, 
   Tooltip, 
-  AreaChart, 
-  Area 
+  ResponsiveContainer, 
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell
 } from 'recharts';
-import { Patient, Doctor, Appointment, InventoryItem, Invoice, UserRole } from '../types';
+import { Patient, Doctor, Appointment, InventoryItem, Invoice, UserRole, Bed as BedType } from '../types';
 
 interface DashboardProps {
   userRole?: UserRole;
@@ -42,9 +39,11 @@ interface DashboardProps {
   appointments?: Appointment[];
   inventory?: InventoryItem[];
   invoices?: Invoice[];
+  beds?: BedType[];
   onNavigateTab?: (tabId: string) => void;
   onNavigate?: (tabId: string) => void;
   onOpenQuickModal?: (modalType: 'appointment' | 'patient' | 'inventory' | 'invoice') => void;
+  onOpenEmergencyModal?: () => void;
   onUpdateAppointmentStatus?: (id: string, status: any) => void;
   onDeleteAppointment?: (id: string) => void;
 }
@@ -56,9 +55,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   appointments = [],
   inventory = [],
   invoices = [],
+  beds = [],
   onNavigateTab,
   onNavigate,
   onOpenQuickModal,
+  onOpenEmergencyModal,
   onUpdateAppointmentStatus,
   onDeleteAppointment,
 }) => {
@@ -70,17 +71,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
     else if (type === 'invoice') navigate('billing');
   });
 
-  // Local state for dynamic appointments table
+  // Local states
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [tableSearch, setTableSearch] = useState<string>('');
 
-  // Filtered appointments dynamically (Patients ONLY see their own appointments)
+  // Role details
   const isPatientRole = userRole === 'patient';
+  const isDoctorRole = userRole === 'doctor';
+  const isStaffRole = userRole === 'staff';
+  const isAdminRole = userRole === 'admin';
+
   const patientNameTarget = 'محمد عبد الله العتيبي';
 
   const userAppointments = appointments.filter((apt) => {
     if (isPatientRole) {
       return apt.patientName === patientNameTarget || apt.patientName.includes('محمد') || apt.patientId === 'pat-1';
+    }
+    if (isDoctorRole) {
+      return apt.doctorName.includes('سارة') || apt.doctorName.includes('طبيب') || apt.doctorId === 'doc-1';
     }
     return true;
   });
@@ -101,624 +109,531 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Calculated Metrics
   const totalPatients = (patients || []).length;
   const todayAppointments = (appointments || []).filter(a => a?.date === todayStr || a?.status === 'مؤكد' || a?.status === 'معلق');
-  const pendingInvoices = (invoices || []).filter(i => i?.status === 'معلق');
   const activeDoctors = (doctors || []).filter(d => d?.status === 'active');
   const lowStockItems = (inventory || []).filter(i => i?.status === 'منخفض' || (i?.quantity ?? 0) <= (i?.minStockAlert ?? 0));
+  const availableBeds = (beds || []).filter(b => b.status === 'available');
 
   // Patient Specific Metrics
   const patientInvoices = invoices.filter(i => i.patientName === patientNameTarget || i.patientName.includes('محمد'));
   const patientPendingInvoices = patientInvoices.filter(i => i.status === 'معلق');
 
-  const totalRevenue = (invoices || [])
-    .filter(i => i?.status === 'مدفوع')
-    .reduce((sum, inv) => sum + (inv?.netAmount || 0), 0);
-
-  // Pie Chart Data - Appointment Statuses
-  const statusCounts = {
-    'مؤكد': appointments.filter(a => a.status === 'مؤكد').length,
-    'معلق': appointments.filter(a => a.status === 'معلق').length,
-    'مكتمل': appointments.filter(a => a.status === 'مكتمل').length,
-    'ملغى': appointments.filter(a => a.status === 'ملغى').length,
-  };
-
-  const pieChartData = [
-    { name: 'مؤكد', value: statusCounts['مؤكد'] || 3, color: '#0284c7' }, // Sky Blue
-    { name: 'معلق', value: statusCounts['معلق'] || 2, color: '#f59e0b' }, // Amber
-    { name: 'مكتمل', value: statusCounts['مكتمل'] || 4, color: '#10b981' }, // Emerald
-    { name: 'ملغى', value: statusCounts['ملغى'] || 1, color: '#ef4444' }, // Red
+  // Simple Clean Weekly Flow Data
+  const weeklyFlowData = [
+    { day: 'السبت', visits: 18, emergency: 4 },
+    { day: 'الأحد', visits: 26, emergency: 5 },
+    { day: 'الإثنين', visits: 31, emergency: 6 },
+    { day: 'الثلاثاء', visits: 24, emergency: 3 },
+    { day: 'الأربعاء', visits: 35, emergency: 7 },
+    { day: 'الخميس', visits: 40, emergency: 8 },
+    { day: 'الجمعة', visits: 17, emergency: 9 },
   ];
 
-  // Bar Chart Data - Weekly Appointments Trend
-  const weeklyData = [
-    { day: 'الأحد', appointments: 18, emergency: 3 },
-    { day: 'الإثنين', appointments: 24, emergency: 5 },
-    { day: 'الثلاثاء', appointments: 20, emergency: 2 },
-    { day: 'الأربعاء', appointments: 28, emergency: 6 },
-    { day: 'الخميس', appointments: 32, emergency: 8 },
-    { day: 'الجمعة', appointments: 12, emergency: 9 },
-    { day: 'السبت', appointments: 15, emergency: 4 },
-  ];
-
-  // Area Chart Data - Monthly Revenue
-  const revenueData = [
-    { month: 'يناير', revenue: 142000 },
-    { month: 'فبراير', revenue: 165000 },
-    { month: 'مارس', revenue: 189000 },
-    { month: 'أبريل', revenue: 175000 },
-    { month: 'مايو', revenue: 210000 },
-    { month: 'يونيو', revenue: 245000 },
-    { month: 'يوليو', revenue: 230000 },
-    { month: 'أغسطس', revenue: 280000 },
+  const aptStatusData = [
+    { name: 'مؤكد', value: appointments.filter(a => a.status === 'مؤكد').length || 4, color: '#0ea5e9' },
+    { name: 'معلق', value: appointments.filter(a => a.status === 'معلق').length || 2, color: '#f59e0b' },
+    { name: 'مكتمل', value: appointments.filter(a => a.status === 'مكتمل').length || 5, color: '#10b981' },
   ];
 
   return (
     <div className="space-y-6">
       
-      {/* Top Banner / Welcome Bar */}
-      <div className="relative rounded-3xl bg-slate-900 p-6 sm:p-8 border border-slate-800 shadow-lg overflow-hidden">
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      {/* 1. TOP WELCOME BAR WITH ROLE-TAILORED QUICK ACTIONS */}
+      <div className="rounded-2xl bg-white dark:bg-slate-900 p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-wide">
-              {userRole === 'patient' ? 'أهلاً بك في بوابتك الطبية بمشفى الرحمة' : 'أهلاً بك في نظام إدارة "مشفى الرحمة"'}
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+              {isPatientRole && 'أهلاً بك في بوابتك الطبية بمشفى الرحمة'}
+              {isDoctorRole && 'مرحباً د. سارة السعيد - لوحة متابعة العيادات والمرضى'}
+              {isStaffRole && 'قسم الاستقبال والتسجيل وتسكين الأجنحة'}
+              {isAdminRole && 'مركز القيادة والعمليات لمشفى الرحمة'}
             </h2>
-            <p className="text-sm text-slate-300 mt-2 max-w-2xl leading-relaxed">
-              {userRole === 'patient' 
-                ? 'تابع مواعيدك الطبية واستشاراتك ونتائج الفحوصات والفواتير بكل أمان وخصوصية.' 
-                : 'تابع جميع العمليات الطبية والمواعيد والحالات الحرجة والمخزون المباشر بأعلى مستويات الكفاءة والأمان.'}
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
+              {isPatientRole && 'استعرض مواعيدك السريرية، نتائج الفحوصات والتحاليل المخبرية، والوصفات الصيدلانية بكل أمان.'}
+              {isDoctorRole && 'متابعة مباشرة للمرضى المراجعين اليوم، الحالات السريرية المعلقة، والتنبيهات المخبرية الحرجة.'}
+              {isStaffRole && 'تسجيل المرضى الجدد، تثبيت الحجوزات السريعة، تتبع شواغر الأسِرّة، وإصدار الفواتير الفورية.'}
+              {isAdminRole && 'نظرة شاملة على الطاقة الاستيعابية، الأطباء المناوبين، والإشغال السريري لقاعدة البيانات.'}
             </p>
           </div>
 
-          {/* Quick Action Buttons */}
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => openQuickModal('appointment')}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md shadow-sky-600/30 transition-all hover:scale-105"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>حجز موعد جديد</span>
-            </button>
-
-            {userRole !== 'patient' && (
-              <button
-                onClick={() => openQuickModal('patient')}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs transition-all cursor-pointer"
-              >
-                <Users className="w-4 h-4 text-sky-400" />
-                <span>تسجيل مريض جديد</span>
-              </button>
-            )}
+          {/* Quick Date / Time badge */}
+          <div className="flex items-center gap-2 self-start md:self-auto text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/60 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700/50">
+            <Clock className="w-3.5 h-3.5 text-sky-500" />
+            <span className="font-semibold text-slate-700 dark:text-slate-200">
+              {new Date().toLocaleDateString('ar-SY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </span>
           </div>
         </div>
+
+        {/* 4 PROMINENT ACTION CARDS */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+          
+          {/* Action 1 */}
+          <button
+            onClick={() => {
+              if (isDoctorRole) navigate('doctor_portal');
+              else if (isPatientRole) navigate('appointments');
+              else openQuickModal('patient');
+            }}
+            className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 hover:bg-sky-50 dark:hover:bg-sky-950/40 border border-slate-200 dark:border-slate-700/80 hover:border-sky-500/50 text-start flex items-center gap-3 transition-all group cursor-pointer"
+          >
+            <div className="w-9 h-9 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              {isDoctorRole ? <Stethoscope className="w-5 h-5" /> : <Users className="w-5 h-5" />}
+            </div>
+            <div className="min-w-0">
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-100 block truncate">
+                {isDoctorRole ? 'لوحة الفحص السريري' : isPatientRole ? 'حجز موعد كشفية' : 'تسجيل مريض جديد'}
+              </span>
+              <span className="text-[10px] text-slate-400 block truncate">
+                {isDoctorRole ? 'معاينة الحالات' : isPatientRole ? 'اختيار العيادة' : 'إضافة ملف طبي'}
+              </span>
+            </div>
+          </button>
+
+          {/* Action 2 */}
+          <button
+            onClick={() => openQuickModal('appointment')}
+            className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 hover:bg-teal-50 dark:hover:bg-teal-950/40 border border-slate-200 dark:border-slate-700/80 hover:border-teal-500/50 text-start flex items-center gap-3 transition-all group cursor-pointer"
+          >
+            <div className="w-9 h-9 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-100 block truncate">
+                {isDoctorRole ? 'مواعيد عيادتي' : 'حجز موعد ذكي'}
+              </span>
+              <span className="text-[10px] text-slate-400 block truncate">
+                منع تضارب الأوقات
+              </span>
+            </div>
+          </button>
+
+          {/* Action 3 */}
+          <button
+            onClick={() => {
+              if (isPatientRole) navigate('lab');
+              else if (isDoctorRole) navigate('lab');
+              else if (isStaffRole) navigate('beds');
+              else navigate('beds');
+            }}
+            className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 hover:bg-amber-50 dark:hover:bg-amber-950/40 border border-slate-200 dark:border-slate-700/80 hover:border-amber-500/50 text-start flex items-center gap-3 transition-all group cursor-pointer"
+          >
+            <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              {isPatientRole || isDoctorRole ? <FlaskConical className="w-5 h-5" /> : <Bed className="w-5 h-5" />}
+            </div>
+            <div className="min-w-0">
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-100 block truncate">
+                {isPatientRole ? 'نتائج التحاليل والوصفات' : isDoctorRole ? 'طلب فحص ومخبر' : 'شواغر الأسِرّة'}
+              </span>
+              <span className="text-[10px] text-slate-400 block truncate">
+                {isPatientRole ? 'الملف الطبي' : isDoctorRole ? 'مختبر المستشفى' : 'إشغال الأجنحة'}
+              </span>
+            </div>
+          </button>
+
+          {/* Action 4: Emergency SOS */}
+          <button
+            onClick={() => {
+              if (onOpenEmergencyModal) onOpenEmergencyModal();
+              else navigate('beds');
+            }}
+            className="p-3.5 rounded-xl bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 hover:border-rose-500 text-start flex items-center gap-3 transition-all group cursor-pointer"
+          >
+            <div className="w-9 h-9 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <Siren className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-xs font-bold text-rose-700 dark:text-rose-400 block truncate">
+                نداء طوارئ (SOS)
+              </span>
+              <span className="text-[10px] text-rose-500/80 block truncate">
+                استجابة فورية
+              </span>
+            </div>
+          </button>
+
+        </div>
+
       </div>
 
-      {/* 4 Top KPI Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      {/* 2. ROLE-TAILORED 4 KPI CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        {/* KPI 1 */}
-        <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl hover:border-sky-500/50 transition-all group">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-slate-400">
-              {userRole === 'patient' ? 'مواعيدي القادمة' : 'إجمالي المرضى المسجلين'}
+        {/* KPI Card 1 */}
+        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-sky-500/40 transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              {isPatientRole ? 'مواعيدي القادمة' : isDoctorRole ? 'مرضاي بالعيادة اليوم' : 'إجمالي المرضى المسجلين'}
             </span>
-            <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center border border-sky-500/20 group-hover:scale-110 transition-transform">
-              {userRole === 'patient' ? <Calendar className="w-5 h-5" /> : <Users className="w-5 h-5" />}
+            <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+              {isPatientRole ? <Calendar className="w-4 h-4" /> : <Users className="w-4 h-4" />}
             </div>
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-white">
-              {userRole === 'patient' ? `${userAppointments.length} موعد` : `${totalPatients} مريض`}
+            <span className="text-2xl font-black text-slate-900 dark:text-white">
+              {isPatientRole ? `${userAppointments.length} موعد` : isDoctorRole ? `8 مراجعين` : `${totalPatients} مريض`}
             </span>
-            <span className="text-xs text-emerald-400 font-bold flex items-center gap-0.5">
-              {userRole === 'patient' ? 'نشط' : <><TrendingUp className="w-3.5 h-3.5" /> +12% هذا الشهر</>}
+            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-0.5">
+              <TrendingUp className="w-3 h-3" /> نشط
             </span>
           </div>
-          <button onClick={() => navigate(userRole === 'patient' ? 'appointments' : 'patients')} className="mt-3 text-[11px] text-sky-400 font-medium hover:underline flex items-center gap-1">
-            {userRole === 'patient' ? 'استعراض مواعيدي بالكامل &larr;' : 'إدارة الملفات الطبية &larr;'}
+          <button onClick={() => navigate(isPatientRole ? 'appointments' : 'patients')} className="mt-2 text-[11px] text-sky-600 dark:text-sky-400 font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer">
+            {isPatientRole ? 'عرض مواعيدي الكاملة' : 'إدارة ملفات المرضى'} &larr;
           </button>
         </div>
 
-        {/* KPI 2 */}
-        <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl hover:border-blue-500/50 transition-all group">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-slate-400">
-              {userRole === 'patient' ? 'فحوصاتي والتحاليل' : 'مواعيد اليوم والنشطة'}
+        {/* KPI Card 2 */}
+        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-teal-500/40 transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              {isPatientRole ? 'فحوصاتي والتحاليل' : isDoctorRole ? 'المواعيد السريرية المعلقة' : 'مواعيد اليوم النشطة'}
             </span>
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20 group-hover:scale-110 transition-transform">
-              <Pill className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center">
+              <Calendar className="w-4 h-4" />
             </div>
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-white">
-              {userRole === 'patient' ? 'نتائج المخبر والتقارير' : `${todayAppointments.length} موعد`}
+            <span className="text-2xl font-black text-slate-900 dark:text-white">
+              {isPatientRole ? '4 نتائج جاهزة' : isDoctorRole ? `${userAppointments.filter(a => a.status === 'معلق').length} معلق` : `${todayAppointments.length} موعد`}
             </span>
-            <span className="text-xs text-blue-400 font-bold">
-              {userRole === 'patient' ? 'حالة مكتملة' : 'عيادات اليوم'}
+            <span className="text-[11px] text-teal-600 dark:text-teal-400 font-bold">
+              {isPatientRole ? 'مكتملة' : 'اليوم'}
             </span>
           </div>
-          <button onClick={() => navigate(userRole === 'patient' ? 'lab' : 'appointments')} className="mt-3 text-[11px] text-blue-400 font-medium hover:underline flex items-center gap-1">
-            {userRole === 'patient' ? 'استعراض نتائج التحاليل &larr;' : 'جدول المواعيد الكامل &larr;'}
+          <button onClick={() => navigate(isPatientRole ? 'lab' : 'appointments')} className="mt-2 text-[11px] text-teal-600 dark:text-teal-400 font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer">
+            {isPatientRole ? 'استعراض نتائج التحاليل' : 'جدول المواعيد'} &larr;
           </button>
         </div>
 
-        {/* KPI 3 */}
-        <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl hover:border-amber-500/50 transition-all group">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-slate-400">
-              {userRole === 'patient' ? 'فواتيري ومستحقاتي' : 'الفواتير المعلقة للسداد'}
+        {/* KPI Card 3 */}
+        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-amber-500/40 transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              {isPatientRole ? 'الفواتير المستحقة' : isDoctorRole ? 'التنبيهات المخبرية الحرجة' : 'شواغر الأسِرّة الفورية'}
             </span>
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20 group-hover:scale-110 transition-transform">
-              <Receipt className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              {isPatientRole ? <Receipt className="w-4 h-4" /> : isDoctorRole ? <FlaskConical className="w-4 h-4" /> : <Bed className="w-4 h-4" />}
             </div>
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-white">
-              {userRole === 'patient' ? `${patientPendingInvoices.length} فاتورة` : `${pendingInvoices.length} فاتورة`}
+            <span className="text-2xl font-black text-slate-900 dark:text-white">
+              {isPatientRole ? `${patientPendingInvoices.length} فواتير` : isDoctorRole ? '1 تنبيه حرج' : `${availableBeds.length} سرير شاغر`}
             </span>
-            <span className="text-xs text-amber-400 font-bold">
-              {userRole === 'patient' ? 'سداد مباشر عبر شام كاش' : 'بانتظار التحصيل'}
+            <span className="text-[11px] text-amber-600 dark:text-amber-400 font-bold">
+              {isPatientRole ? 'سداد إلكتروني' : isDoctorRole ? 'تتطلب إقراراً' : 'جاهزة للتسكين'}
             </span>
           </div>
-          <button onClick={() => navigate('billing')} className="mt-3 text-[11px] text-amber-400 font-medium hover:underline flex items-center gap-1">
-            {userRole === 'patient' ? 'سداد الفواتير &larr;' : 'إدارة الحسابات والفواتير &larr;'}
+          <button onClick={() => navigate(isPatientRole ? 'billing' : isDoctorRole ? 'doctor_portal' : 'beds')} className="mt-2 text-[11px] text-amber-600 dark:text-amber-400 font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer">
+            {isPatientRole ? 'سداد ومطالبات' : isDoctorRole ? 'فتح لوحة الطبيب' : 'تتبع أجنحة المستشفى'} &larr;
           </button>
         </div>
 
-        {/* KPI 4 */}
-        <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl hover:border-emerald-500/50 transition-all group">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-slate-400">
-              {userRole === 'patient' ? 'الأطباء المتاحون' : 'الأطباء النشطون بالعيادات'}
+        {/* KPI Card 4 */}
+        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-emerald-500/40 transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              {isPatientRole ? 'الأطباء المناوبون' : isDoctorRole ? 'الوصفات المصروفة اليوم' : 'الأطباء المناوبون بالعيادات'}
             </span>
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 group-hover:scale-110 transition-transform">
-              <UserCheck className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              {isDoctorRole ? <Stethoscope className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
             </div>
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-white">{activeDoctors.length} / {doctors.length} طبيب</span>
-            <span className="text-xs text-emerald-400 font-bold">في الدوام اليوم</span>
+            <span className="text-2xl font-black text-slate-900 dark:text-white">
+              {isDoctorRole ? '12 وصفة' : `${activeDoctors.length} / ${doctors.length} طبيب`}
+            </span>
+            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
+              على رأس العمل
+            </span>
           </div>
-          <button onClick={() => navigate('doctors')} className="mt-3 text-[11px] text-emerald-400 font-medium hover:underline flex items-center gap-1">
-            {userRole === 'patient' ? 'استعراض دكتور العيادة &larr;' : 'دليل الأطباء والمناوبات &larr;'}
+          <button onClick={() => navigate(isDoctorRole ? 'lab' : 'doctors')} className="mt-2 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer">
+            {isDoctorRole ? 'أرشيف الوصفات' : 'دليل الأطباء والمناوبات'} &larr;
           </button>
         </div>
 
       </div>
 
-      {/* Critical Low Inventory Stock Alert Red Section (Hidden for patients) */}
-      {userRole !== 'patient' && lowStockItems.length > 0 && (
-        <div className="p-5 rounded-2xl bg-gradient-to-r from-rose-950/80 via-slate-900 to-slate-900 border-2 border-rose-600/60 text-white shadow-xl">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-rose-600 flex items-center justify-center text-white animate-pulse">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
+      {/* 3. SIMPLE & CLEAN CHARTS SECTION */}
+      {!isPatientRole && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          
+          {/* Main Area Flow Chart */}
+          <div className="lg:col-span-2 rounded-2xl bg-white dark:bg-slate-900 p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="font-bold text-sm text-rose-200">تنبيهات نقص المستودع والصيدلية (Low Inventory Alert)</h3>
-                <p className="text-xs text-rose-300/80">توجد أصناف دوائية وصل مخزونها للحد الأدنى الحرج وتتطلب إعادة طلب فورية</p>
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-sky-500" />
+                  <span>مخطط تدفق المراجعين الأسبوعي</span>
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">مقارنة بين مراجعي العيادات وحالات الطوارئ</p>
               </div>
-            </div>
-            <button
-              onClick={() => navigate('inventory')}
-              className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md transition-all flex items-center gap-1"
-            >
-              <span>إرسال طلب توريد</span>
-              <ArrowRight className="w-3.5 h-3.5 rotate-180" />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
-            {lowStockItems.map((item) => (
-              <div key={item.id} className="p-3 rounded-xl bg-slate-900/90 border border-rose-500/40 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-bold text-slate-100">{item.itemName}</p>
-                  <span className="text-[11px] text-rose-400 font-semibold">
-                    المتوقع: {item.quantity} {item.unit} (الحد: {item.minStockAlert})
-                  </span>
-                </div>
-                <span className="px-2 py-1 text-[10px] font-black rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                  نقص حرج
+              <div className="flex items-center gap-3 text-[11px]">
+                <span className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
+                  <span className="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block" />
+                  العيادات
                 </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Interactive Charts Section (Hidden for Patient Role) */}
-      {userRole !== 'patient' && (
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            {/* Chart 1: Appointments Distribution (Pie Chart) */}
-            <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-bold text-sm text-slate-100">توزيع حالة المواعيد</h3>
-                <span className="text-xs text-slate-400">نسبية (%)</span>
-              </div>
-
-              <div className="h-56 relative my-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieChartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={55}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {pieChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {pieChartData.map((item) => (
-                  <div key={item.name} className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/50">
-                    <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: item.color }}></div>
-                    <span className="text-slate-300 font-medium">{item.name}:</span>
-                    <span className="font-bold text-white mr-auto">{item.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Chart 2: Weekly Appointments Bar Chart */}
-            <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl lg:col-span-2">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="font-bold text-sm text-slate-100">إحصائيات المواعيد والطوارئ الأسبوعية</h3>
-                  <p className="text-xs text-slate-400">مقارنة العيادات الخارجية بحالات الطوارئ المباشرة</p>
-                </div>
-                <span className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                  الأسبوع الحالي
-                </span>
-              </div>
-
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={weeklyData}>
-                    <XAxis dataKey="day" stroke="#64748b" fontSize={12} tickLine={false} />
-                    <YAxis stroke="#64748b" fontSize={12} tickLine={false} />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
-                    />
-                    <Bar dataKey="appointments" name="عيادات خارجية" fill="#0284c7" radius={[6, 6, 0, 0]} />
-                    <Bar dataKey="emergency" name="حالات طوارئ" fill="#ef4444" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Chart 3: Monthly Revenue Area Chart */}
-          <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="font-bold text-sm text-slate-100">نمو الإيرادات والتحصيل المالي (بالليرة السورية)</h3>
-                <p className="text-xs text-slate-400">شامل المبيعات الدوائية، الاستشارات، والتغطيات التأمينية</p>
-              </div>
-              <div className="text-right">
-                <span className="text-xs text-slate-400 block">إجمالي إيرادات الشهر الحالي</span>
-                <span className="text-lg font-extrabold text-emerald-400 font-mono">
-                  {totalRevenue > 0 ? totalRevenue.toLocaleString('ar-SY') : '280,000'} ل.س
+                <span className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
+                  الطوارئ
                 </span>
               </div>
             </div>
 
-            <div className="h-64">
+            <div className="h-48 w-full mt-2">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueData}>
+                <AreaChart data={weeklyFlowData} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    <linearGradient id="colorVisits" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.35}/>
+                      <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0.0}/>
+                    </linearGradient>
+                    <linearGradient id="colorEmerg" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.35}/>
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0.0}/>
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="month" stroke="#64748b" fontSize={12} tickLine={false} />
-                  <YAxis stroke="#64748b" fontSize={12} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" opacity={0.15} />
+                  <XAxis dataKey="day" stroke="#94a3b8" fontSize={10} tickLine={false} />
+                  <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
-                    formatter={(val: any) => [`${Number(val).toLocaleString('ar-SY')} ل.س`, 'الإيراد']}
+                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '10px', color: '#fff', fontSize: '11px', textAlign: 'right' }}
                   />
-                  <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+                  <Area type="monotone" dataKey="visits" name="مراجعو العيادات" stroke="#0ea5e9" strokeWidth={2} fillOpacity={1} fill="url(#colorVisits)" />
+                  <Area type="monotone" dataKey="emergency" name="حالات الطوارئ" stroke="#ef4444" strokeWidth={2} fillOpacity={1} fill="url(#colorEmerg)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
-        </>
+
+          {/* Appointments Status Donut */}
+          <div className="rounded-2xl bg-white dark:bg-slate-900 p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+            <div>
+              <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-1">
+                <BarChart3 className="w-4 h-4 text-teal-500" />
+                <span>حالات المواعيد المسجلة</span>
+              </h3>
+              <p className="text-[11px] text-slate-400">توزيع الحجوزات الحالية</p>
+            </div>
+
+            <div className="h-36 relative my-1">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={aptStatusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={42}
+                    outerRadius={58}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {aptStatusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '10px', color: '#fff', fontSize: '11px', textAlign: 'right' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-[10px] text-slate-400 font-medium">الإجمالي</span>
+                <span className="text-base font-black text-slate-800 dark:text-white">{appointments.length}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-1.5 text-[11px] pt-2 border-t border-slate-100 dark:border-slate-800">
+              {aptStatusData.map((item) => (
+                <div key={item.name} className="flex flex-col items-center p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                  <span className="text-slate-500 text-[10px] flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                    {item.name}
+                  </span>
+                  <span className="font-bold text-slate-800 dark:text-white mt-0.5">{item.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
       )}
 
-      {/* Outpatient Specialists & Clinic Hours Showcase */}
-      <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-sky-400" />
-              <h3 className="font-bold text-base text-slate-100">دليل أطباء العيادات الخارجية ومواعيد الاستشارات</h3>
+      {/* 4. CRITICAL INVENTORY ALERT (Only shown when there are real stock shortages, for staff/admin) */}
+      {!isPatientRole && lowStockItems.length > 0 && (
+        <div className="p-4 rounded-2xl bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-slate-800 dark:text-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-rose-500 text-white flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-4 h-4" />
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              استعراض مباشر للأطباء الاختصاصيين، مواعيد العيادات الصباحية والمسائية، والحجز المباشر للمعاينة
-            </p>
+            <div>
+              <h4 className="text-xs font-bold text-rose-800 dark:text-rose-300">
+                تنبيه نقص في الصيدلية ({lowStockItems.length} أصناف وصلت للحد الحرج)
+              </h4>
+              <p className="text-[11px] text-rose-600 dark:text-rose-400">
+                الأصناف تشمل: {lowStockItems.map(i => i.itemName).slice(0, 3).join(' ، ')}
+              </p>
+            </div>
           </div>
+
           <button
-            onClick={() => navigate('doctors')}
-            className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 font-bold text-xs flex items-center gap-1.5 transition-all w-fit cursor-pointer"
+            onClick={() => navigate('inventory')}
+            className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shrink-0 self-start sm:self-auto transition-all cursor-pointer"
           >
-            <span>عرض دليل الأطباء والورديات الكامل</span>
-            <ArrowRight className="w-3.5 h-3.5 rotate-180" />
+            إرسال طلب توريد للصيدلية
           </button>
         </div>
+      )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
-          {doctors.slice(0, 4).map((doc) => (
-            <div
-              key={doc.id}
-              className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-sky-500/40 transition-all flex flex-col justify-between group"
-            >
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-xl bg-sky-600/20 text-sky-400 flex items-center justify-center font-bold text-xs border border-sky-500/30">
-                      {doc.name.charAt(3) || 'د'}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-xs text-white group-hover:text-sky-400 transition-colors">{doc.name}</h4>
-                      <span className="text-[11px] text-sky-400 font-medium block">{doc.specialty}</span>
-                    </div>
-                  </div>
-                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                    doc.status === 'active' ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
-                  }`}>
-                    {doc.status === 'active' ? 'متاح بالعيادة' : 'إجازة'}
-                  </span>
-                </div>
-
-                <div className="space-y-1 text-[11px] text-slate-300 mt-2.5 pt-2 border-t border-slate-800/80">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">العيادة:</span>
-                    <span className="font-semibold text-slate-200">{doc.roomNumber}</span>
-                  </div>
-                  {doc.clinicHours && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-400">أوقات المعاينة:</span>
-                      <span className="font-semibold text-sky-300">{doc.clinicHours}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">الكشفية:</span>
-                    <span className="font-bold text-emerald-400 font-mono">{doc.consultingFee.toLocaleString('ar-SY')} ل.س</span>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={() => {
-                  openQuickModal('appointment');
-                }}
-                className="mt-3 w-full py-1.5 rounded-lg bg-sky-600/20 hover:bg-sky-600 text-sky-300 hover:text-white font-bold text-xs border border-sky-500/30 transition-all flex items-center justify-center gap-1 cursor-pointer"
-              >
-                <Calendar className="w-3.5 h-3.5" />
-                <span>حجز موعد بالعيادة</span>
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Dynamic Activity & Visits Table */}
-      <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-4">
-        {/* Table Header & Quick Action */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+      {/* 4. ACTIVE APPOINTMENTS & SCHEDULING TABLE */}
+      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        
+        {/* Table Header Controls */}
+        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-bold text-base text-slate-100">
-                {userRole === 'patient' ? 'جدول مواعيدي الطبية الشخصية' : 'جدول الزيارات الحالية المباشرة بالمستشفى'}
-              </h3>
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-sky-500/20 text-sky-300 border border-sky-500/30">
-                مباشر ({filteredAppointments.length} من {userAppointments.length})
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 mt-1">
-              {userRole === 'patient' 
-                ? 'متابعة مواعيدك وحجز استشارات طبيبك الخاص بكل سهولة' 
-                : 'إدارة تفاعلية ديناميكية لمواعيد اليوم، تعديل الحالات، والتصفية الفورية حسب المريض أو الطبيب'}
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-sky-500" />
+              <span>{isPatientRole ? 'مواعيدي الطبية القادمة' : 'جدول المواعيد والعيادات اليومية'}</span>
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              متابعة الحالات المؤكدة والمعلقة مع فحص منع التضارب الفوري
             </p>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => openQuickModal('appointment')}
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+          {/* Search and Filters */}
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="ابحث بالمريض أو الطبيب..."
+                value={tableSearch}
+                onChange={(e) => setTableSearch(e.target.value)}
+                className="w-44 sm:w-56 pl-3 pr-8 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-sky-500"
+              />
+            </div>
+
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-2.5 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-sky-500 font-medium"
             >
-              <Plus className="w-4 h-4" />
-              <span>حجز موعد جديد</span>
-            </button>
-            <button
-              onClick={() => navigate('appointments')}
-              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
-            >
-              <span>{userRole === 'patient' ? 'عرض كافة مواعيدي' : 'إدارة كافة المواعيد'}</span>
-              <ArrowRight className="w-3.5 h-3.5 rotate-180" />
-            </button>
+              <option value="all">كافة الحالات</option>
+              <option value="مؤكد">مؤكد</option>
+              <option value="معلق">معلق</option>
+              <option value="مكتمل">مكتمل</option>
+            </select>
           </div>
         </div>
 
-        {/* Dynamic Toolbar: Search & Status Filters */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
-          {/* Status Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-            {[
-              { id: 'all', label: 'الكل', count: userAppointments.length },
-              { id: 'مؤكد', label: 'مؤكد', count: userAppointments.filter(a => a.status === 'مؤكد').length },
-              { id: 'معلق', label: 'معلق', count: userAppointments.filter(a => a.status === 'معلق').length },
-              { id: 'مكتمل', label: 'مكتمل', count: userAppointments.filter(a => a.status === 'مكتمل').length },
-              { id: 'ملغى', label: 'ملغى', count: userAppointments.filter(a => a.status === 'ملغى').length },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setStatusFilter(tab.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
-                  statusFilter === tab.id
-                    ? 'bg-sky-600 text-white shadow-sm'
-                    : 'bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                }`}
-              >
-                <span>{tab.label}</span>
-                <span className={`px-1.5 py-0.2 text-[10px] rounded-md ${
-                  statusFilter === tab.id ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
-                }`}>
-                  {tab.count}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {/* Table Search Input */}
-          <div className="relative min-w-[200px]">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              value={tableSearch}
-              onChange={(e) => setTableSearch(e.target.value)}
-              placeholder={userRole === 'patient' ? 'تصفية مواعيدي حسب الطبيب أو العيادة...' : 'تصفية حسب المريض أو الطبيب...'}
-              className="w-full bg-slate-900 text-slate-200 pl-3 pr-8 py-1.5 rounded-lg text-xs border border-slate-800 focus:outline-none focus:border-sky-500/60 placeholder:text-slate-500"
-            />
-            {tableSearch && (
-              <button
-                onClick={() => setTableSearch('')}
-                className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-              >
-                <XCircle className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Dynamic Table Body */}
-        <div className="overflow-x-auto rounded-xl border border-slate-800">
-          <table className="w-full text-right text-xs text-slate-300">
-            <thead className="bg-slate-950/80 text-slate-400 font-bold border-b border-slate-800">
+        {/* Table Body */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-right text-xs">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800">
               <tr>
-                {userRole !== 'patient' && <th className="p-3">اسم المريض</th>}
-                <th className="p-3">الطبيب المعالج</th>
-                <th className="p-3">القسم / العيادة</th>
-                <th className="p-3">الوقت والتاريخ</th>
-                <th className="p-3">النوع</th>
-                <th className="p-3">حالة الموعد</th>
-                {userRole !== 'patient' && <th className="p-3 text-center">إجراءات</th>}
+                <th className="p-3.5">المريض</th>
+                <th className="p-3.5">الطبيب والاختصاص</th>
+                <th className="p-3.5">التاريخ والوقت</th>
+                <th className="p-3.5">نوع الكشفية</th>
+                <th className="p-3.5">الحالة</th>
+                <th className="p-3.5 text-center">الإجراء</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 bg-slate-900/40">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filteredAppointments.length === 0 ? (
                 <tr>
-                  <td colSpan={userRole === 'patient' ? 5 : 7} className="p-8 text-center text-slate-400">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <Calendar className="w-8 h-8 text-slate-600 stroke-[1.5]" />
-                      <p className="font-bold text-sm text-slate-300">لا توجد مواعيد مطابقة للتصفية الحالية</p>
-                      <p className="text-xs text-slate-500">حاول تغيير التصفية أو البحث باسم الطبيب</p>
-                      {(statusFilter !== 'all' || tableSearch !== '') && (
-                        <button
-                          onClick={() => { setStatusFilter('all'); setTableSearch(''); }}
-                          className="mt-2 text-xs text-sky-400 hover:underline font-bold"
-                        >
-                          إعادة ضبط الفلاتر
-                        </button>
-                      )}
+                  <td colSpan={6} className="p-8 text-center">
+                    <div className="max-w-xs mx-auto space-y-2">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
+                        <Calendar className="w-5 h-5" />
+                      </div>
+                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">لا توجد مواعيد مطابقة حالياً</p>
+                      <p className="text-[11px] text-slate-400">يمكنك حجز موعد جديد بالضغط على الزر أدناه</p>
+                      <button
+                        onClick={() => openQuickModal('appointment')}
+                        className="mt-2 px-3 py-1.5 rounded-xl bg-sky-600 text-white font-bold text-xs hover:bg-sky-500 transition-all inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>جدولة موعد جديد</span>
+                      </button>
                     </div>
                   </td>
                 </tr>
               ) : (
-                filteredAppointments.map((apt) => (
-                  <tr key={apt.id} className="hover:bg-slate-800/40 transition-colors group">
-                    {userRole !== 'patient' && (
-                      <td className="p-3">
-                        <div className="font-bold text-white group-hover:text-sky-300 transition-colors">
-                          {apt.patientName}
+                filteredAppointments.slice(0, 6).map((apt) => (
+                  <tr key={apt.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="p-3.5 font-bold text-slate-900 dark:text-slate-100">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 font-bold text-[11px] flex items-center justify-center shrink-0">
+                          {apt.patientName.charAt(0)}
                         </div>
-                        {apt.notes && (
-                          <span className="text-[10px] text-slate-500 block truncate max-w-[180px]">
-                            {apt.notes}
-                          </span>
-                        )}
-                      </td>
-                    )}
-                    <td className="p-3 font-semibold text-slate-200">{apt.doctorName}</td>
-                    <td className="p-3 text-slate-400">{apt.specialty}</td>
-                    <td className="p-3 text-slate-300 whitespace-nowrap">
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-sky-400" />
-                        <span>{apt.time}</span>
-                        <span className="text-slate-500 text-[10px]">({apt.date || todayStr})</span>
+                        <span>{apt.patientName}</span>
                       </div>
                     </td>
-                    <td className="p-3">
-                      <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 font-medium text-[11px]">
+                    <td className="p-3.5">
+                      <div className="text-slate-800 dark:text-slate-200 font-medium">{apt.doctorName}</div>
+                      <span className="text-[10px] text-slate-400">{apt.specialty}</span>
+                    </td>
+                    <td className="p-3.5 font-mono text-slate-600 dark:text-slate-300">
+                      {apt.date} • {apt.time}
+                    </td>
+                    <td className="p-3.5">
+                      <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px]">
                         {apt.type}
                       </span>
                     </td>
-                    <td className="p-3">
-                      {userRole === 'patient' ? (
-                        <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap inline-block ${
-                          apt.status === 'مؤكد' ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40' :
-                          apt.status === 'مكتمل' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' :
-                          apt.status === 'معلق' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' :
-                          'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                        }`}>
-                          {apt.status}
-                        </span>
-                      ) : (
-                        /* Live Dynamic Status Switcher Dropdown */
-                        <div className="relative inline-block">
-                          <select
-                            value={apt.status}
-                            onChange={(e) => onUpdateAppointmentStatus && onUpdateAppointmentStatus(apt.id, e.target.value)}
-                            className={`appearance-none text-[11px] font-bold px-3 py-1 pr-3 pl-7 rounded-lg border focus:outline-none cursor-pointer transition-all ${
-                              apt.status === 'مؤكد'
-                                ? 'bg-sky-500/20 text-sky-300 border-sky-500/40 hover:bg-sky-500/30'
-                                : apt.status === 'مكتمل'
-                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
-                                : apt.status === 'معلق'
-                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30'
-                                : 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
-                            }`}
-                          >
-                            <option value="مؤكد" className="bg-slate-900 text-sky-300">مؤكد</option>
-                            <option value="معلق" className="bg-slate-900 text-amber-300">معلق</option>
-                            <option value="مكتمل" className="bg-slate-900 text-emerald-300">مكتمل</option>
-                            <option value="ملغى" className="bg-slate-900 text-rose-300">ملغى</option>
-                          </select>
-                          <ChevronDown className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-70" />
-                        </div>
-                      )}
+                    <td className="p-3.5">
+                      <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${
+                        apt.status === 'مؤكد'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
+                          : apt.status === 'معلق'
+                            ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
+                      }`}>
+                        {apt.status}
+                      </span>
                     </td>
-                    {userRole !== 'patient' && (
-                      <td className="p-3 text-center">
+                    <td className="p-3.5 text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        {onUpdateAppointmentStatus && apt.status === 'معلق' && (
+                          <button
+                            onClick={() => onUpdateAppointmentStatus(apt.id, 'مؤكد')}
+                            className="p-1 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60"
+                            title="تأكيد الموعد"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         <button
-                          onClick={() => onDeleteAppointment && onDeleteAppointment(apt.id)}
-                          title="إلغاء الموعد"
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          onClick={() => navigate('appointments')}
+                          className="text-[11px] text-sky-600 dark:text-sky-400 hover:underline font-semibold"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          التفاصيل
                         </button>
-                      </td>
-                    )}
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
         </div>
+
+        {filteredAppointments.length > 6 && (
+          <div className="p-3 border-t border-slate-100 dark:border-slate-800 text-center bg-slate-50/50 dark:bg-slate-950/30">
+            <button
+              onClick={() => navigate('appointments')}
+              className="text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline inline-flex items-center gap-1"
+            >
+              <span>عرض كافة المواعيد المتبقية ({filteredAppointments.length - 6})</span>
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
       </div>
 
     </div>
   );
 };
+
+

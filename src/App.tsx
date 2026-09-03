@@ -30,8 +30,8 @@ import { DoctorClinicalDashboard } from './components/DoctorClinicalDashboard';
 import { LandingAndAuthScreen } from './components/LandingAndAuthScreen';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { EmergencyModal } from './components/EmergencyModal';
-import { HospitalPulseBar } from './components/HospitalPulseBar';
 import { DatabaseManagerModal } from './components/DatabaseManagerModal';
+import { QuickCommandPalette } from './components/QuickCommandPalette';
 
 function getStoredData<T>(key: string, defaultValue: T): T {
   try {
@@ -82,9 +82,22 @@ export function App() {
     }
   }, [theme]);
 
-  // Emergency SOS State
+  // Emergency SOS and Command Palette State
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
   const [showDatabaseManager, setShowDatabaseManager] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+
+  // Global Keyboard Shortcut: Ctrl+K / Cmd+K to trigger Command Palette
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setShowCommandPalette((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
   const [activeSOS, setActiveSOS] = useState<{
     id: string;
     patientName: string;
@@ -530,25 +543,10 @@ export function App() {
         criticalLabCount={criticalLabCount}
         onOpenEmergencyModal={() => setShowEmergencyModal(true)}
         onOpenDatabaseManager={() => setShowDatabaseManager(true)}
+        onOpenCommandPalette={() => setShowCommandPalette(true)}
         hasActiveSOS={!!activeSOS}
         isMobileMenuOpen={isMobileMenuOpen}
         onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-      />
-
-      {/* Hospital Live Pulse Bar */}
-      <HospitalPulseBar
-        patients={patients}
-        doctors={doctors}
-        appointments={appointments}
-        inventory={inventory}
-        labResults={labResults}
-        beds={beds}
-        activeSOS={!!activeSOS}
-        onOpenEmergency={() => setShowEmergencyModal(true)}
-        onNavigate={(tab) => {
-          setActiveTab(tab);
-          setIsMobileMenuOpen(false);
-        }}
       />
 
       {/* Main Body with Sidebar + Content Area */}
@@ -581,9 +579,11 @@ export function App() {
               appointments={appointments}
               inventory={inventory}
               invoices={invoices}
+              beds={beds}
               onNavigate={setActiveTab}
               onUpdateAppointmentStatus={handleUpdateAppointmentStatus}
               onDeleteAppointment={handleDeleteAppointment}
+              onOpenEmergencyModal={() => setShowEmergencyModal(true)}
             />
           )}
 
@@ -749,6 +749,21 @@ export function App() {
         onRestoreData={handleRestoreDatabase}
         onResetToDefault={handleResetDatabaseToDefault}
         onShowToast={showToast}
+      />
+
+      {/* Global Quick Command Palette (Ctrl + K) */}
+      <QuickCommandPalette
+        isOpen={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+        onNavigate={(tab) => {
+          setActiveTab(tab);
+          setShowCommandPalette(false);
+        }}
+        patients={patients}
+        doctors={doctors}
+        appointments={appointments}
+        inventory={inventory}
+        userRole={userRole}
       />
 
     </div>

@@ -52,6 +52,7 @@ interface HeaderProps {
   onSearchChange?: (query: string) => void;
   onOpenEmergencyModal?: () => void;
   onOpenDatabaseManager?: () => void;
+  onOpenCommandPalette?: () => void;
   hasActiveSOS?: boolean;
   isMobileMenuOpen?: boolean;
   onToggleMobileMenu?: () => void;
@@ -74,6 +75,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSearchChange,
   onOpenEmergencyModal,
   onOpenDatabaseManager,
+  onOpenCommandPalette,
   hasActiveSOS = false,
   isMobileMenuOpen = false,
   onToggleMobileMenu,
@@ -238,22 +240,37 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Global Instant Search Bar */}
-        {onSearchChange && (
-          <div className="hidden lg:flex items-center relative max-w-xs w-full">
-            <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="بحث شامل في النظام..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-4 pr-10 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-500 transition-all"
-            />
-          </div>
-        )}
+        {/* Global Instant Search Bar & Command Palette Trigger */}
+        <div className="hidden lg:flex items-center gap-2 max-w-xs w-full">
+          {onOpenCommandPalette ? (
+            <button
+              onClick={onOpenCommandPalette}
+              className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-950/80 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs text-slate-400 transition-all text-start"
+            >
+              <div className="flex items-center gap-2">
+                <Search className="w-3.5 h-3.5 text-sky-400" />
+                <span className="text-slate-400">بحث سريع أو أمر...</span>
+              </div>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                Ctrl K
+              </span>
+            </button>
+          ) : onSearchChange && (
+            <div className="relative w-full">
+              <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="بحث شامل في النظام..."
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className="w-full pl-4 pr-10 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-500 transition-all"
+              />
+            </div>
+          )}
+        </div>
 
         {/* Header Right Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3">
           
           {/* Live Dynamic Date & Ticking Clock Display */}
           <div className="hidden sm:flex flex-col items-end px-3.5 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800 text-slate-200 shadow-inner">

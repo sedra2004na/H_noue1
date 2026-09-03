@@ -323,20 +323,6 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
                   <span className="text-lg font-bold text-slate-300">{totalArchived}</span>
                 </div>
               </div>
-
-              {/* Data Engine Specifications */}
-              <div className="bg-slate-800/30 p-4 rounded-xl border border-slate-700/40 space-y-2">
-                <h4 className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                  <Server className="w-4 h-4 text-emerald-400" />
-                  مواصفات وتوافقية قاعدة البيانات
-                </h4>
-                <div className="text-xs text-slate-400 grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                  <div>• المحرك: <span className="text-slate-200">REST API & Browser Local Storage / SQL Layer</span></div>
-                  <div>• التشفير: <span className="text-slate-200">SSL / TLS 256-bit Enforced</span></div>
-                  <div>• فحص النزاهة: <span className="text-emerald-400 font-semibold">نشط تلقائياً عند كل إدخال</span></div>
-                  <div>• التوافق الطبي: <span className="text-slate-200">معايير ملف المريض الإلكتروني (EMR)</span></div>
-                </div>
-              </div>
             </div>
           )}
 

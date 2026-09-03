@@ -13,9 +13,6 @@ import {
   Stethoscope, 
   X,
   Trash2,
-  ChevronDown,
-  ChevronUp,
-  FileText,
   AlertTriangle,
   ShieldAlert
 } from 'lucide-react';
@@ -28,7 +25,7 @@ interface AppointmentsSectionProps {
   onAddAppointment: (apt: Partial<Appointment>) => void;
   onUpdateStatus: (id: string, status: Appointment['status']) => void;
   onDeleteAppointment?: (id: string) => void;
-  searchQuery: string;
+  searchQuery?: string;
 }
 
 export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
@@ -46,7 +43,6 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [expandedAptId, setExpandedAptId] = useState<string | null>(null);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
   // Form state & Validation
@@ -56,7 +52,6 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
     date: new Date().toISOString().split('T')[0],
     time: '11:00',
     type: 'كشف' as Appointment['type'],
-    notes: '',
   });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [fieldWarnings, setFieldWarnings] = useState<Record<string, string>>({});
@@ -68,7 +63,6 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
       !query ||
       apt.doctorName.toLowerCase().includes(query) ||
       apt.specialty.toLowerCase().includes(query) ||
-      (apt.notes && apt.notes.toLowerCase().includes(query)) ||
       (userRole !== 'patient' && apt.patientName.toLowerCase().includes(query));
 
     const matchesStatus = selectedStatus === 'all' || apt.status === selectedStatus;
@@ -124,7 +118,6 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
       date: formData.date,
       time: formData.time,
       type: formData.type,
-      notes: formData.notes || 'حجز عبر لوحة تحكم المستشفى',
       fee: finalFee,
     });
 
@@ -135,7 +128,6 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
       date: new Date().toISOString().split('T')[0],
       time: '11:00',
       type: 'كشف',
-      notes: '',
     });
     setBookingError(null);
     setFieldErrors({});
@@ -208,7 +200,6 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
           <table className="w-full text-right text-xs text-slate-300">
             <thead className="bg-slate-800 text-slate-400 font-bold border-b border-slate-700 whitespace-nowrap">
               <tr>
-                <th className="p-4 w-10 text-center">#</th>
                 {userRole !== 'patient' && <th className="p-4">المريض المراجع</th>}
                 <th className="p-4">الطبيب المعالج</th>
                 <th className="p-4">التخصص والعيادة</th>
@@ -222,144 +213,104 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
             <tbody className="divide-y divide-slate-800">
               {filteredAppointments.length === 0 ? (
                 <tr>
-                  <td colSpan={userRole === 'patient' ? 7 : 9} className="p-8 text-center text-slate-400 whitespace-nowrap">
+                  <td colSpan={userRole === 'patient' ? 6 : 8} className="p-8 text-center text-slate-400 whitespace-nowrap">
                     {userRole === 'patient' 
                       ? 'لا توجد مواعيد حجز جديدة مسجلة باسمك حالياً. يمكنك الضغط على "حجز موعد جديد" لطلب موعد جديد.' 
                       : 'لا توجد مواعيد تطابق شروط التصفية الحالية.'}
                   </td>
                 </tr>
               ) : (
-                filteredAppointments.map((apt) => {
-                  const isExpanded = expandedAptId === apt.id;
-                  return (
-                    <React.Fragment key={apt.id}>
-                      <tr 
-                        onClick={() => setExpandedAptId(isExpanded ? null : apt.id)}
-                        className={`hover:bg-slate-800/60 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-800/40 border-l-4 border-sky-500' : ''}`}
-                      >
-                        <td className="p-4 text-center text-slate-400">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedAptId(isExpanded ? null : apt.id);
-                            }}
-                            className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-sky-400 transition-colors"
-                          >
-                            {isExpanded ? <ChevronUp className="w-4 h-4 text-sky-400" /> : <ChevronDown className="w-4 h-4" />}
-                          </button>
-                        </td>
+                filteredAppointments.map((apt) => (
+                  <tr 
+                    key={apt.id}
+                    className="hover:bg-slate-800/60 transition-colors"
+                  >
+                    {userRole !== 'patient' && (
+                      <td className="p-4 font-bold text-white whitespace-nowrap">
+                        {apt.patientName}
+                      </td>
+                    )}
 
-                        {userRole !== 'patient' && (
-                          <td className="p-4 font-bold text-white whitespace-nowrap">
-                            {apt.patientName}
-                          </td>
-                        )}
+                    <td className="p-4 text-slate-200 font-medium whitespace-nowrap">
+                      {apt.doctorName}
+                    </td>
 
-                        <td className="p-4 text-slate-200 font-medium whitespace-nowrap">
-                          {apt.doctorName}
-                        </td>
+                    <td className="p-4 text-slate-400 whitespace-nowrap">
+                      {apt.specialty}
+                    </td>
 
-                        <td className="p-4 text-slate-400 whitespace-nowrap">
-                          {apt.specialty}
-                        </td>
+                    <td className="p-4 font-mono text-sky-400 whitespace-nowrap">
+                      {apt.time} ({apt.date})
+                    </td>
 
-                        <td className="p-4 font-mono text-sky-400 whitespace-nowrap">
-                          {apt.time} ({apt.date})
-                        </td>
+                    <td className="p-4 whitespace-nowrap">
+                      <span className={`px-2.5 py-1 rounded-md font-bold text-[11px] whitespace-nowrap inline-block ${
+                        apt.type === 'طوارئ' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' :
+                        apt.type === 'استشارة' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
+                        'bg-slate-800 text-slate-300'
+                      }`}>
+                        {apt.type}
+                      </span>
+                    </td>
 
-                        <td className="p-4 whitespace-nowrap">
-                          <span className={`px-2.5 py-1 rounded-md font-bold text-[11px] whitespace-nowrap inline-block ${
-                            apt.type === 'طوارئ' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' :
-                            apt.type === 'استشارة' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
-                            'bg-slate-800 text-slate-300'
-                          }`}>
-                            {apt.type}
-                          </span>
-                        </td>
+                    <td className="p-4 font-bold text-emerald-400 font-mono whitespace-nowrap">
+                      {apt.fee ? Number(apt.fee).toLocaleString('ar-SY') : '25,000'} ل.س
+                    </td>
 
-                        <td className="p-4 font-bold text-emerald-400 font-mono whitespace-nowrap">
-                          {apt.fee ? Number(apt.fee).toLocaleString('ar-SY') : '25,000'} ل.س
-                        </td>
+                    <td className="p-4 whitespace-nowrap">
+                      <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold whitespace-nowrap inline-block ${
+                        apt.status === 'مؤكد' ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' :
+                        apt.status === 'مكتمل' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                        apt.status === 'معلق' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                        'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                      }`}>
+                        {apt.status}
+                      </span>
+                    </td>
 
-                        <td className="p-4 whitespace-nowrap">
-                          <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold whitespace-nowrap inline-block ${
-                            apt.status === 'مؤكد' ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' :
-                            apt.status === 'مكتمل' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
-                            apt.status === 'معلق' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
-                            'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                          }`}>
-                            {apt.status}
-                          </span>
-                        </td>
-
-                        {userRole !== 'patient' && (
-                          <td className="p-4 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-center gap-1.5">
-                              {canManageStatus && apt.status !== 'مكتمل' && (
-                                <button
-                                  onClick={() => onUpdateStatus(apt.id, 'مكتمل')}
-                                  className="px-2.5 py-1 rounded-md bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600 hover:text-white border border-emerald-500/30 font-bold transition-all cursor-pointer"
-                                  title="تحديد كمكتمل"
-                                >
-                                  إكمال
-                                </button>
-                              )}
-                              {canManageStatus && apt.status !== 'مؤكد' && apt.status !== 'مكتمل' && (
-                                <button
-                                  onClick={() => onUpdateStatus(apt.id, 'مؤكد')}
-                                  className="px-2.5 py-1 rounded-md bg-sky-600/20 text-sky-300 hover:bg-sky-600 hover:text-white border border-sky-500/30 font-bold transition-all cursor-pointer"
-                                >
-                                  تأكيد
-                                </button>
-                              )}
-                              {canManageStatus && apt.status !== 'ملغى' && (
-                                <button
-                                  onClick={() => onUpdateStatus(apt.id, 'ملغى')}
-                                  className="px-2.5 py-1 rounded-md bg-rose-600/20 text-rose-300 hover:bg-rose-600 hover:text-white border border-rose-500/30 font-bold transition-all cursor-pointer"
-                                >
-                                  إلغاء
-                                </button>
-                              )}
-                              {canDeleteApt && onDeleteAppointment && (
-                                <button
-                                  type="button"
-                                  onClick={() => onDeleteAppointment(apt.id)}
-                                  className="p-1 rounded-md bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 transition-all cursor-pointer"
-                                  title="حذف الموعد نهائياً"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-
-                      {/* Expandable Appointment Details Drawer */}
-                      {isExpanded && (
-                        <tr className="bg-slate-950/70 border-b-2 border-sky-500/30">
-                          <td colSpan={userRole === 'patient' ? 7 : 9} className="p-4">
-                            <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-                              <div className="space-y-1">
-                                <span className="font-bold text-sky-400 flex items-center gap-1.5">
-                                  <FileText className="w-3.5 h-3.5" />
-                                  <span>تفاصيل الموعد والشكوى السريرية:</span>
-                                </span>
-                                <p className="text-slate-200">
-                                  {apt.notes || 'لا توجد ملاحظات إضافية مسجلة لهذا الحجز.'}
-                                </p>
-                              </div>
-                              <div className="text-left font-mono text-[11px] text-slate-400 self-end sm:self-auto">
-                                <span>معرف الحجز: {apt.id}</span>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })
+                    {userRole !== 'patient' && (
+                      <td className="p-4 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1.5">
+                          {canManageStatus && apt.status !== 'مكتمل' && (
+                            <button
+                              onClick={() => onUpdateStatus(apt.id, 'مكتمل')}
+                              className="px-2.5 py-1 rounded-md bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600 hover:text-white border border-emerald-500/30 font-bold transition-all cursor-pointer"
+                              title="تحديد كمكتمل"
+                            >
+                              إكمال
+                            </button>
+                          )}
+                          {canManageStatus && apt.status !== 'مؤكد' && apt.status !== 'مكتمل' && (
+                            <button
+                              onClick={() => onUpdateStatus(apt.id, 'مؤكد')}
+                              className="px-2.5 py-1 rounded-md bg-sky-600/20 text-sky-300 hover:bg-sky-600 hover:text-white border border-sky-500/30 font-bold transition-all cursor-pointer"
+                            >
+                              تأكيد
+                            </button>
+                          )}
+                          {canManageStatus && apt.status !== 'ملغى' && (
+                            <button
+                              onClick={() => onUpdateStatus(apt.id, 'ملغى')}
+                              className="px-2.5 py-1 rounded-md bg-rose-600/20 text-rose-300 hover:bg-rose-600 hover:text-white border border-rose-500/30 font-bold transition-all cursor-pointer"
+                            >
+                              إلغاء
+                            </button>
+                          )}
+                          {canDeleteApt && onDeleteAppointment && (
+                            <button
+                              type="button"
+                              onClick={() => onDeleteAppointment(apt.id)}
+                              className="p-1 rounded-md bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 transition-all cursor-pointer"
+                              title="حذف الموعد نهائياً"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -520,17 +471,6 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
                   <option value="عملية جراحية">إجراء / عملية جراحية صغرى أو كبرى</option>
                   <option value="طوارئ عاجلة">طوارئ وإسعاف عاجل</option>
                 </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">ملاحظات أو أعراض مبدئية</label>
-                <textarea
-                  rows={2}
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="وصف الأعراض الشائعة..."
-                  className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500"
-                />
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
