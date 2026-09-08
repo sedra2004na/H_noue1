@@ -220,7 +220,7 @@ export const Header: React.FC<HeaderProps> = ({
           {onToggleMobileMenu && (
             <button
               onClick={onToggleMobileMenu}
-              className="md:hidden p-1.5 sm:p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer shrink-0"
+              className="lg:hidden p-1.5 sm:p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer shrink-0"
               aria-label="القائمة"
               title="القائمة الرئيسية"
             >
@@ -454,17 +454,14 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Authenticated Role Badge */}
+          {/* Authenticated Role Badge (Hidden on mobile for clean breathing space, shown on sm+) */}
           <div 
-            className={`flex items-center gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl border text-xs font-semibold ${getRoleColor(currentRole)} shadow-inner shrink-0`}
+            className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl border text-xs font-semibold ${getRoleColor(currentRole)} shadow-inner shrink-0`}
             title={getRoleLabel(currentRole)}
           >
             <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
             <div className="text-right">
-              <span className="hidden sm:block font-bold whitespace-nowrap">{getRoleLabel(currentRole)}</span>
-              <span className="block sm:hidden font-bold text-[10px] whitespace-nowrap">
-                {currentRole === 'admin' ? 'مدير' : currentRole === 'doctor' ? 'طبيب' : currentRole === 'staff' ? 'موظف' : 'مريض'}
-              </span>
+              <span className="font-bold whitespace-nowrap">{getRoleLabel(currentRole)}</span>
             </div>
           </div>
 

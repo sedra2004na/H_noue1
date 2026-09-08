@@ -19,7 +19,9 @@ import {
   HeartPulse,
   Activity,
   ClipboardList,
-  Database
+  Database,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -38,6 +40,8 @@ interface SidebarProps {
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
   onOpenDatabaseManager?: () => void;
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -53,6 +57,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isMobileOpen = false,
   onCloseMobile,
   onOpenDatabaseManager,
+  theme,
+  onToggleTheme,
 }) => {
   const effectiveLowStock = lowStockCount || inventoryAlertsCount;
 
@@ -224,8 +230,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </nav>
 
-      {/* Sidebar Footer with Database Manager & Logout */}
+      {/* Sidebar Footer with Database Manager, Theme Switcher & Logout */}
       <div className="p-3 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/40 text-xs mt-auto space-y-2">
+        {onToggleTheme && (
+          <button
+            onClick={onToggleTheme}
+            className="w-full flex items-center justify-between py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 transition-all text-xs font-bold cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+              <span>{theme === 'dark' ? 'النمط النهاري (Light)' : 'النمط الليلي (Dark)'}</span>
+            </div>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono text-slate-600 dark:text-slate-300">
+              {theme === 'dark' ? 'نهاري' : 'ليلي'}
+            </span>
+          </button>
+        )}
+
         {onOpenDatabaseManager && (userRole === 'admin' || userRole === 'staff') && (
           <button
             onClick={() => {

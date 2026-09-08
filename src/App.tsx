@@ -567,6 +567,8 @@ export function App() {
           isMobileOpen={isMobileMenuOpen}
           onCloseMobile={() => setIsMobileMenuOpen(false)}
           onOpenDatabaseManager={() => setShowDatabaseManager(true)}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
 
         {/* Main Content Workspace */}

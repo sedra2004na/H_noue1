@@ -19,8 +19,8 @@ export const HospitalLogo: React.FC<HospitalLogoProps> = ({
   };
 
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
-      <div className={`${sizeMap[size]} relative flex items-center justify-center rounded-2xl bg-slate-950 border border-sky-500/40 shadow-xl shadow-sky-500/25 overflow-hidden group p-1.5`}>
+    <div className={`flex items-center ${showText ? 'gap-3' : ''} ${className}`}>
+      <div className={`${sizeMap[size]} relative flex items-center justify-center ${size === 'sm' ? 'rounded-xl p-1' : 'rounded-2xl p-1.5'} bg-slate-950 border border-sky-500/40 shadow-md shadow-sky-500/20 overflow-hidden group`}>
         {/* Glow backdrop */}
         <div className="absolute inset-0 bg-gradient-to-tr from-sky-600/40 via-blue-600/30 to-cyan-400/40 blur-md group-hover:opacity-100 transition-opacity" />
         
