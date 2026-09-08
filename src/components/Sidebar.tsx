@@ -18,7 +18,8 @@ import {
   Bed as BedIcon, 
   HeartPulse,
   Activity,
-  ClipboardList
+  ClipboardList,
+  Database
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -36,6 +37,7 @@ interface SidebarProps {
   abnormalFlagsCount?: number;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
+  onOpenDatabaseManager?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -50,6 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   abnormalFlagsCount = 0,
   isMobileOpen = false,
   onCloseMobile,
+  onOpenDatabaseManager,
 }) => {
   const effectiveLowStock = lowStockCount || inventoryAlertsCount;
 
@@ -221,9 +224,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </nav>
 
-      {/* Hospital System Logout Button */}
-      {onLogout && (
-        <div className="p-3 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/40 text-xs mt-auto">
+      {/* Sidebar Footer with Database Manager & Logout */}
+      <div className="p-3 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/40 text-xs mt-auto space-y-2">
+        {onOpenDatabaseManager && (userRole === 'admin' || userRole === 'staff') && (
+          <button
+            onClick={() => {
+              if (onCloseMobile) onCloseMobile();
+              onOpenDatabaseManager();
+            }}
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-600/50 text-emerald-300 hover:text-white transition-all text-xs font-bold cursor-pointer"
+          >
+            <Database className="w-4 h-4 text-emerald-400" />
+            <span>إدارة وتدقيق قاعدة البيانات</span>
+          </button>
+        )}
+
+        {onLogout && (
           <button
             onClick={() => {
               if (onCloseMobile) onCloseMobile();
@@ -234,8 +250,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <LogOut className="w-4 h-4 text-rose-500" />
             <span>تسجيل الخروج</span>
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </>
   );
 
@@ -263,6 +279,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 <X className="w-5 h-5" />
               </button>
+            </div>
+
+            {/* Mobile User Role Banner */}
+            <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800/80 bg-slate-100/50 dark:bg-slate-950/60 flex items-center gap-2.5">
+              <div className={`p-2 rounded-xl border ${currentRoleInfo.color} shrink-0`}>
+                <currentRoleInfo.icon className="w-4 h-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{currentRoleInfo.title}</p>
+                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 mt-0.5">
+                  {currentRoleInfo.badge}
+                </span>
+              </div>
             </div>
 
             {renderNavContent()}

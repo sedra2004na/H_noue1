@@ -213,14 +213,14 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/90 text-white shadow-2xl">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-2 sm:gap-4">
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-1.5 sm:gap-4">
         
         {/* Brand & Mobile Toggle */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0">
           {onToggleMobileMenu && (
             <button
               onClick={onToggleMobileMenu}
-              className="md:hidden p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
+              className="md:hidden p-1.5 sm:p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer shrink-0"
               aria-label="القائمة"
               title="القائمة الرئيسية"
             >
@@ -228,15 +228,18 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          <HospitalLogo size="md" />
-          <div>
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <h1 className="text-base sm:text-xl font-black text-white tracking-wide">مشفى الرحمة</h1>
-              <span className="hidden xs:inline-block px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-extrabold rounded-md bg-sky-500/20 text-sky-300 border border-sky-500/30">
+          <div className="shrink-0">
+            <HospitalLogo size="sm" className="sm:hidden" />
+            <HospitalLogo size="md" className="hidden sm:flex" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1 sm:gap-2">
+              <h1 className="text-sm sm:text-lg lg:text-xl font-black text-white tracking-wide whitespace-nowrap">مشفى الرحمة</h1>
+              <span className="hidden md:inline-block px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-extrabold rounded-md bg-sky-500/20 text-sky-300 border border-sky-500/30 whitespace-nowrap">
                 Al-Rahma Hospital
               </span>
             </div>
-            <p className="text-xs text-slate-400 hidden sm:block">Al-Rahma Medical Center - المركز الطبي التخصصي الموحد</p>
+            <p className="text-xs text-slate-400 hidden lg:block truncate">Al-Rahma Medical Center - المركز الطبي التخصصي الموحد</p>
           </div>
         </div>
 
@@ -270,15 +273,15 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Header Right Actions */}
-        <div className="flex items-center gap-2.5 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 lg:gap-3 shrink-0">
           
-          {/* Live Dynamic Date & Ticking Clock Display */}
-          <div className="hidden sm:flex flex-col items-end px-3.5 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800 text-slate-200 shadow-inner">
+          {/* Live Dynamic Date & Ticking Clock Display (Visible on lg+) */}
+          <div className="hidden lg:flex flex-col items-end px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-800 text-slate-200 shadow-inner">
             <div className="flex items-center gap-1.5 text-xs font-bold text-sky-400">
               <Clock className="w-3.5 h-3.5 text-sky-400 animate-spin" style={{ animationDuration: '10s' }} />
               <span className="font-mono tracking-wider">{formattedTime}</span>
             </div>
-            <span className="text-[11px] text-slate-400 font-medium">{formattedDate}</span>
+            <span className="text-[10px] text-slate-400 font-medium">{formattedDate}</span>
           </div>
 
           {/* Theme Toggle (Light / Dark Mode) */}
@@ -286,27 +289,27 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={onToggleTheme}
-              className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-amber-300 hover:text-amber-200 transition-all shadow-inner cursor-pointer group"
+              className="p-2 sm:p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-amber-300 hover:text-amber-200 transition-all shadow-inner cursor-pointer group shrink-0"
               title={theme === 'dark' ? 'التحويل إلى النمط الفاتح (Clinical Light)' : 'التحويل إلى النمط الليلي (Dark Luxury)'}
             >
               {theme === 'dark' ? (
-                <Sun className="w-5 h-5 text-amber-400 group-hover:rotate-90 transition-transform duration-300" />
+                <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 group-hover:rotate-90 transition-transform duration-300" />
               ) : (
-                <Moon className="w-5 h-5 text-indigo-400 group-hover:-rotate-12 transition-transform duration-300" />
+                <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400 group-hover:-rotate-12 transition-transform duration-300" />
               )}
             </button>
           )}
 
-          {/* Database Health & Validation Manager Button */}
+          {/* Database Health & Validation Manager Button - visible on sm+ screens */}
           {onOpenDatabaseManager && (userRole === 'admin' || userRole === 'staff') && (
             <button
               type="button"
               onClick={onOpenDatabaseManager}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-600/50 text-emerald-300 hover:text-white transition-all shadow-md text-xs font-bold cursor-pointer"
+              className="hidden sm:flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-600/50 text-emerald-300 hover:text-white transition-all shadow-md text-xs font-bold cursor-pointer shrink-0"
               title="فحص وتدقيق سلامة قاعدة البيانات والنسخ الاحتياطي"
             >
               <Database className="w-4 h-4 text-emerald-400" />
-              <span className="hidden lg:inline">إدارة وتدقيق البيانات</span>
+              <span className="hidden lg:inline">إدارة البيانات</span>
             </button>
           )}
 
@@ -314,7 +317,7 @@ export const Header: React.FC<HeaderProps> = ({
           {onOpenEmergencyModal && (
             <button
               onClick={onOpenEmergencyModal}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-extrabold transition-all shadow-lg cursor-pointer ${
+              className={`flex items-center gap-1 sm:gap-2 p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-extrabold transition-all shadow-lg cursor-pointer shrink-0 ${
                 hasActiveSOS 
                   ? 'bg-rose-600 text-white animate-bounce ring-4 ring-rose-500/50 shadow-rose-600/50' 
                   : 'bg-rose-950/80 hover:bg-rose-900 text-rose-200 border border-rose-700/60 shadow-rose-950/40'
@@ -328,21 +331,21 @@ export const Header: React.FC<HeaderProps> = ({
           )}
 
           {/* Interactive Notification Bell */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               onClick={() => {
                 setShowNotifications(!showNotifications);
                 triggerBellShake();
               }}
               onMouseEnter={triggerBellShake}
-              className={`relative p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition-all shadow-inner ${
+              className={`relative p-2 sm:p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition-all shadow-inner ${
                 isRinging || unreadNotificationsCount > 0 ? 'ring-2 ring-rose-500/40' : ''
               }`}
               title="التنبيهات العاجلة"
             >
-              <Bell className={`w-5 h-5 transition-transform ${isRinging ? 'animate-[bounce_0.5s_infinite] text-amber-400' : ''}`} />
+              <Bell className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform ${isRinging ? 'animate-[bounce_0.5s_infinite] text-amber-400' : ''}`} />
               {unreadNotificationsCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 bg-rose-600 text-white text-[11px] font-black rounded-full flex items-center justify-center border-2 border-slate-900 animate-pulse shadow-md">
+                <span className="absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5 min-w-4 h-4 sm:min-w-5 sm:h-5 px-1 bg-rose-600 text-white text-[9px] sm:text-[11px] font-black rounded-full flex items-center justify-center border-2 border-slate-900 animate-pulse shadow-md">
                   {unreadNotificationsCount}
                 </span>
               )}
@@ -350,7 +353,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Interactive Notifications Drawer */}
             {showNotifications && (
-              <div className="absolute left-0 mt-3 w-80 sm:w-96 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl z-50 overflow-hidden text-right">
+              <div className="fixed inset-x-3 top-18 sm:static sm:inset-auto sm:absolute sm:left-0 sm:mt-3 w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl z-50 overflow-hidden text-right">
                 <div className="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-5 h-5 text-amber-400 animate-bounce" />
@@ -452,10 +455,16 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Authenticated Role Badge */}
-          <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold ${getRoleColor(currentRole)} shadow-inner`}>
-            <ShieldCheck className="w-4 h-4" />
+          <div 
+            className={`flex items-center gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl border text-xs font-semibold ${getRoleColor(currentRole)} shadow-inner shrink-0`}
+            title={getRoleLabel(currentRole)}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
             <div className="text-right">
-              <span className="block font-bold">{getRoleLabel(currentRole)}</span>
+              <span className="hidden sm:block font-bold whitespace-nowrap">{getRoleLabel(currentRole)}</span>
+              <span className="block sm:hidden font-bold text-[10px] whitespace-nowrap">
+                {currentRole === 'admin' ? 'مدير' : currentRole === 'doctor' ? 'طبيب' : currentRole === 'staff' ? 'موظف' : 'مريض'}
+              </span>
             </div>
           </div>
 

@@ -566,6 +566,7 @@ export function App() {
           abnormalFlagsCount={abnormalFlagsCount}
           isMobileOpen={isMobileMenuOpen}
           onCloseMobile={() => setIsMobileMenuOpen(false)}
+          onOpenDatabaseManager={() => setShowDatabaseManager(true)}
         />
 
         {/* Main Content Workspace */}
