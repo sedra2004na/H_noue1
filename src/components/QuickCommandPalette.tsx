@@ -9,7 +9,6 @@ import {
   Pill, 
   FlaskConical, 
   Receipt, 
-  Archive, 
   LayoutDashboard, 
   ArrowRight, 
   Siren,
@@ -70,7 +69,6 @@ export const QuickCommandPalette: React.FC<QuickCommandPaletteProps> = ({
     { id: 'inventory', title: 'الصيدلية والمستودع الطبي', subtitle: 'مخزون الأدوية وتنبيهات النقص', icon: Pill, tab: 'inventory' },
     { id: 'lab', title: 'التحاليل والوصفات الطبية', subtitle: 'نتائج المختبر وصرف الأدوية', icon: FlaskConical, tab: 'lab' },
     { id: 'billing', title: 'المحاسبة والفوترة والتأمين', subtitle: 'المطالبات المالية والتقارير', icon: Receipt, tab: 'billing' },
-    { id: 'archive', title: 'أرشيف السجلات القديمة', subtitle: 'قاعدة بيانات التخزين البارد', icon: Archive, tab: 'archive' },
   ].filter(c => !normalizedQuery || c.title.toLowerCase().includes(normalizedQuery) || c.subtitle.toLowerCase().includes(normalizedQuery));
 
   // Matching Patients

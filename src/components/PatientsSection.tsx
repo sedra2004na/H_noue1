@@ -31,7 +31,6 @@ import {
   ChevronLeft,
   Thermometer,
   Weight,
-  Archive,
   AlertTriangle
 } from 'lucide-react';
 
@@ -51,7 +50,6 @@ interface PatientsSectionProps {
   onAddPatient: (patient: Partial<Patient>) => void;
   onUpdatePatient: (id: string, data: Partial<Patient>) => void;
   onDeletePatient?: (id: string) => void;
-  onArchivePatient?: (patientId: string) => void;
   searchQuery: string;
   onShowToast?: (msg: string, type?: 'success' | 'info' | 'warning' | 'error' | 'download') => void;
 }
@@ -63,7 +61,6 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
   onAddPatient,
   onUpdatePatient,
   onDeletePatient,
-  onArchivePatient,
   searchQuery,
   onShowToast
 }) => {
@@ -527,21 +524,6 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
                               <FileCheck2 className="w-3.5 h-3.5 text-emerald-400" />
                               <span>{dischargeSummaries[patient.id] ? 'تقرير ✓' : 'تقرير خروج'}</span>
                             </button>
-
-                            {onArchivePatient && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (confirm(`هل ترغب في نقل ملف المريض (${patient.fullName}) إلى الأرشيف والتخزين البارد؟`)) {
-                                    onArchivePatient(patient.id);
-                                  }
-                                }}
-                                className="p-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 transition-all cursor-pointer"
-                                title="نقل الملف للأرشيف والتخزين البارد (Cold Storage)"
-                              >
-                                <Archive className="w-3.5 h-3.5" />
-                              </button>
-                            )}
 
                             {onDeletePatient && (
                               <button

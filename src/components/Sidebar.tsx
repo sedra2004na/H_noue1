@@ -16,7 +16,6 @@ import {
   UserCircle2, 
   X, 
   Bed as BedIcon, 
-  Archive, 
   HeartPulse,
   Activity,
   ClipboardList
@@ -116,12 +115,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: 'patients',
           label: 'سجلات وملفات المرضى',
           icon: Users,
-          badge: null,
-        },
-        {
-          id: 'archive',
-          label: 'أرشيف السجلات (Cold DB)',
-          icon: Archive,
           badge: null,
         },
       ]

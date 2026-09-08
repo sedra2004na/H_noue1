@@ -627,7 +627,6 @@ export function App() {
               onAddPatient={handleAddPatient}
               onUpdatePatient={handleUpdatePatient}
               onDeletePatient={handleDeletePatient}
-              onArchivePatient={handleArchivePatient}
               searchQuery={searchQuery}
               onShowToast={showToast}
             />
