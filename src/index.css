@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   font-family: 'Cairo', 'Tajawal', system-ui, -apple-system, sans-serif;
@@ -24,104 +25,233 @@
   background: rgba(148, 163, 184, 0.5);
 }
 
+/* Dark mode root base */
+.dark,
+.dark body {
+  background-color: #020617 !important;
+  color: #f8fafc !important;
+}
+
 /* =========================================================================
-   PURE CLINICAL LIGHT THEME (Clean, Airy, High-Contrast Medical Design)
+   PURE CLINICAL & COMFORTABLE LIGHT THEME
+   (Soft Eye-Friendly Medical Palette - Crisp, Calming, Clear)
    ========================================================================= */
+
 .theme-light,
 .theme-light body,
-body {
-  background-color: #f8fafc !important;
-  color: #0f172a !important;
+.theme-light .min-h-screen {
+  background-color: #f8fafc !important; /* Soft Slate 50 - soothing on eyes */
+  color: #0f172a !important;            /* High-contrast Slate 900 for readability */
 }
 
-/* Main Background and Containers */
+/* 1. Main Backgrounds, Cards, Panels & Windows */
 .theme-light .bg-slate-950,
-.theme-light .bg-slate-950\/95,
-.theme-light .bg-slate-950\/90,
-.theme-light .bg-slate-950\/80,
-.theme-light .bg-slate-950\/60,
-.theme-light .bg-slate-950\/40 {
-  background-color: #f1f5f9 !important;
-  color: #0f172a !important;
-  border-color: #e2e8f0 !important;
-}
-
+.theme-light [class*="bg-slate-950"],
 .theme-light .bg-slate-900,
-.theme-light .bg-slate-900\/95,
-.theme-light .bg-slate-900\/90,
-.theme-light .bg-slate-900\/80,
-.theme-light .bg-slate-900\/70 {
+.theme-light [class*="bg-slate-900"] {
   background-color: #ffffff !important;
   color: #0f172a !important;
   border-color: #e2e8f0 !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04) !important;
 }
 
-/* Sub-containers, table cells, secondary cards */
+/* 2. Sub-containers, Secondary Cards, Stat Chips, Nested Boxes */
 .theme-light .bg-slate-800,
-.theme-light .bg-slate-800\/90,
-.theme-light .bg-slate-800\/80,
-.theme-light .bg-slate-800\/70,
-.theme-light .bg-slate-800\/60,
-.theme-light .bg-slate-800\/50,
-.theme-light .bg-slate-800\/40 {
+.theme-light [class*="bg-slate-800"] {
   background-color: #f8fafc !important;
   color: #1e293b !important;
   border-color: #e2e8f0 !important;
 }
 
-.theme-light .hover\:bg-slate-800\/50:hover,
-.theme-light .hover\:bg-slate-800\/60:hover,
-.theme-light .hover\:bg-slate-800\/80:hover,
-.theme-light .hover\:bg-slate-800:hover,
-.theme-light .hover\:bg-slate-900:hover {
-  background-color: #e2e8f0 !important;
+/* Hover States for Cards & Lists */
+.theme-light [class*="hover:bg-slate-800"]:hover,
+.theme-light [class*="hover:bg-slate-900"]:hover,
+.theme-light [class*="hover:bg-slate-950"]:hover {
+  background-color: #f1f5f9 !important;
 }
 
-/* Borders */
-.theme-light .border-slate-800,
-.theme-light .border-slate-700,
-.theme-light .border-slate-700\/80,
-.theme-light .border-slate-700\/70,
-.theme-light .border-slate-700\/60,
-.theme-light .border-slate-800\/90,
-.theme-light .border-slate-800\/80 {
+/* 3. Borders & Dividers */
+.theme-light [class*="border-slate-700"],
+.theme-light [class*="border-slate-800"],
+.theme-light [class*="border-slate-900"],
+.theme-light [class*="border-slate-950"] {
   border-color: #e2e8f0 !important;
 }
 
-.theme-light .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
-.theme-light .divide-slate-700 > :not([hidden]) ~ :not([hidden]) {
+.theme-light [class*="divide-slate-700"] > :not([hidden]) ~ :not([hidden]),
+.theme-light [class*="divide-slate-800"] > :not([hidden]) ~ :not([hidden]) {
   border-color: #e2e8f0 !important;
 }
 
-/* Typography Overrides for Light Mode */
-.theme-light h1, 
-.theme-light h2, 
-.theme-light h3, 
+/* 4. Soft Medical Tinted Badges & Status Panels (Soothing & Harmonious) */
+
+/* Rose / Emergency / Critical / High-Alert */
+.theme-light [class*="bg-rose-950"],
+.theme-light [class*="bg-rose-900"],
+.theme-light [class*="bg-rose-500/10"],
+.theme-light [class*="bg-rose-500/20"] {
+  background-color: #fff1f2 !important;
+  border-color: #fecdd3 !important;
+  color: #be123c !important;
+}
+.theme-light [class*="border-rose-700"],
+.theme-light [class*="border-rose-800"],
+.theme-light [class*="border-rose-900"] {
+  border-color: #fecdd3 !important;
+}
+
+/* Emerald / Success / Available Beds / Active Staff */
+.theme-light [class*="bg-emerald-950"],
+.theme-light [class*="bg-emerald-900"],
+.theme-light [class*="bg-emerald-500/10"],
+.theme-light [class*="bg-emerald-500/20"] {
+  background-color: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #047857 !important;
+}
+.theme-light [class*="border-emerald-700"],
+.theme-light [class*="border-emerald-800"],
+.theme-light [class*="border-emerald-900"] {
+  border-color: #a7f3d0 !important;
+}
+
+/* Sky / Info / Scheduled / Doctors / Primary Clinic */
+.theme-light [class*="bg-sky-950"],
+.theme-light [class*="bg-sky-900"],
+.theme-light [class*="bg-sky-500/10"],
+.theme-light [class*="bg-sky-500/20"] {
+  background-color: #f0f9ff !important;
+  border-color: #bae6fd !important;
+  color: #0369a1 !important;
+}
+.theme-light [class*="border-sky-700"],
+.theme-light [class*="border-sky-800"],
+.theme-light [class*="border-sky-900"] {
+  border-color: #bae6fd !important;
+}
+
+/* Amber / Warning / Pending / Low Stock Alerts */
+.theme-light [class*="bg-amber-950"],
+.theme-light [class*="bg-amber-900"],
+.theme-light [class*="bg-amber-500/10"],
+.theme-light [class*="bg-amber-500/20"] {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #b45309 !important;
+}
+.theme-light [class*="border-amber-700"],
+.theme-light [class*="border-amber-800"],
+.theme-light [class*="border-amber-900"] {
+  border-color: #fde68a !important;
+}
+
+/* Purple / Intensive Care / Specialty Clinics */
+.theme-light [class*="bg-purple-950"],
+.theme-light [class*="bg-purple-900"],
+.theme-light [class*="bg-purple-500/10"],
+.theme-light [class*="bg-purple-500/20"] {
+  background-color: #faf5ff !important;
+  border-color: #e9d5ff !important;
+  color: #7e22ce !important;
+}
+.theme-light [class*="border-purple-700"],
+.theme-light [class*="border-purple-800"],
+.theme-light [class*="border-purple-900"] {
+  border-color: #e9d5ff !important;
+}
+
+/* Teal / Patient Care / Nursing */
+.theme-light [class*="bg-teal-950"],
+.theme-light [class*="bg-teal-900"],
+.theme-light [class*="bg-teal-500/10"],
+.theme-light [class*="bg-teal-500/20"] {
+  background-color: #f0fdfa !important;
+  border-color: #99f6e4 !important;
+  color: #0f766e !important;
+}
+.theme-light [class*="border-teal-700"],
+.theme-light [class*="border-teal-800"],
+.theme-light [class*="border-teal-900"] {
+  border-color: #99f6e4 !important;
+}
+
+/* Indigo / Analytics & Hospital Operations */
+.theme-light [class*="bg-indigo-950"],
+.theme-light [class*="bg-indigo-900"],
+.theme-light [class*="bg-indigo-500/10"],
+.theme-light [class*="bg-indigo-500/20"] {
+  background-color: #eef2ff !important;
+  border-color: #c7d2fe !important;
+  color: #4338ca !important;
+}
+.theme-light [class*="border-indigo-700"],
+.theme-light [class*="border-indigo-800"],
+.theme-light [class*="border-indigo-900"] {
+  border-color: #c7d2fe !important;
+}
+
+/* 5. Typography Hierarchy for Light Mode */
+.theme-light h1,
+.theme-light h2,
+.theme-light h3,
 .theme-light h4,
 .theme-light h5,
 .theme-light h6 {
   color: #0f172a !important;
 }
 
+.theme-light .text-slate-900,
+.theme-light [class*="text-slate-900"],
+.theme-light .text-slate-800,
+.theme-light [class*="text-slate-800"] {
+  color: #0f172a !important;
+}
+
 .theme-light .text-slate-100,
-.theme-light .text-slate-200 {
+.theme-light .text-slate-200,
+.theme-light [class*="text-slate-100"],
+.theme-light [class*="text-slate-200"] {
   color: #1e293b !important;
 }
 
-.theme-light .text-slate-300 {
+.theme-light .text-slate-300,
+.theme-light [class*="text-slate-300"] {
   color: #334155 !important;
 }
 
-.theme-light .text-slate-400 {
+.theme-light .text-slate-400,
+.theme-light [class*="text-slate-400"] {
+  color: #475569 !important;
+}
+
+.theme-light .text-slate-500,
+.theme-light [class*="text-slate-500"] {
   color: #64748b !important;
 }
 
-.theme-light .text-slate-500 {
-  color: #94a3b8 !important;
+/* Light Mode: White and light texts turn dark on white surfaces */
+.theme-light .text-white,
+.theme-light [class*="text-white"],
+.theme-light .dark\:text-white,
+.theme-light [class*="dark:text-white"],
+.theme-light .dark\:text-slate-100,
+.theme-light [class*="dark:text-slate-100"],
+.theme-light .dark\:text-slate-200,
+.theme-light [class*="dark:text-slate-200"] {
+  color: #0f172a !important;
 }
 
-/* Medical Accent Typography in Light Mode (High Contrast & Clear) */
+.theme-light .dark\:text-slate-300,
+.theme-light [class*="dark:text-slate-300"] {
+  color: #334155 !important;
+}
+
+.theme-light .dark\:text-slate-400,
+.theme-light [class*="dark:text-slate-400"] {
+  color: #64748b !important;
+}
+
+/* Light Mode Accent Text Colors (Calibrated for AA Accessibility Contrast) */
 .theme-light .text-sky-400,
 .theme-light .text-sky-300 {
   color: #0284c7 !important;
@@ -162,78 +292,85 @@ body {
   color: #2563eb !important;
 }
 
-/* =========================================================================
-   BUTTONS AND SOLID ACCENT PROTECTION (Pure White Text on Solid Buttons)
-   ========================================================================= */
-.theme-light .text-white {
-  color: #0f172a;
-}
-
-/* Ensure solid colored buttons and tags always have pure white text and icons */
+/* 6. Solid Action Buttons - Preserve Pure Crisp White Text & Icons */
 .theme-light .bg-sky-600,
+.theme-light .bg-sky-700,
 .theme-light .bg-sky-500,
-.theme-light .bg-blue-600,
-.theme-light .bg-emerald-600,
 .theme-light .bg-rose-600,
-.theme-light .bg-rose-500,
+.theme-light .bg-rose-700,
+.theme-light .bg-emerald-600,
+.theme-light .bg-emerald-700,
+.theme-light .bg-blue-600,
 .theme-light .bg-teal-600,
 .theme-light .bg-indigo-600,
 .theme-light .bg-purple-600,
-.theme-light .bg-red-600 {
+.theme-light .bg-amber-600 {
   color: #ffffff !important;
 }
 
 .theme-light .bg-sky-600 *,
+.theme-light .bg-sky-700 *,
 .theme-light .bg-sky-500 *,
-.theme-light .bg-blue-600 *,
-.theme-light .bg-emerald-600 *,
 .theme-light .bg-rose-600 *,
-.theme-light .bg-rose-500 *,
+.theme-light .bg-rose-700 *,
+.theme-light .bg-emerald-600 *,
+.theme-light .bg-emerald-700 *,
+.theme-light .bg-blue-600 *,
 .theme-light .bg-teal-600 *,
 .theme-light .bg-indigo-600 *,
 .theme-light .bg-purple-600 *,
-.theme-light .bg-red-600 *,
+.theme-light .bg-amber-600 *,
 .theme-light button.bg-sky-600,
-.theme-light button.bg-sky-500,
-.theme-light button.bg-emerald-600,
 .theme-light button.bg-rose-600,
-.theme-light button.bg-rose-500 {
+.theme-light button.bg-emerald-600 {
   color: #ffffff !important;
 }
 
-/* =========================================================================
-   HEADER & NAVIGATION IN LIGHT MODE
-   ========================================================================= */
+/* 7. Header Navigation in Light Mode */
 .theme-light header {
   background-color: #ffffff !important;
   border-bottom: 1px solid #e2e8f0 !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04) !important;
 }
 
-.theme-light header .text-white {
+.theme-light header h1 {
   color: #0f172a !important;
 }
 
 .theme-light header .bg-slate-950,
-.theme-light header .bg-slate-950\/80 {
+.theme-light header [class*="bg-slate-950"] {
   background-color: #f8fafc !important;
   border-color: #e2e8f0 !important;
   color: #0f172a !important;
 }
 
-.theme-light header .bg-slate-900 {
+.theme-light header .bg-slate-900,
+.theme-light header [class*="bg-slate-900"] {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
 }
 
-/* Sidebar in Light Mode */
+.theme-light .divide-slate-800 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #f1f5f9 !important;
+}
+
+.theme-light .hover\:bg-slate-800\/60:hover {
+  background-color: #f8fafc !important;
+}
+
+/* 8. Sidebar in Light Mode */
 .theme-light aside {
   background-color: #ffffff !important;
   border-left: 1px solid #e2e8f0 !important;
   box-shadow: -1px 0 3px 0 rgba(0, 0, 0, 0.02) !important;
 }
 
-.theme-light aside .text-white {
+.theme-light aside button:not(.bg-sky-600) {
+  color: #334155 !important;
+}
+
+.theme-light aside button:not(.bg-sky-600):hover {
+  background-color: #f1f5f9 !important;
   color: #0f172a !important;
 }
 
@@ -241,20 +378,17 @@ body {
   background-color: #0284c7 !important;
   color: #ffffff !important;
 }
-
 .theme-light aside button.bg-sky-600 * {
   color: #ffffff !important;
 }
 
-/* =========================================================================
-   INPUTS, DROPDOWNS & FORM CONTROLS
-   ========================================================================= */
+/* 9. Form Inputs, Selects & Textareas */
 .theme-light input,
 .theme-light select,
 .theme-light textarea {
   background-color: #ffffff !important;
   color: #0f172a !important;
-  border-color: #cbd5e1 !important;
+  border: 1px solid #cbd5e1 !important;
 }
 
 .theme-light input::placeholder,
@@ -266,12 +400,11 @@ body {
 .theme-light select:focus,
 .theme-light textarea:focus {
   border-color: #0284c7 !important;
-  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15) !important;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
+  outline: none !important;
 }
 
-/* =========================================================================
-   TABLES IN LIGHT MODE
-   ========================================================================= */
+/* 10. Tables in Light Mode */
 .theme-light thead,
 .theme-light thead tr,
 .theme-light table thead {
@@ -286,6 +419,7 @@ body {
 
 .theme-light tbody tr {
   border-bottom-color: #f1f5f9 !important;
+  background-color: #ffffff !important;
 }
 
 .theme-light tbody tr:hover {
@@ -296,9 +430,9 @@ body {
   color: #1e293b !important;
 }
 
-/* =========================================================================
-   MODAL DIALOGS & BACKDROPS
-   ========================================================================= */
+/* 11. Modals, Drawers & Overlays */
+.theme-light [class*="fixed"][class*="inset-0"][class*="bg-slate-950"],
+.theme-light [class*="fixed"][class*="inset-0"][class*="bg-black"],
 .theme-light .fixed.inset-0.bg-slate-950\/80,
 .theme-light .fixed.inset-0.bg-slate-950\/90,
 .theme-light .fixed.inset-0.bg-black\/80 {
@@ -306,62 +440,32 @@ body {
   backdrop-filter: blur(4px) !important;
 }
 
-/* =========================================================================
-   PASTEL MEDICAL BADGES & TINTS (Harmonious & Soothing)
-   ========================================================================= */
-.theme-light .bg-sky-500\/10,
-.theme-light .bg-sky-500\/20,
-.theme-light .bg-sky-950\/40,
-.theme-light .bg-sky-950\/60 {
-  background-color: #f0f9ff !important;
-  border-color: #bae6fd !important;
-  color: #0369a1 !important;
+.theme-light .fixed .bg-slate-900,
+.theme-light .fixed [class*="bg-slate-900"],
+.theme-light .fixed .bg-slate-950,
+.theme-light .fixed [class*="bg-slate-950"] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
 }
 
-.theme-light .bg-emerald-500\/10,
-.theme-light .bg-emerald-500\/20,
-.theme-light .bg-emerald-950\/40,
-.theme-light .bg-emerald-950\/60 {
-  background-color: #ecfdf5 !important;
-  border-color: #a7f3d0 !important;
-  color: #047857 !important;
+/* 12. Recharts Data Visualization in Light Mode */
+.theme-light .recharts-default-tooltip {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08) !important;
+  color: #0f172a !important;
 }
 
-.theme-light .bg-amber-500\/10,
-.theme-light .bg-amber-500\/20,
-.theme-light .bg-amber-950\/40,
-.theme-light .bg-amber-950\/60 {
-  background-color: #fffbeb !important;
-  border-color: #fde68a !important;
-  color: #b45309 !important;
+.theme-light .recharts-tooltip-item,
+.theme-light .recharts-tooltip-label {
+  color: #0f172a !important;
 }
 
-.theme-light .bg-rose-500\/10,
-.theme-light .bg-rose-500\/20,
-.theme-light .bg-rose-950\/40,
-.theme-light .bg-rose-950\/60,
-.theme-light .bg-rose-950\/80 {
-  background-color: #fff1f2 !important;
-  border-color: #fecdd3 !important;
-  color: #be123c !important;
-}
-
-.theme-light .bg-purple-500\/10,
-.theme-light .bg-purple-500\/20,
-.theme-light .bg-purple-950\/40,
-.theme-light .bg-purple-950\/60 {
-  background-color: #faf5ff !important;
-  border-color: #e9d5ff !important;
-  color: #7e22ce !important;
-}
-
-.theme-light .bg-teal-500\/10,
-.theme-light .bg-teal-500\/20,
-.theme-light .bg-teal-950\/40,
-.theme-light .bg-teal-950\/60 {
-  background-color: #f0fdfa !important;
-  border-color: #99f6e4 !important;
-  color: #0f766e !important;
+.theme-light .recharts-cartesian-grid line {
+  stroke: #e2e8f0 !important;
 }
 
 /* =========================================================================

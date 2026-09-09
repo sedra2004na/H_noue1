@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, UserRole, InventoryItem, LabResult } from '../types';
 import { HospitalLogo } from './HospitalLogo';
 import { 
@@ -84,6 +84,22 @@ export const Header: React.FC<HeaderProps> = ({
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [isRinging, setIsRinging] = useState(false);
+  const notificationsRef = useRef<HTMLDivElement>(null);
+
+  // Close notifications dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+    if (showNotifications) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNotifications]);
 
   // Dynamic notifications state
   const [notificationsList, setNotificationsList] = useState<NotificationItem[]>([
@@ -331,17 +347,17 @@ export const Header: React.FC<HeaderProps> = ({
           )}
 
           {/* Interactive Notification Bell */}
-          <div className="relative shrink-0">
+          <div className="relative shrink-0" ref={notificationsRef}>
             <button
               onClick={() => {
                 setShowNotifications(!showNotifications);
                 triggerBellShake();
               }}
               onMouseEnter={triggerBellShake}
-              className={`relative p-2 sm:p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition-all shadow-inner ${
+              className={`relative p-2 sm:p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition-all shadow-inner cursor-pointer ${
                 isRinging || unreadNotificationsCount > 0 ? 'ring-2 ring-rose-500/40' : ''
               }`}
-              title="التنبيهات العاجلة"
+              title="التنبيهات والإشعارات"
             >
               <Bell className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform ${isRinging ? 'animate-[bounce_0.5s_infinite] text-amber-400' : ''}`} />
               {unreadNotificationsCount > 0 && (
@@ -353,104 +369,119 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Interactive Notifications Drawer */}
             {showNotifications && (
-              <div className="fixed inset-x-3 top-18 sm:static sm:inset-auto sm:absolute sm:left-0 sm:mt-3 w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl z-50 overflow-hidden text-right">
-                <div className="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-amber-400 animate-bounce" />
-                    <div>
-                      <h3 className="font-bold text-sm text-white flex items-center gap-2">
-                        <span>مركز التنبيهات الحية</span>
-                        {unreadNotificationsCount > 0 && (
-                          <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[10px]">
-                            {unreadNotificationsCount} غير مقروء
-                          </span>
-                        )}
-                      </h3>
-                      <p className="text-[10px] text-slate-400">إشعارات النظام، الصيدلية والمستودع</p>
-                    </div>
-                  </div>
-                  <button onClick={() => setShowNotifications(false)} className="text-slate-400 hover:text-white">
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
+              <>
+                {/* Mobile Backdrop to click outside easily on small devices */}
+                <div
+                  className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-xs sm:hidden"
+                  onClick={() => setShowNotifications(false)}
+                />
 
-                {/* Actions Toolbar */}
-                {activeNotifications.length > 0 && (
-                  <div className="px-4 py-2 bg-slate-950/60 border-b border-slate-800 flex items-center justify-between text-[11px]">
-                    <button
-                      onClick={handleMarkAllAsRead}
-                      className="text-sky-400 hover:underline flex items-center gap-1 font-bold"
-                    >
-                      <CheckCheck className="w-3.5 h-3.5" />
-                      <span>تحديد الكل كمقروء</span>
-                    </button>
-                    <button
-                      onClick={handleClearAllNotifications}
-                      className="text-rose-400 hover:underline flex items-center gap-1 font-bold"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>مسح جميع التنبيهات</span>
-                    </button>
-                  </div>
-                )}
-
-                <div className="max-h-80 overflow-y-auto divide-y divide-slate-800">
-                  {activeNotifications.length === 0 ? (
-                    <div className="p-8 text-center text-slate-400 text-xs flex flex-col items-center gap-2">
-                      <CheckCircle2 className="w-8 h-8 text-emerald-400" />
-                      <p className="font-bold text-slate-200">لا توجد تنبيهات جديدة حالياً</p>
-                      <p className="text-slate-400 text-[11px]">جميع أقسام المستشفى والخدمات تعمل بشكل متكامل.</p>
-                    </div>
-                  ) : (
-                    activeNotifications.map((notif) => (
-                      <div
-                        key={notif.id}
-                        className={`p-3.5 hover:bg-slate-800/60 transition-colors flex items-start justify-between gap-3 ${
-                          !notif.isRead ? 'bg-sky-950/20 border-r-2 border-sky-500' : ''
-                        }`}
-                      >
-                        <div className="flex items-start gap-3 flex-1">
-                          <div
-                            className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 border ${
-                              notif.type === 'danger'
-                                ? 'bg-rose-500/20 text-rose-400 border-rose-500/30'
-                                : notif.type === 'warning'
-                                ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                                : 'bg-sky-500/20 text-sky-400 border-sky-500/30'
-                            }`}
-                          >
-                            <AlertTriangle className="w-4 h-4" />
-                          </div>
-                          <div className="flex-1 text-xs">
-                            <div className="flex items-center justify-between">
-                              <p className="font-bold text-slate-100">{notif.title}</p>
-                              <span className="text-[10px] text-slate-400 font-mono">{notif.time}</span>
-                            </div>
-                            <p className="text-slate-300 mt-0.5">{notif.message}</p>
-                            <button
-                              onClick={() => {
-                                handleNavigate(notif.targetTab);
-                                setShowNotifications(false);
-                              }}
-                              className="mt-1 text-sky-400 hover:underline font-semibold text-[11px] block"
-                            >
-                              عرض القسم للتعامل مع التنبيه &larr;
-                            </button>
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={() => handleDismissNotification(notif.id)}
-                          className="p-1 text-slate-500 hover:text-slate-300"
-                          title="إخفاء التنبيه"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
+                <div className="fixed inset-x-3 top-20 sm:top-auto sm:inset-auto sm:absolute sm:top-full sm:left-0 sm:mt-2.5 w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl z-50 overflow-hidden text-right">
+                  <div className="p-3.5 sm:p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+                        <AlertTriangle className="w-4 h-4 animate-bounce" />
                       </div>
-                    ))
+                      <div>
+                        <h3 className="font-bold text-xs sm:text-sm text-white flex items-center gap-2">
+                          <span>مركز التنبيهات الحية</span>
+                          {unreadNotificationsCount > 0 && (
+                            <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[10px] font-bold">
+                              {unreadNotificationsCount} جديد
+                            </span>
+                          )}
+                        </h3>
+                        <p className="text-[10px] text-slate-400">إشعارات النظام، المواعيد والتحاليل</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setShowNotifications(false)} 
+                      className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                      title="إغلاق التنبيهات"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Actions Toolbar */}
+                  {activeNotifications.length > 0 && (
+                    <div className="px-4 py-2 bg-slate-950/60 border-b border-slate-800 flex items-center justify-between text-[11px]">
+                      <button
+                        onClick={handleMarkAllAsRead}
+                        className="text-sky-400 hover:text-sky-300 hover:underline flex items-center gap-1 font-bold cursor-pointer"
+                      >
+                        <CheckCheck className="w-3.5 h-3.5" />
+                        <span>تحديد الكل كمقروء</span>
+                      </button>
+                      <button
+                        onClick={handleClearAllNotifications}
+                        className="text-rose-400 hover:text-rose-300 hover:underline flex items-center gap-1 font-bold cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>مسح جميع التنبيهات</span>
+                      </button>
+                    </div>
                   )}
+
+                  <div className="max-h-80 sm:max-h-96 overflow-y-auto divide-y divide-slate-800">
+                    {activeNotifications.length === 0 ? (
+                      <div className="p-8 text-center text-slate-400 text-xs flex flex-col items-center gap-2">
+                        <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+                        <p className="font-bold text-slate-200">لا توجد تنبيهات جديدة حالياً</p>
+                        <p className="text-slate-400 text-[11px]">جميع أقسام المستشفى والخدمات تعمل بشكل متكامل.</p>
+                      </div>
+                    ) : (
+                      activeNotifications.map((notif) => (
+                        <div
+                          key={notif.id}
+                          className={`p-3.5 hover:bg-slate-800/60 transition-colors flex items-start justify-between gap-3 ${
+                            !notif.isRead ? 'bg-sky-950/20 border-r-2 border-sky-500' : ''
+                          }`}
+                        >
+                          <div className="flex items-start gap-3 flex-1 min-w-0">
+                            <div
+                              className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 border ${
+                                notif.type === 'danger'
+                                  ? 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                                  : notif.type === 'warning'
+                                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                                  : 'bg-sky-500/20 text-sky-400 border-sky-500/30'
+                              }`}
+                            >
+                              <AlertTriangle className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 min-w-0 text-xs">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="font-bold text-slate-100 truncate">{notif.title}</p>
+                                <span className="text-[10px] text-slate-400 font-mono shrink-0">{notif.time}</span>
+                              </div>
+                              <p className="text-slate-300 mt-0.5 leading-relaxed">{notif.message}</p>
+                              <button
+                                onClick={() => {
+                                  handleNavigate(notif.targetTab);
+                                  setShowNotifications(false);
+                                }}
+                                className="mt-1.5 text-sky-400 hover:text-sky-300 hover:underline font-semibold text-[11px] flex items-center gap-1 cursor-pointer"
+                              >
+                                <span>عرض القسم للتعامل مع التنبيه</span>
+                                <span className="text-xs">&larr;</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleDismissNotification(notif.id)}
+                            className="p-1 rounded text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-colors shrink-0 cursor-pointer"
+                            title="إخفاء التنبيه"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
 

@@ -19,12 +19,16 @@ import {
   Eye,
   EyeOff,
   Send,
-  Sparkles
+  Sparkles,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { UserRole } from '../types';
 
 interface LandingAndAuthScreenProps {
   onLogin: (role: UserRole, userName?: string) => void;
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
 }
 
 // Pre-configured official system accounts (including all hospital roles)
@@ -38,7 +42,11 @@ const DEFAULT_ACCOUNTS: Record<string, { role: UserRole; name: string; pass: str
   'm.otaibi@gmail.com': { role: 'patient', name: 'محمد عبد الله العتيبي', pass: '1234' },
 };
 
-export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLogin }) => {
+export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ 
+  onLogin, 
+  theme = 'light', 
+  onToggleTheme 
+}) => {
   const [activeTab, setActiveTab] = useState<'landing' | 'login' | 'register' | 'forgot'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -336,6 +344,20 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ onLo
               <LogIn className="w-3.5 h-3.5" />
               <span>بوابة الدخول</span>
             </button>
+
+            {onToggleTheme && (
+              <button
+                onClick={onToggleTheme}
+                title={theme === 'dark' ? 'التحويل إلى النمط النهاري' : 'التحويل إلى النمط الليلي'}
+                className="p-2 rounded-full text-slate-400 hover:text-amber-400 hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                {theme === 'dark' ? (
+                  <Sun className="w-4 h-4 text-amber-400" />
+                ) : (
+                  <Moon className="w-4 h-4 text-indigo-400" />
+                )}
+              </button>
+            )}
           </nav>
 
         </div>

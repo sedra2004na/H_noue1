@@ -75,10 +75,14 @@ export function App() {
   useEffect(() => {
     if (theme === 'light') {
       document.documentElement.classList.add('theme-light');
+      document.documentElement.classList.remove('dark');
       document.body.classList.add('theme-light');
+      document.body.classList.remove('dark');
     } else {
       document.documentElement.classList.remove('theme-light');
+      document.documentElement.classList.add('dark');
       document.body.classList.remove('theme-light');
+      document.body.classList.add('dark');
     }
   }, [theme]);
 
@@ -506,6 +510,8 @@ export function App() {
   if (!isLoggedIn) {
     return (
       <LandingAndAuthScreen
+        theme={theme}
+        onToggleTheme={toggleTheme}
         onLogin={(role, userName) => {
           setUserRole(role);
           setIsLoggedIn(true);
@@ -519,7 +525,7 @@ export function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans dir-rtl" dir="rtl">
+    <div className={`min-h-screen ${theme === 'light' ? 'bg-slate-50 text-slate-900' : 'bg-slate-950 text-slate-100'} flex flex-col font-sans dir-rtl transition-colors duration-200`} dir="rtl">
       
       {/* Top Navigation Header */}
       <Header
