@@ -514,17 +514,9 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
                   />
                 </div>
 
-                {/* Role badge & Forgot password button */}
-                <div className="flex items-center justify-between text-xs pt-2">
-                  <span className="text-slate-400 text-[11px]">
-                    {isRoleLocked && lockedRoleLabel ? (
-                      <span className="inline-flex items-center gap-1 text-sky-400">
-                        <ShieldCheck className="w-3 h-3" />
-                        <span>الدور المربوط: {lockedRoleLabel}</span>
-                      </span>
-                    ) : null}
-                  </span>
-                  {activeTab === 'login' && (
+                {/* Forgot password button */}
+                {activeTab === 'login' && (
+                  <div className="flex items-center justify-end text-xs pt-2">
                     <button
                       type="button"
                       onClick={() => {
@@ -539,8 +531,8 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
                     >
                       نسيت كلمة المرور؟
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
               <button
