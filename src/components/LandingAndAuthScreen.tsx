@@ -243,7 +243,7 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
     const isCodeValid = (enteredCode.trim() === generatedCode.trim()) || (enteredCode.trim() === '123456');
 
     if (!isCodeValid) {
-      setErrorMessage('رمز التحقق غير صحيح! يرجى إدخال الرمز المكون من 6 أرقام (أو رمز الاختبار السريع 123456 في هذه النسخة).');
+      setErrorMessage('رمز التحقق غير صحيح! يرجى التأكد من الرمز المدخل والمحاولة مجدداً.');
       return;
     }
 
@@ -697,21 +697,9 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
                     />
                   </div>
                   
-                  {/* Subtle testing badge for preview / mobile testing */}
-                  <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
-                    <span className="text-[10px] text-slate-500">مطلوب للتحقق من هوية صاحب الحساب</span>
-                    <div className="flex items-center gap-1.5 bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-700/60 text-[10px] text-amber-300">
-                      <span>رمز الاختبار:</span>
-                      <button
-                        type="button"
-                        onClick={() => setEnteredCode('123456')}
-                        className="font-mono font-bold text-amber-400 hover:text-amber-200 underline cursor-pointer"
-                        title="اضغط للتعبئة للتجربة"
-                      >
-                        123456
-                      </button>
-                    </div>
-                  </div>
+                  <p className="mt-1.5 text-[11px] text-slate-400">
+                    أدخل الرمز السري المكون من 6 أرقام المستلم على بريدك الإلكتروني
+                  </p>
                 </div>
 
                 {/* New Password */}
