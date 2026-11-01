@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Invoice, Patient, UserRole } from '../types';
 import { printAndExportPdf } from '../utils/pdfExport';
 import { validateInvoiceForm } from '../utils/validation';
+import { formatArabicDate } from '../utils/arabicFormatters';
 import { 
   Receipt, 
   DollarSign, 
@@ -91,8 +92,8 @@ export const BillingSection: React.FC<BillingSectionProps> = ({
             <tr>
               <td><strong>${item.description}</strong></td>
               <td>${item.quantity}</td>
-              <td>${item.unitPrice.toLocaleString('ar-SY')} ل.س</td>
-              <td><strong>${item.total.toLocaleString('ar-SY')} ل.س</strong></td>
+              <td>${item.unitPrice.toLocaleString('en-US')} ل.س</td>
+              <td><strong>${item.total.toLocaleString('en-US')} ل.س</strong></td>
             </tr>
           `).join('') || ''}
         </tbody>
@@ -101,19 +102,19 @@ export const BillingSection: React.FC<BillingSectionProps> = ({
       <div class="totals-box">
         <div class="totals-row">
           <span>المبلغ قبل الضريبة:</span>
-          <span>${inv.subtotal.toLocaleString('ar-SY')} ل.س</span>
+          <span>${inv.subtotal.toLocaleString('en-US')} ل.س</span>
         </div>
         <div class="totals-row">
           <span>ضريبة القيمة المضافة (15%):</span>
-          <span>+${inv.tax.toLocaleString('ar-SY')} ل.س</span>
+          <span>+${inv.tax.toLocaleString('en-US')} ل.س</span>
         </div>
         <div class="totals-row" style="color: #047857;">
           <span>مبلغ التغطية التأمينية:</span>
-          <span>-${inv.insuranceCovered.toLocaleString('ar-SY')} ل.س</span>
+          <span>-${inv.insuranceCovered.toLocaleString('en-US')} ل.س</span>
         </div>
         <div class="totals-row final">
           <span>الصافي المطلوب سداده:</span>
-          <span>${inv.netAmount.toLocaleString('ar-SY')} ل.س</span>
+          <span>${inv.netAmount.toLocaleString('en-US')} ل.س</span>
         </div>
       </div>
     `;
@@ -177,13 +178,19 @@ export const BillingSection: React.FC<BillingSectionProps> = ({
           <div className="flex items-center gap-2">
             <Receipt className="w-6 h-6 text-sky-400" />
             <h2 className="text-xl font-bold text-white">
-              {userRole === 'patient' ? 'الفواتير والمستحقات المالية الخاصة بي' : 'إدارة الفواتير والإيرادات المالية'}
+              {userRole === 'patient' 
+                ? 'فواتيري ومدفوعاتي الطبية' 
+                : userRole === 'staff' 
+                  ? 'فواتير ومحاسبة المرضى' 
+                  : 'إدارة الفواتير والإيرادات المالية'}
             </h2>
           </div>
           <p className="text-xs text-slate-400 mt-1">
             {userRole === 'patient' 
               ? 'متابعة سجلات المطالبات الطبية وسداد الفواتير إلكترونياً عبر شام كاش' 
-              : 'سجلات المطالبات المالية، ضريبة القيمة المضافة (15%)، ونسب التغطية التأمينية'}
+              : userRole === 'staff'
+                ? 'سجلات المطالبات والتحصيل المالي وتوثيق السداد لمرضى المشفى'
+                : 'سجلات المطالبات المالية، ضريبة القيمة المضافة (15%)، وتقارير الإيرادات التشغيلية'}
           </p>
         </div>
 
@@ -215,27 +222,37 @@ export const BillingSection: React.FC<BillingSectionProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         
         <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl">
-          <span className="text-xs text-slate-400 font-bold block mb-1">إجمالي المحصل الصافي (المدفوع)</span>
+          <span className="text-xs text-slate-400 font-bold block mb-1">
+            {userRole === 'patient' ? 'إجمالي فواتيري المسددة' : userRole === 'staff' ? 'إجمالي المبالغ المحصلة' : 'إجمالي الإيرادات المحصلة'}
+          </span>
           <span className="text-2xl font-black text-emerald-400 font-mono">
-            {totalPaid.toLocaleString('ar-SY')} ل.س
+            {totalPaid.toLocaleString('en-US')} ل.س
           </span>
           <span className="text-[11px] text-slate-400 block mt-1">مسدد بالكامل</span>
         </div>
 
         <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl">
-          <span className="text-xs text-slate-400 font-bold block mb-1">المبالغ المعلقة قيد التحصيل</span>
-          <span className="text-2xl font-black text-amber-400 font-mono">
-            {totalPending.toLocaleString('ar-SY')} ل.س
+          <span className="text-xs text-slate-400 font-bold block mb-1">
+            {userRole === 'patient' ? 'الفواتير المستحقة للدفع' : 'المبالغ المعلقة قيد التحصيل'}
           </span>
-          <span className="text-[11px] text-amber-400/80 block mt-1">بانتظار السداد النقدي/الشبكة</span>
+          <span className="text-2xl font-black text-amber-400 font-mono">
+            {totalPending.toLocaleString('en-US')} ل.س
+          </span>
+          <span className="text-[11px] text-amber-400/80 block mt-1">
+            {userRole === 'patient' ? 'متاح للدفع الإلكتروني' : 'بانتظار السداد النقدي/الشبكة'}
+          </span>
         </div>
 
         <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl">
-          <span className="text-xs text-slate-400 font-bold block mb-1">المطالبات المغطاة تأمينياً</span>
-          <span className="text-2xl font-black text-sky-400 font-mono">
-            {totalInsurance.toLocaleString('ar-SY')} ل.س
+          <span className="text-xs text-slate-400 font-bold block mb-1">
+            {userRole === 'patient' ? 'المغطى من التأمين الطبي' : 'المطالبات المغطاة تأمينياً'}
           </span>
-          <span className="text-[11px] text-sky-400/80 block mt-1">مرفوعة لشركات التأمين</span>
+          <span className="text-2xl font-black text-sky-400 font-mono">
+            {totalInsurance.toLocaleString('en-US')} ل.س
+          </span>
+          <span className="text-[11px] text-sky-400/80 block mt-1">
+            {userRole === 'patient' ? 'مساهمة شركة التأمين' : 'مرفوعة لشركات التأمين'}
+          </span>
         </div>
 
       </div>
@@ -266,10 +283,10 @@ export const BillingSection: React.FC<BillingSectionProps> = ({
                   <tr key={inv.id} className="hover:bg-slate-800/50 transition-colors">
                     <td className="p-4 font-mono font-bold text-sky-400 whitespace-nowrap">{inv.invoiceNumber}</td>
                     {!isPatientRole && <td className="p-4 font-bold text-white whitespace-nowrap">{inv.patientName}</td>}
-                    <td className="p-4 font-mono text-slate-400 whitespace-nowrap">{inv.date}</td>
-                    <td className="p-4 font-mono text-slate-300 whitespace-nowrap">{inv.subtotal.toLocaleString('ar-SY')} ل.س</td>
-                    <td className="p-4 font-mono text-emerald-400 whitespace-nowrap">{inv.insuranceCovered.toLocaleString('ar-SY')} ل.س</td>
-                    <td className="p-4 font-mono font-extrabold text-white whitespace-nowrap">{inv.netAmount.toLocaleString('ar-SY')} ل.س</td>
+                    <td className="p-4 text-slate-300 whitespace-nowrap font-medium">{formatArabicDate(inv.date)}</td>
+                    <td className="p-4 font-mono text-slate-300 whitespace-nowrap">{inv.subtotal.toLocaleString('en-US')} ل.س</td>
+                    <td className="p-4 font-mono text-emerald-400 whitespace-nowrap">{inv.insuranceCovered.toLocaleString('en-US')} ل.س</td>
+                    <td className="p-4 font-mono font-extrabold text-white whitespace-nowrap">{inv.netAmount.toLocaleString('en-US')} ل.س</td>
                     <td className="p-4 whitespace-nowrap">
                       <span className={`px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap inline-flex items-center gap-1.5 border shadow-sm ${
                         inv.status === 'مدفوع' || inv.status === 'مدفوعة' 
@@ -383,8 +400,8 @@ export const BillingSection: React.FC<BillingSectionProps> = ({
                   <tr key={idx} className="border-b">
                     <td className="p-2 border font-bold text-slate-900">{item.description}</td>
                     <td className="p-2 border font-mono">{item.quantity}</td>
-                    <td className="p-2 border font-mono">{item.unitPrice.toLocaleString('ar-SY')} ل.س</td>
-                    <td className="p-2 border font-mono font-bold">{item.total.toLocaleString('ar-SY')} ل.س</td>
+                    <td className="p-2 border font-mono">{item.unitPrice.toLocaleString('en-US')} ل.س</td>
+                    <td className="p-2 border font-mono font-bold">{item.total.toLocaleString('en-US')} ل.س</td>
                   </tr>
                 ))}
               </tbody>
@@ -394,19 +411,19 @@ export const BillingSection: React.FC<BillingSectionProps> = ({
             <div className="space-y-1 text-xs text-slate-800 font-mono bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div className="flex justify-between">
                 <span>المبلغ الخاضع للضريبة:</span>
-                <span>{selectedInvoice.subtotal.toLocaleString('ar-SY')} ل.س</span>
+                <span>{selectedInvoice.subtotal.toLocaleString('en-US')} ل.س</span>
               </div>
               <div className="flex justify-between text-slate-600">
                 <span>ضريبة القيمة المضافة VAT (15%):</span>
-                <span>+{selectedInvoice.tax.toLocaleString('ar-SY')} ل.س</span>
+                <span>+{selectedInvoice.tax.toLocaleString('en-US')} ل.س</span>
               </div>
               <div className="flex justify-between text-emerald-700 font-bold">
                 <span>مبلغ التغطية التأمينية:</span>
-                <span>-{selectedInvoice.insuranceCovered.toLocaleString('ar-SY')} ل.س</span>
+                <span>-{selectedInvoice.insuranceCovered.toLocaleString('en-US')} ل.س</span>
               </div>
               <div className="flex justify-between font-black text-sm text-slate-900 pt-2 border-t border-slate-300">
                 <span>الصافي المطلوب سداده:</span>
-                <span className="text-sky-700">{selectedInvoice.netAmount.toLocaleString('ar-SY')} ل.س</span>
+                <span className="text-sky-700">{selectedInvoice.netAmount.toLocaleString('en-US')} ل.س</span>
               </div>
             </div>
 
@@ -654,7 +671,7 @@ export const BillingSection: React.FC<BillingSectionProps> = ({
                   <div className="text-left">
                     <span className="text-slate-400 block text-[10px]">المبلغ المطلوب:</span>
                     <span className="text-amber-400 font-mono font-black text-sm sm:text-base">
-                      {activeShamCashInvoice.netAmount.toLocaleString('ar-SY')} ل.س
+                      {activeShamCashInvoice.netAmount.toLocaleString('en-US')} ل.س
                     </span>
                   </div>
                 </div>

@@ -32,6 +32,8 @@ import { ToastContainer, ToastMessage } from './components/Toast';
 import { EmergencyModal } from './components/EmergencyModal';
 import { DatabaseManagerModal } from './components/DatabaseManagerModal';
 import { QuickCommandPalette } from './components/QuickCommandPalette';
+import { formatArabicTime } from './utils/arabicFormatters';
+import { recordAuditLog } from './utils/security';
 
 function getStoredData<T>(key: string, defaultValue: T): T {
   try {
@@ -52,6 +54,53 @@ export function App() {
   const [userRole, setUserRole] = useState<UserRole>(() => getStoredData('syrian_hosp_userRole', 'admin'));
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [sessionTimeoutAlert, setSessionTimeoutAlert] = useState<boolean>(() => {
+    return localStorage.getItem('syrian_hosp_session_timeout') === 'true';
+  });
+
+  // Keep login status synced with localStorage
+  useEffect(() => {
+    localStorage.setItem('syrian_hosp_isLoggedIn', JSON.stringify(isLoggedIn));
+  }, [isLoggedIn]);
+
+  // 15-Minute Inactivity Session Timeout (Clinical & Security HIPAA/ISO-27001 standard)
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+    let lastActivityTime = Date.now();
+
+    const resetActivity = () => {
+      lastActivityTime = Date.now();
+    };
+
+    const activityEvents = ['mousedown', 'keydown', 'touchstart', 'scroll'];
+    activityEvents.forEach((evt) => window.addEventListener(evt, resetActivity, { passive: true }));
+
+    const checkInterval = setInterval(() => {
+      const elapsed = Date.now() - lastActivityTime;
+      if (elapsed >= INACTIVITY_TIMEOUT_MS) {
+        const savedName = getStoredData('syrian_hosp_userName', 'مستخدم النظام');
+        recordAuditLog({
+          userId: userRole === 'patient' ? 'pat-1' : 'auth-session',
+          userName: savedName,
+          userRole: userRole,
+          action: 'SESSION_TIMEOUT',
+          targetResource: 'AUTH_SESSION',
+          details: 'قفل وإنهاء الجلسة تلقائياً بعد 15 دقيقة من انعدام النشاط لحماية بيانات المرضى والامتثال للخصوصية',
+          status: 'SUCCESS',
+        });
+        localStorage.setItem('syrian_hosp_session_timeout', 'true');
+        setSessionTimeoutAlert(true);
+        setIsLoggedIn(false);
+      }
+    }, 15000); // Check every 15 seconds
+
+    return () => {
+      activityEvents.forEach((evt) => window.removeEventListener(evt, resetActivity));
+      clearInterval(checkInterval);
+    };
+  }, [isLoggedIn, userRole]);
 
   // Theme State: 'light' | 'dark' (Default to pure clinical light)
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -117,7 +166,7 @@ export function App() {
       patientName,
       condition,
       roomName,
-      time: new Date().toLocaleTimeString('ar-SY', { hour: '2-digit', minute: '2-digit' }),
+      time: formatArabicTime(new Date()),
       status: 'active',
     });
   };
@@ -151,7 +200,31 @@ export function App() {
     }
     return stored;
   });
-  const [appointments, setAppointments] = useState(() => getStoredData('syrian_hosp_appointments', mockAppointments));
+  const [appointments, setAppointments] = useState(() => {
+    const stored = getStoredData('syrian_hosp_appointments', mockAppointments);
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (Array.isArray(stored)) {
+      // 1. Transition past appointments that were pending/confirmed to completed/expired
+      let updated = stored.map((apt: any) => {
+        if (apt.date < todayStr && (apt.status === 'مؤكد' || apt.status === 'معلق')) {
+          return {
+            ...apt,
+            status: apt.id === 'apt-509' ? 'منتهي' : 'مكتمل'
+          };
+        }
+        return apt;
+      });
+
+      // 2. Ensure new upcoming appointments are merged into stored list
+      const existingIds = new Set(updated.map((a: any) => a.id));
+      const missing = mockAppointments.filter(m => !existingIds.has(m.id));
+      if (missing.length > 0) {
+        updated = [...updated, ...missing];
+      }
+      return updated;
+    }
+    return mockAppointments;
+  });
   const [inventory, setInventory] = useState(() => getStoredData('syrian_hosp_inventory', mockInventory));
   const [labResults, setLabResults] = useState(() => getStoredData('syrian_hosp_labResults', mockLabResults));
   const [prescriptions, setPrescriptions] = useState(() => getStoredData('syrian_hosp_prescriptions', mockPrescriptions));
@@ -388,6 +461,13 @@ export function App() {
     showToast(`تم تحديث حالة الموعد إلى (${status})`, 'info');
   };
 
+  const handleRescheduleAppointment = (id: string, newDate: string, newTime: string) => {
+    setAppointments(prev => prev.map(a => 
+      a.id === id ? { ...a, date: newDate, time: newTime, status: 'مؤكد' } : a
+    ));
+    showToast(`تمت إعادة جدولة الموعد بنجاح إلى تاريخ ${newDate} الساعة ${newTime}`, 'success');
+  };
+
   const handleDeleteAppointment = (id: string) => {
     setAppointments(appointments.filter(a => a.id !== id));
     showToast('تم إلغاء وحذف الموعد الطبي فوراً', 'error');
@@ -512,9 +592,12 @@ export function App() {
       <LandingAndAuthScreen
         theme={theme}
         onToggleTheme={toggleTheme}
+        sessionTimedOut={sessionTimeoutAlert}
         onLogin={(role, userName) => {
           setUserRole(role);
           setIsLoggedIn(true);
+          setSessionTimeoutAlert(false);
+          localStorage.removeItem('syrian_hosp_session_timeout');
           setActiveTab(role === 'doctor' ? 'doctor_portal' : 'dashboard');
           if (userName) {
             localStorage.setItem('syrian_hosp_userName', JSON.stringify(userName));
@@ -556,14 +639,26 @@ export function App() {
       />
 
       {/* Main Body with Sidebar + Content Area */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] overflow-hidden">
         
         {/* Right Sidebar */}
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           userRole={userRole}
-          onLogout={() => setIsLoggedIn(false)}
+          onLogout={() => {
+            const savedName = getStoredData('syrian_hosp_userName', 'مستخدم النظام');
+            recordAuditLog({
+              userId: userRole === 'patient' ? 'pat-1' : 'auth-session',
+              userName: savedName,
+              userRole: userRole,
+              action: 'LOGOUT',
+              targetResource: 'AUTH_GATEWAY',
+              details: 'تسجيل خروج يدوي آمن وإغلاق الجلسة',
+              status: 'SUCCESS',
+            });
+            setIsLoggedIn(false);
+          }}
           patientsCount={patients.length}
           doctorsCount={doctors.length}
           appointmentsCount={pendingAppointmentsCount}
@@ -589,9 +684,14 @@ export function App() {
               inventory={inventory}
               invoices={invoices}
               beds={beds}
+              labResults={labResults}
+              prescriptions={prescriptions}
+              abnormalFlags={abnormalFlags}
               onNavigate={setActiveTab}
               onUpdateAppointmentStatus={handleUpdateAppointmentStatus}
+              onRescheduleAppointment={handleRescheduleAppointment}
               onDeleteAppointment={handleDeleteAppointment}
+              onShowToast={showToast}
               onOpenEmergencyModal={() => setShowEmergencyModal(true)}
             />
           )}
@@ -677,7 +777,9 @@ export function App() {
               doctors={doctors}
               onAddAppointment={handleAddAppointment}
               onUpdateStatus={handleUpdateAppointmentStatus}
+              onRescheduleAppointment={handleRescheduleAppointment}
               onDeleteAppointment={handleDeleteAppointment}
+              onShowToast={showToast}
               searchQuery={searchQuery}
             />
           )}

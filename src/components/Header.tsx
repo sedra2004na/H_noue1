@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, UserRole, InventoryItem, LabResult } from '../types';
 import { HospitalLogo } from './HospitalLogo';
+import { formatArabicClock } from '../utils/arabicFormatters';
 import { 
   Building2, 
   Bell, 
@@ -213,19 +214,7 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  const formattedDate = new Intl.DateTimeFormat('ar-SY', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(currentTime);
-
-  const formattedTime = new Intl.DateTimeFormat('ar-SY', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: true,
-  }).format(currentTime);
+  const { dateText: formattedDate, timeText: formattedTime } = formatArabicClock(currentTime);
 
   return (
     <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/90 text-white shadow-2xl">
@@ -248,14 +237,22 @@ export const Header: React.FC<HeaderProps> = ({
             <HospitalLogo size="sm" className="sm:hidden" />
             <HospitalLogo size="md" className="hidden sm:flex" />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0" dir="rtl">
             <div className="flex items-center gap-1 sm:gap-2">
-              <h1 className="text-sm sm:text-lg lg:text-xl font-black text-white tracking-wide whitespace-nowrap">مشفى الرحمة</h1>
-              <span className="hidden md:inline-block px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-extrabold rounded-md bg-sky-500/20 text-sky-300 border border-sky-500/30 whitespace-nowrap">
+              <h1 className="text-sm sm:text-lg lg:text-xl font-black text-white tracking-wide whitespace-nowrap">
+                <bdi>مشفى الرحمة</bdi>
+              </h1>
+              <span dir="ltr" className="hidden md:inline-block px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-extrabold rounded-md bg-sky-500/20 text-sky-300 border border-sky-500/30 whitespace-nowrap font-sans">
                 Al-Rahma Hospital
               </span>
             </div>
-            <p className="text-xs text-slate-400 hidden lg:block truncate">Al-Rahma Medical Center - المركز الطبي التخصصي الموحد</p>
+            <p className="text-xs text-slate-400 hidden lg:flex items-center gap-1.5 truncate" dir="rtl">
+              <bdi className="font-semibold text-slate-300">المركز الطبي التخصصي الموحد</bdi>
+              <span className="text-slate-600 font-sans select-none" aria-hidden="true">-</span>
+              <bdi dir="ltr" className="font-sans text-[11px] text-slate-400 tracking-wide font-normal">
+                Al-Rahma Medical Center
+              </bdi>
+            </p>
           </div>
         </div>
 
@@ -338,10 +335,10 @@ export const Header: React.FC<HeaderProps> = ({
                   ? 'bg-rose-600 text-white animate-bounce ring-4 ring-rose-500/50 shadow-rose-600/50' 
                   : 'bg-rose-950/80 hover:bg-rose-900 text-rose-200 border border-rose-700/60 shadow-rose-950/40'
               }`}
-              title="نظام طوارئ وغرف الإسعاف"
+              title="مركز الطوارئ والإسعاف السريع (أرقام 110 وحجز غرف الإنعاش)"
             >
               <Siren className={`w-4 h-4 text-rose-400 ${hasActiveSOS ? 'animate-spin text-white' : ''}`} />
-              <span className="hidden md:inline">طوارئ (SOS)</span>
+              <span className="hidden md:inline">طوارئ (110)</span>
               {hasActiveSOS && <span className="w-2 h-2 rounded-full bg-white animate-ping"></span>}
             </button>
           )}

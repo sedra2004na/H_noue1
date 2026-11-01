@@ -9,6 +9,7 @@ import {
   Prescription, 
   UserRole 
 } from '../types';
+import { formatArabicDate, formatAppointmentsCount } from '../utils/arabicFormatters';
 import { 
   Stethoscope, 
   AlertOctagon, 
@@ -254,7 +255,7 @@ export const DoctorClinicalDashboard: React.FC<DoctorClinicalDashboardProps> = (
               <span>مواعيد العيادة اليوم</span>
             </div>
             <div className="text-xl font-mono font-black text-emerald-400">
-              {doctorAppointments.length} <span className="text-xs text-slate-400 font-normal">موعد</span>
+              {formatAppointmentsCount(doctorAppointments.length)}
             </div>
           </div>
         </div>
@@ -352,7 +353,7 @@ export const DoctorClinicalDashboard: React.FC<DoctorClinicalDashboardProps> = (
                         <span className="font-bold text-white text-sm">{flag.patientName}</span>
                         <div className="text-[11px] text-slate-400 font-mono flex items-center gap-2 mt-0.5">
                           <span>{flag.roomBedNumber || 'العيادة'}</span>
-                          <span>• {flag.testDate}</span>
+                          <span>• {formatArabicDate(flag.testDate)}</span>
                         </div>
                       </div>
 

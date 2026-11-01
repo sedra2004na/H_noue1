@@ -69,7 +69,7 @@ export type AppointmentType =
   | 'استشارة' 
   | 'متابعة' 
   | 'طوارئ';
-export type AppointmentStatus = 'مؤكد' | 'معلق' | 'مكتمل' | 'ملغى';
+export type AppointmentStatus = 'مؤكد' | 'معلق' | 'مكتمل' | 'ملغى' | 'منتهي' | 'لم يحضر';
 
 export interface Appointment {
   id: string;

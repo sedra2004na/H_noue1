@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { LabResult, Prescription, Patient, Doctor, UserRole } from '../types';
 import { printAndExportPdf } from '../utils/pdfExport';
+import { formatArabicDate } from '../utils/arabicFormatters';
 import { 
   FlaskConical, 
   FileText, 
@@ -299,7 +300,7 @@ export const LabPrescriptionsSection: React.FC<LabPrescriptionsProps> = ({
                       <td className="p-4 text-slate-400">{lab.doctorName}</td>
                       <td className="p-4 font-mono font-bold text-sky-300">{lab.resultValue}</td>
                       <td className="p-4 font-mono text-slate-400">{lab.normalRange}</td>
-                      <td className="p-4 font-mono text-slate-400">{lab.testDate}</td>
+                      <td className="p-4 text-slate-300 font-medium whitespace-nowrap">{formatArabicDate(lab.testDate)}</td>
                       <td className="p-4">
                         <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold ${
                           lab.status === 'حرج' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse' :
@@ -429,7 +430,7 @@ export const LabPrescriptionsSection: React.FC<LabPrescriptionsProps> = ({
 
               <div className="text-left text-xs text-slate-600 font-mono">
                 <p className="font-bold text-slate-900">رقم الوصفة: {selectedPrescription.id}</p>
-                <p>تاريخ الصدور: {selectedPrescription.date}</p>
+                <p>تاريخ الصدور: {formatArabicDate(selectedPrescription.date)}</p>
               </div>
             </div>
 

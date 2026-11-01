@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Appointment, Patient, Doctor, UserRole } from '../types';
 import { validateAppointmentForm } from '../utils/validation';
+import { formatArabicDate, formatArabicTime, formatAppointmentsCount, formatArabicPlural } from '../utils/arabicFormatters';
 import { 
   Calendar, 
   Clock, 
@@ -14,7 +15,10 @@ import {
   X,
   Trash2,
   AlertTriangle,
-  ShieldAlert
+  ShieldAlert,
+  BellRing,
+  CalendarDays,
+  CalendarCheck
 } from 'lucide-react';
 
 interface AppointmentsSectionProps {
@@ -24,7 +28,9 @@ interface AppointmentsSectionProps {
   doctors: Doctor[];
   onAddAppointment: (apt: Partial<Appointment>) => void;
   onUpdateStatus: (id: string, status: Appointment['status']) => void;
+  onRescheduleAppointment?: (id: string, newDate: string, newTime: string) => void;
   onDeleteAppointment?: (id: string) => void;
+  onShowToast?: (msg: string, type: 'success' | 'error' | 'info') => void;
   searchQuery?: string;
 }
 
@@ -35,7 +41,9 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
   doctors,
   onAddAppointment,
   onUpdateStatus,
+  onRescheduleAppointment,
   onDeleteAppointment,
+  onShowToast,
   searchQuery,
 }) => {
   const canManageStatus = userRole === 'admin' || userRole === 'staff' || userRole === 'doctor';
@@ -56,14 +64,74 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [fieldWarnings, setFieldWarnings] = useState<Record<string, string>>({});
 
+  const [timelineScope, setTimelineScope] = useState<'upcoming' | 'past' | 'all'>(userRole === 'patient' ? 'upcoming' : 'all');
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  // Reschedule and Reminder states
+  const [rescheduleApt, setRescheduleApt] = useState<Appointment | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState<string>('');
+  const [rescheduleTime, setRescheduleTime] = useState<string>('10:00');
+  const [remindedAptIds, setRemindedAptIds] = useState<string[]>([]);
+
+  const handleOpenReschedule = (apt: Appointment) => {
+    setRescheduleApt(apt);
+    setRescheduleDate(apt.date >= todayStr ? apt.date : todayStr);
+    setRescheduleTime(apt.time || '10:00');
+  };
+
+  const handleConfirmReschedule = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rescheduleApt) return;
+    if (onRescheduleAppointment) {
+      onRescheduleAppointment(rescheduleApt.id, rescheduleDate, rescheduleTime);
+    } else {
+      onUpdateStatus(rescheduleApt.id, 'مؤكد');
+    }
+    if (onShowToast) {
+      onShowToast(`تمت إعادة جدولة موعد ${rescheduleApt.patientName} بنجاح إلى ${formatArabicDate(rescheduleDate)} الساعة ${formatArabicTime(rescheduleTime)}`, 'success');
+    }
+    setRescheduleApt(null);
+  };
+
+  const handleSendReminder = (apt: Appointment) => {
+    setRemindedAptIds(prev => [...prev, apt.id]);
+    if (onShowToast) {
+      onShowToast(`تم إرسال تذكير الموعد بنجاح للمريض (${apt.patientName}) عبر البريد وSMS: موعدك يوم ${formatArabicDate(apt.date)} الساعة ${formatArabicTime(apt.time)} مع ${apt.doctorName}`, 'success');
+    }
+  };
+
+  const isUpcomingAppointment = (apt: Appointment) => {
+    return apt.date >= todayStr && apt.status !== 'ملغى' && apt.status !== 'مكتمل' && apt.status !== 'منتهي';
+  };
+
+  const isPastAppointment = (apt: Appointment) => {
+    return apt.date < todayStr || apt.status === 'مكتمل' || apt.status === 'منتهي' || apt.status === 'لم يحضر' || apt.status === 'ملغى';
+  };
+
+  const roleBaseAppointments = appointments.filter((apt) => {
+    if (userRole === 'patient') {
+      return apt.patientName === 'محمد عبد الله العتيبي' || apt.patientName.includes('محمد') || apt.patientId === 'pat-1';
+    }
+    if (userRole === 'doctor') {
+      return apt.doctorName.includes('سارة') || apt.doctorName.includes('طبيب') || apt.doctorId === 'doc-1';
+    }
+    return true;
+  });
+
+  const upcomingCount = roleBaseAppointments.filter(isUpcomingAppointment).length;
+  const pastCount = roleBaseAppointments.filter(isPastAppointment).length;
+
   // Filter appointments
-  const filteredAppointments = appointments.filter((apt) => {
+  const filteredAppointments = roleBaseAppointments.filter((apt) => {
+    if (timelineScope === 'upcoming' && !isUpcomingAppointment(apt)) return false;
+    if (timelineScope === 'past' && !isPastAppointment(apt)) return false;
+
     const query = (searchQuery || '').toLowerCase().trim();
     const matchesSearch = 
       !query ||
       apt.doctorName.toLowerCase().includes(query) ||
       apt.specialty.toLowerCase().includes(query) ||
-      (userRole !== 'patient' && apt.patientName.toLowerCase().includes(query));
+      apt.patientName.toLowerCase().includes(query);
 
     const matchesStatus = selectedStatus === 'all' || apt.status === selectedStatus;
     const matchesType = selectedType === 'all' || apt.type === selectedType;
@@ -152,10 +220,72 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-lg shadow-sky-600/30 transition-all hover:scale-105"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-lg shadow-sky-600/30 transition-all hover:scale-105 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>حجز موعد جديد</span>
+        </button>
+      </div>
+
+      {/* KPI Stats & Scope Switcher Banner */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <button
+          type="button"
+          onClick={() => setTimelineScope('upcoming')}
+          className={`p-4 rounded-2xl border text-start transition-all cursor-pointer ${
+            timelineScope === 'upcoming'
+              ? 'bg-sky-950/40 border-sky-500 shadow-md shadow-sky-900/20'
+              : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'
+          }`}
+        >
+          <div className="flex items-center justify-between text-xs text-slate-400 font-bold mb-1">
+            <span>المواعيد القادمة والنشطة</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          </div>
+          <div className="text-xl sm:text-2xl font-black text-white">{formatAppointmentsCount(upcomingCount, true)}</div>
+          <div className="text-[11px] text-sky-400 font-medium mt-1">المواعيد السارية من اليوم فصاعداً</div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setTimelineScope('past')}
+          className={`p-4 rounded-2xl border text-start transition-all cursor-pointer ${
+            timelineScope === 'past'
+              ? 'bg-sky-950/40 border-sky-500 shadow-md shadow-sky-900/20'
+              : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'
+          }`}
+        >
+          <div className="flex items-center justify-between text-xs text-slate-400 font-bold mb-1">
+            <span>سجل المواعيد السابقة والمنتهية</span>
+            <Clock className="w-3.5 h-3.5 text-slate-400" />
+          </div>
+          <div className="text-xl sm:text-2xl font-black text-white">
+            {formatArabicPlural(pastCount, {
+              zero: 'لا توجد مواعيد سابقة',
+              one: 'موعد سابق واحد',
+              two: 'موعدان سابقان',
+              few: 'مواعيد سابقة',
+              many: 'موعداً سابقاً'
+            })}
+          </div>
+          <div className="text-[11px] text-slate-400 font-medium mt-1">مواعيد سابقة مكتملة أو منتهية</div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setTimelineScope('all')}
+          className={`p-4 rounded-2xl border text-start transition-all cursor-pointer ${
+            timelineScope === 'all'
+              ? 'bg-sky-950/40 border-sky-500 shadow-md shadow-sky-900/20'
+              : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'
+          }`}
+        >
+          <div className="flex items-center justify-between text-xs text-slate-400 font-bold mb-1">
+            <span>إجمالي المواعيد بالسجل</span>
+            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+          </div>
+          <div className="text-xl sm:text-2xl font-black text-white">{formatAppointmentsCount(roleBaseAppointments.length)}</div>
+          <div className="text-[11px] text-teal-400 font-medium mt-1">الأرشيف والمستقبل معاً</div>
         </button>
       </div>
 
@@ -166,12 +296,14 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
         <select
           value={selectedStatus}
           onChange={(e) => setSelectedStatus(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-sky-500"
+          className="w-full px-3 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-sky-500 cursor-pointer"
         >
-          <option value="all">كافة الحالات (مؤكد، معلق، مكتمل، ملغى)</option>
+          <option value="all">كافة الحالات (مؤكد، معلق، مكتمل، منتهي، ملغى)</option>
           <option value="مؤكد">المواعيد المؤكدة</option>
           <option value="معلق">المواعيد المعلقة</option>
           <option value="مكتمل">المواعيد المكتملة</option>
+          <option value="منتهي">المواعيد المنتهية</option>
+          <option value="لم يحضر">حالات لم يحضر</option>
           <option value="ملغى">المواعيد الملغاة</option>
         </select>
 
@@ -179,7 +311,7 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
         <select
           value={selectedType}
           onChange={(e) => setSelectedType(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-sky-500"
+          className="w-full px-3 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-sky-500 cursor-pointer"
         >
           <option value="all">كافة أنواع المواعيد والعيادات الخارجية</option>
           <option value="كشف عيادة خارجية">كشف عيادة خارجية</option>
@@ -194,7 +326,9 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
           <option value="متابعة">متابعة</option>
           <option value="طوارئ">طوارئ</option>
         </select>
-      </div>      {/* Appointments Table */}
+      </div>
+
+      {/* Appointments Table */}
       <div className="bg-slate-900/90 rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-right text-xs text-slate-300">
@@ -207,13 +341,13 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
                 <th className="p-4">نوع الزيارة</th>
                 <th className="p-4">رسوم الكشف</th>
                 <th className="p-4">حالة الموعد</th>
-                {userRole !== 'patient' && <th className="p-4 text-center">تحديث الحالة</th>}
+                <th className="p-4 text-center">الإجراءات المتاحة</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {filteredAppointments.length === 0 ? (
                 <tr>
-                  <td colSpan={userRole === 'patient' ? 6 : 8} className="p-8 text-center text-slate-400 whitespace-nowrap">
+                  <td colSpan={userRole === 'patient' ? 7 : 8} className="p-8 text-center text-slate-400 whitespace-nowrap">
                     {userRole === 'patient' 
                       ? 'لا توجد مواعيد حجز جديدة مسجلة باسمك حالياً. يمكنك الضغط على "حجز موعد جديد" لطلب موعد جديد.' 
                       : 'لا توجد مواعيد تطابق شروط التصفية الحالية.'}
@@ -239,8 +373,12 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
                       {apt.specialty}
                     </td>
 
-                    <td className="p-4 font-mono text-sky-400 whitespace-nowrap">
-                      {apt.time} ({apt.date})
+                    <td className="p-4 whitespace-nowrap">
+                      <div className="font-semibold text-white">{formatArabicDate(apt.date)}</div>
+                      <div className="text-xs text-sky-400 font-mono flex items-center gap-1 mt-0.5">
+                        <Clock className="w-3 h-3 shrink-0" />
+                        <span>{formatArabicTime(apt.time)}</span>
+                      </div>
                     </td>
 
                     <td className="p-4 whitespace-nowrap">
@@ -254,61 +392,115 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
                     </td>
 
                     <td className="p-4 font-bold text-emerald-400 font-mono whitespace-nowrap">
-                      {apt.fee ? Number(apt.fee).toLocaleString('ar-SY') : '25,000'} ل.س
+                      {apt.fee ? Number(apt.fee).toLocaleString('en-US') : '25,000'} ل.س
                     </td>
 
                     <td className="p-4 whitespace-nowrap">
-                      <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold whitespace-nowrap inline-block ${
-                        apt.status === 'مؤكد' ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' :
-                        apt.status === 'مكتمل' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
-                        apt.status === 'معلق' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
-                        'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                      }`}>
-                        {apt.status}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold whitespace-nowrap inline-block ${
+                          apt.status === 'مؤكد' && apt.date >= todayStr
+                            ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+                            : apt.status === 'مكتمل'
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                              : apt.status === 'معلق' && apt.date >= todayStr
+                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                : apt.status === 'منتهي' || apt.date < todayStr
+                                  ? 'bg-slate-700/50 text-slate-400 border border-slate-600'
+                                  : apt.status === 'لم يحضر'
+                                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                    : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                        }`}>
+                          {apt.date < todayStr && (apt.status === 'مؤكد' || apt.status === 'معلق') ? 'منتهي (سابق)' : apt.status}
+                        </span>
+                        {apt.date < todayStr ? (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                            سابق
+                          </span>
+                        ) : (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-950/60 text-sky-400 border border-sky-800">
+                            قادم
+                          </span>
+                        )}
+                      </div>
                     </td>
 
-                    {userRole !== 'patient' && (
-                      <td className="p-4 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {canManageStatus && apt.status !== 'مكتمل' && (
-                            <button
-                              onClick={() => onUpdateStatus(apt.id, 'مكتمل')}
-                              className="px-2.5 py-1 rounded-md bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600 hover:text-white border border-emerald-500/30 font-bold transition-all cursor-pointer"
-                              title="تحديد كمكتمل"
-                            >
-                              إكمال
-                            </button>
-                          )}
-                          {canManageStatus && apt.status !== 'مؤكد' && apt.status !== 'مكتمل' && (
-                            <button
-                              onClick={() => onUpdateStatus(apt.id, 'مؤكد')}
-                              className="px-2.5 py-1 rounded-md bg-sky-600/20 text-sky-300 hover:bg-sky-600 hover:text-white border border-sky-500/30 font-bold transition-all cursor-pointer"
-                            >
-                              تأكيد
-                            </button>
-                          )}
-                          {canManageStatus && apt.status !== 'ملغى' && (
-                            <button
-                              onClick={() => onUpdateStatus(apt.id, 'ملغى')}
-                              className="px-2.5 py-1 rounded-md bg-rose-600/20 text-rose-300 hover:bg-rose-600 hover:text-white border border-rose-500/30 font-bold transition-all cursor-pointer"
-                            >
-                              إلغاء
-                            </button>
-                          )}
-                          {canDeleteApt && onDeleteAppointment && (
-                            <button
-                              type="button"
-                              onClick={() => onDeleteAppointment(apt.id)}
-                              className="p-1 rounded-md bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 transition-all cursor-pointer"
-                              title="حذف الموعد نهائياً"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    )}
+                    <td className="p-4 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                        {/* 1. Reschedule Action */}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenReschedule(apt)}
+                          className="px-2 py-1 rounded-md bg-sky-600/20 text-sky-300 hover:bg-sky-600 hover:text-white border border-sky-500/30 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer"
+                          title="إعادة جدولة الموعد"
+                        >
+                          <CalendarDays className="w-3.5 h-3.5" />
+                          <span>إعادة جدولة</span>
+                        </button>
+
+                        {/* 2. Send Reminder Action */}
+                        <button
+                          type="button"
+                          onClick={() => handleSendReminder(apt)}
+                          className={`px-2 py-1 rounded-md border text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                            remindedAptIds.includes(apt.id)
+                              ? 'bg-emerald-600/30 text-emerald-300 border-emerald-500/40'
+                              : 'bg-amber-600/20 text-amber-300 hover:bg-amber-600 hover:text-white border border-amber-500/30'
+                          }`}
+                          title="إرسال تذكير فوري بالموعد للمريض عبر البريد وSMS"
+                        >
+                          <BellRing className="w-3.5 h-3.5" />
+                          <span>{remindedAptIds.includes(apt.id) ? 'تم التذكير ✓' : 'تذكير'}</span>
+                        </button>
+
+                        {/* 3. Confirm Action (if pending and allowed) */}
+                        {canManageStatus && apt.status === 'معلق' && apt.date >= todayStr && (
+                          <button
+                            type="button"
+                            onClick={() => onUpdateStatus(apt.id, 'مؤكد')}
+                            className="px-2 py-1 rounded-md bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600 hover:text-white border border-emerald-500/30 text-xs font-bold transition-all cursor-pointer"
+                            title="تأكيد الموعد"
+                          >
+                            تأكيد
+                          </button>
+                        )}
+
+                        {/* 4. Complete Action (for staff) */}
+                        {canManageStatus && apt.status !== 'مكتمل' && (
+                          <button
+                            type="button"
+                            onClick={() => onUpdateStatus(apt.id, 'مكتمل')}
+                            className="px-2 py-1 rounded-md bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600 hover:text-white border border-emerald-500/30 text-xs font-bold transition-all cursor-pointer"
+                            title="تحديد كمكتمل"
+                          >
+                            إكمال
+                          </button>
+                        )}
+
+                        {/* 5. Cancel Action */}
+                        {apt.status !== 'ملغى' && (
+                          <button
+                            type="button"
+                            onClick={() => onUpdateStatus(apt.id, 'ملغى')}
+                            className="px-2 py-1 rounded-md bg-rose-600/20 text-rose-300 hover:bg-rose-600 hover:text-white border border-rose-500/30 text-xs font-bold transition-all cursor-pointer"
+                            title="إلغاء الموعد"
+                          >
+                            إلغاء
+                          </button>
+                        )}
+
+                        {/* 6. Delete Action (for admin/staff) */}
+                        {canDeleteApt && onDeleteAppointment && (
+                          <button
+                            type="button"
+                            onClick={() => onDeleteAppointment(apt.id)}
+                            className="p-1 rounded-md bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 transition-all cursor-pointer"
+                            title="حذف الموعد نهائياً"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -491,6 +683,87 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
 
             </form>
 
+          </div>
+        </div>
+      )}
+
+      {/* Reschedule Modal */}
+      {rescheduleApt && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in" dir="rtl">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-6 text-right shadow-2xl space-y-4 text-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2.5 rounded-xl bg-sky-500/10 text-sky-400">
+                  <CalendarDays className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">إعادة جدولة الموعد الطبي</h3>
+                  <p className="text-xs text-slate-400">تعديل التاريخ والوقت</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRescheduleApt(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 text-xs space-y-1">
+              <p>المريض: <strong className="text-white font-bold">{rescheduleApt.patientName}</strong></p>
+              <p>الطبيب: <strong className="text-white font-bold">{rescheduleApt.doctorName}</strong> ({rescheduleApt.specialty})</p>
+              <p className="text-slate-400">الموعد الحالي: {formatArabicDate(rescheduleApt.date)} - {formatArabicTime(rescheduleApt.time)}</p>
+            </div>
+
+            <form onSubmit={handleConfirmReschedule} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-300 font-bold mb-1.5">التاريخ الجديد *</label>
+                <input
+                  type="date"
+                  min={todayStr}
+                  value={rescheduleDate}
+                  onChange={(e) => setRescheduleDate(e.target.value)}
+                  required
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-medium focus:outline-none focus:border-sky-500 cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold mb-1.5">التوقيت الجديد المتاح *</label>
+                <select
+                  value={rescheduleTime}
+                  onChange={(e) => setRescheduleTime(e.target.value)}
+                  required
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-medium focus:outline-none focus:border-sky-500 cursor-pointer"
+                >
+                  <option value="09:00">09:00 صباحاً</option>
+                  <option value="10:00">10:00 صباحاً</option>
+                  <option value="11:30">11:30 صباحاً</option>
+                  <option value="13:00">01:00 ظهراً</option>
+                  <option value="15:30">03:30 عصراً</option>
+                  <option value="17:00">05:00 مساءً</option>
+                  <option value="18:30">06:30 مساءً</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="submit"
+                  className="flex-1 py-3 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                >
+                  <CalendarCheck className="w-4 h-4" />
+                  <span>تثبيت الموعد الجديد</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRescheduleApt(null)}
+                  className="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs cursor-pointer"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

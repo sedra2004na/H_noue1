@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArchivedRecord, Patient, UserRole, Doctor } from '../types';
 import { printAndExportPdf } from '../utils/pdfExport';
+import { formatArabicDate } from '../utils/arabicFormatters';
 import { 
   Archive, 
   Search, 
@@ -326,9 +327,9 @@ export const MedicalArchiveSection: React.FC<MedicalArchiveSectionProps> = ({
                     </td>
 
                     {/* Stay Period */}
-                    <td className="py-3.5 px-4">
-                      <div className="font-mono text-slate-200">{record.admissionDate}</div>
-                      <div className="text-[11px] text-slate-400 font-mono">إلى {record.dischargeDate}</div>
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      <div className="text-slate-200 font-semibold">{formatArabicDate(record.admissionDate)}</div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">إلى {formatArabicDate(record.dischargeDate)}</div>
                     </td>
 
                     {/* Department & Doctor */}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Patient, UserRole, Doctor, DischargeSummary } from '../types';
 import { printAndExportPdf } from '../utils/pdfExport';
 import { validatePatientForm, ValidationResult } from '../utils/validation';
+import { formatArabicDate } from '../utils/arabicFormatters';
 import { DischargeSummaryModal } from './DischargeSummaryModal';
 import { 
   Users, 
@@ -498,8 +499,8 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
                           {patient.insuranceProvider || 'سداد نقدي'}
                         </td>
 
-                        <td className="p-4 text-slate-400">
-                          {patient.lastVisitDate}
+                        <td className="p-4 text-slate-300 font-medium whitespace-nowrap">
+                          {formatArabicDate(patient.lastVisitDate)}
                         </td>
 
                         <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>

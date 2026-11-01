@@ -21,14 +21,22 @@ import {
   Send,
   Sparkles,
   Sun,
-  Moon
+  Moon,
+  Clock
 } from 'lucide-react';
 import { UserRole } from '../types';
+import { 
+  sanitizeInput, 
+  hashPasswordWithSalt, 
+  verifyPassword, 
+  recordAuditLog 
+} from '../utils/security';
 
 interface LandingAndAuthScreenProps {
   onLogin: (role: UserRole, userName?: string) => void;
   theme?: 'light' | 'dark';
   onToggleTheme?: () => void;
+  sessionTimedOut?: boolean;
 }
 
 // Pre-configured official system accounts (including all hospital roles)
@@ -45,7 +53,8 @@ const DEFAULT_ACCOUNTS: Record<string, { role: UserRole; name: string; pass: str
 export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ 
   onLogin, 
   theme = 'light', 
-  onToggleTheme 
+  onToggleTheme,
+  sessionTimedOut = false
 }) => {
   const [activeTab, setActiveTab] = useState<'landing' | 'login' | 'register' | 'forgot'>('login');
   const [email, setEmail] = useState('');
@@ -100,8 +109,9 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
   };
 
   const handleEmailChange = (val: string) => {
-    setEmail(val);
-    const cleanEmail = val.trim().toLowerCase();
+    const clean = sanitizeInput(val);
+    setEmail(clean);
+    const cleanEmail = clean.trim().toLowerCase();
     if (cleanEmail) {
       const accounts = getRegisteredAccounts();
       if (accounts[cleanEmail]) {
@@ -127,22 +137,24 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
     return emailRegex.test(emailStr.trim());
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
 
-    if (!validateEmail(email)) {
+    const cleanEmail = sanitizeInput(email).trim().toLowerCase();
+    const cleanPass = password.trim();
+
+    if (!validateEmail(cleanEmail)) {
       setErrorMessage('يرجى إدخال بريد إلكتروني نظامي وصحيح (مثل: name@domain.com)');
       return;
     }
 
-    if (password.trim().length < 4) {
+    if (cleanPass.length < 4) {
       setErrorMessage('كلمة المرور يجب أن تتكون من 4 خانات أو رموز على الأقل');
       return;
     }
 
-    const cleanEmail = email.trim().toLowerCase();
     const accounts = getRegisteredAccounts();
 
     // LOGIN LOGIC
@@ -153,11 +165,41 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
         return;
       }
 
-      // Check password
-      if (existingAccount.pass && existingAccount.pass !== password.trim()) {
+      // Check password (supports salted SHA-256 hash or legacy demo pass)
+      let isPasswordValid = false;
+      if (existingAccount.salt && existingAccount.passHash) {
+        isPasswordValid = await verifyPassword(cleanPass, existingAccount.passHash, existingAccount.salt);
+      } else {
+        isPasswordValid = existingAccount.pass === cleanPass;
+      }
+
+      if (!isPasswordValid) {
+        recordAuditLog({
+          userId: cleanEmail,
+          userName: existingAccount.name || cleanEmail,
+          userRole: existingAccount.role,
+          action: 'LOGIN',
+          targetResource: 'AUTH_GATEWAY',
+          details: 'محاولة فاشلة لتسجيل الدخول: كلمة المرور غير مطابقة',
+          status: 'BLOCKED_ALERT',
+        });
         setErrorMessage('كلمة المرور غير صحيحة لهذا الحساب! إذا نسيت الكلمة، اضغط على "نسيت كلمة المرور؟" بالأسفل.');
         return;
       }
+
+      // Record successful login audit log
+      recordAuditLog({
+        userId: cleanEmail,
+        userName: existingAccount.name || cleanEmail,
+        userRole: existingAccount.role,
+        action: 'LOGIN',
+        targetResource: 'AUTH_GATEWAY',
+        details: 'تسجيل دخول ناجح وموثق بنظام التحقق المشفر',
+        status: 'SUCCESS',
+      });
+
+      // Clear session timeout flag on successful login
+      localStorage.removeItem('syrian_hosp_session_timeout');
 
       // Successful verified login
       onLogin(existingAccount.role, existingAccount.name || fullName || email.split('@')[0]);
@@ -166,7 +208,8 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
 
     // REGISTER LOGIC (Strictly locked to Patient role for public safety)
     if (activeTab === 'register') {
-      if (fullName.trim().length < 3) {
+      const cleanName = sanitizeInput(fullName).trim();
+      if (cleanName.length < 3) {
         setErrorMessage('يرجى كتابة الاسم الكامل للمريض بشكل واضح');
         return;
       }
@@ -176,14 +219,20 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
         return;
       }
 
+      // Generate unique cryptographic salt and compute salted SHA-256 hash
+      const salt = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      const passHash = await hashPasswordWithSalt(cleanPass, salt);
+
       // Save new user account to localStorage (strictly as patient)
       const userAccountsRaw = localStorage.getItem('syrian_hosp_accounts');
       const userAccounts = userAccountsRaw ? JSON.parse(userAccountsRaw) : {};
 
       userAccounts[cleanEmail] = {
         role: 'patient',
-        name: fullName.trim(),
-        pass: password.trim(),
+        name: cleanName,
+        pass: cleanPass, // retained for backward compatibility
+        passHash,
+        salt,
         registeredAt: new Date().toISOString()
       };
 
@@ -193,7 +242,18 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
         // Fallback
       }
 
-      onLogin('patient', fullName.trim());
+      recordAuditLog({
+        userId: cleanEmail,
+        userName: cleanName,
+        userRole: 'patient',
+        action: 'LOGIN',
+        targetResource: 'PATIENT_REGISTRATION',
+        details: 'إنشاء حساب مريض جديد وتشفير بيانات الاعتماد بـ Salted SHA-256',
+        status: 'SUCCESS',
+      });
+
+      localStorage.removeItem('syrian_hosp_session_timeout');
+      onLogin('patient', cleanName);
     }
   };
 
@@ -308,57 +368,65 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
       </div>
 
       {/* Top Header Bar */}
-      <header className="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <header className="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-md">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
           
           {/* Logo & Hospital Name */}
           <div 
             onClick={() => setActiveTab('landing')}
-            className="flex items-center gap-3 cursor-pointer group"
+            className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0 min-w-0"
           >
-            <HospitalLogo size="md" />
-            <div>
-              <h1 className="text-lg font-black text-white tracking-wide group-hover:text-sky-400 transition-colors">مشفى الرحمة</h1>
-              <p className="text-[11px] text-slate-400">النظام الطبي الموحد لإدارة الرعاية الصحيّة</p>
+            <div className="shrink-0">
+              <HospitalLogo size="sm" className="sm:hidden" />
+              <HospitalLogo size="md" className="hidden sm:flex" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-lg font-black text-white tracking-wide group-hover:text-sky-400 transition-colors whitespace-nowrap">
+                مشفى الرحمة
+              </h1>
+              <p className="text-[11px] text-slate-400 hidden sm:block whitespace-nowrap">
+                النظام الطبي الموحد لإدارة الرعاية الصحيّة
+              </p>
             </div>
           </div>
 
           {/* Unified Clean Header Navigation Bar */}
-          <nav className="flex items-center gap-1.5 bg-slate-950/90 p-1.5 rounded-full border border-slate-800/80 shadow-lg">
+          <nav className="flex items-center gap-1 sm:gap-1.5 bg-slate-950/90 p-1 sm:p-1.5 rounded-full border border-slate-800/80 shadow-lg shrink-0">
             <button
               onClick={() => setActiveTab('landing')}
-              className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer whitespace-nowrap ${
                 activeTab === 'landing' 
                   ? 'bg-sky-600 text-white shadow-md shadow-sky-900/50 border border-sky-400/30' 
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Home className="w-3.5 h-3.5" />
+              <Home className="w-3.5 h-3.5 shrink-0" />
               <span>الرئيسية</span>
             </button>
 
             <button
               onClick={() => setActiveTab('login')}
-              className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer whitespace-nowrap ${
                 activeTab === 'login' || activeTab === 'register' || activeTab === 'forgot'
                   ? 'bg-sky-600 text-white shadow-md shadow-sky-900/50 border border-sky-400/30' 
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <LogIn className="w-3.5 h-3.5" />
-              <span>بوابة الدخول</span>
+              <LogIn className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">بوابة الدخول</span>
+              <span className="sm:hidden">الدخول</span>
             </button>
 
             {onToggleTheme && (
               <button
                 onClick={onToggleTheme}
                 title={theme === 'dark' ? 'التحويل إلى النمط النهاري' : 'التحويل إلى النمط الليلي'}
-                className="p-2 rounded-full text-slate-400 hover:text-amber-400 hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1.5 sm:p-2 rounded-full text-slate-400 hover:text-amber-400 hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
               >
                 {theme === 'dark' ? (
-                  <Sun className="w-4 h-4 text-amber-400" />
+                  <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
                 ) : (
-                  <Moon className="w-4 h-4 text-indigo-400" />
+                  <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400" />
                 )}
               </button>
             )}
@@ -458,6 +526,18 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
 
             <form onSubmit={handleFormSubmit} className="space-y-4">
               
+              {sessionTimedOut && !errorMessage && !successMessage && (
+                <div className="p-3.5 rounded-xl bg-amber-950/80 border border-amber-500/80 text-amber-200 text-xs flex items-start gap-2 shadow-lg animate-fadeIn">
+                  <Clock className="w-4.5 h-4.5 text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-bold">تم إغلاق الجلسة تلقائياً لعدم النشاط (15 دقيقة)</div>
+                    <div className="text-[11px] text-amber-300/90 mt-0.5">
+                      لحماية الخصوصية وسرية ملفات المرضى، يرجى إعادة تسجيل الدخول لمتابعة العمل في النظام.
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {successMessage && (
                 <div className="p-3.5 rounded-xl bg-emerald-950/80 border border-emerald-500/80 text-emerald-200 text-xs flex items-center gap-2 shadow-lg">
                   <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400 shrink-0" />

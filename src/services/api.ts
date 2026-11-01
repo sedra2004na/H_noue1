@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Set your Laravel API Backend Base URL
-const API_BASE_URL = process.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+// Set API Backend Base URL (defaults to Express server /api routes)
+const API_BASE_URL = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL) || '/api';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -12,9 +12,22 @@ export const apiClient = axios.create({
   withCredentials: true,
 });
 
-// Request Interceptor: Attach Sanctum Bearer Token
+// Request Interceptor: Attach Active User Role and Patient ID for Server-Side RBAC Enforcement
 apiClient.interceptors.request.use(
   (config) => {
+    let currentRole = 'patient';
+    try {
+      const stored = localStorage.getItem('syrian_hosp_userRole');
+      if (stored) {
+        currentRole = JSON.parse(stored);
+      }
+    } catch {
+      currentRole = 'patient';
+    }
+
+    config.headers['x-user-role'] = currentRole;
+    config.headers['x-patient-id'] = 'pat-1';
+
     const token = localStorage.getItem('care_hospital_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -82,4 +95,8 @@ export const hospitalApi = {
   // Billing & Invoices
   getInvoices: () => apiClient.get('/invoices'),
   createInvoice: (data: any) => apiClient.post('/invoices', data),
+
+  // Server RBAC & Permissions Enforcement
+  verifyPermissions: () => apiClient.get('/auth/permissions'),
+  getServerRbacStatus: () => apiClient.get('/server-rbac-status'),
 };
