@@ -110,8 +110,14 @@ export function formatArabicTime(timeInput: string | Date | undefined | null): s
 
 /**
  * Realtime clock formatter using unified Latin numerals (0-9) with Arabic text.
+ * BiDi safe: returns dateText, timeText, timeDigits, and period.
  */
-export function formatArabicClock(date: Date = new Date()): { dateText: string; timeText: string } {
+export function formatArabicClock(date: Date = new Date()): { 
+  dateText: string; 
+  timeText: string;
+  timeDigits: string;
+  period: string;
+} {
   const dayName = ARABIC_DAYS[date.getDay()];
   const day = date.getDate();
   const monthName = LEVANT_MONTHS[date.getMonth()];
@@ -124,10 +130,13 @@ export function formatArabicClock(date: Date = new Date()): { dateText: string; 
   if (hours > 12) hours -= 12;
   if (hours === 0) hours = 12;
   const formattedHours = hours < 10 ? `0${hours}` : `${hours}`;
+  const timeDigits = `${formattedHours}:${minutes}:${seconds}`;
 
   return {
     dateText: `${dayName}، ${day} ${monthName} ${year}`,
-    timeText: `${formattedHours}:${minutes}:${seconds} ${period}`
+    timeText: `${timeDigits} ${period}`,
+    timeDigits,
+    period
   };
 }
 

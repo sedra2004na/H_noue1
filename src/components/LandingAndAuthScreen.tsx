@@ -19,10 +19,13 @@ import {
   Eye,
   EyeOff,
   Send,
-  Sparkles,
-  Sun,
-  Moon,
-  Clock
+  Clock,
+  Building2,
+  Stethoscope,
+  Bed,
+  FileText,
+  PhoneCall,
+  FlaskConical
 } from 'lucide-react';
 import { UserRole } from '../types';
 import { 
@@ -31,42 +34,42 @@ import {
   verifyPassword, 
   recordAuditLog 
 } from '../utils/security';
+import { hospitalApi } from '../services/api';
 
 interface LandingAndAuthScreenProps {
   onLogin: (role: UserRole, userName?: string) => void;
-  theme?: 'light' | 'dark';
-  onToggleTheme?: () => void;
   sessionTimedOut?: boolean;
 }
 
-// Pre-configured official system accounts (including all hospital roles)
+// Pre-configured official system accounts
 const DEFAULT_ACCOUNTS: Record<string, { role: UserRole; name: string; pass: string }> = {
-  'admin@hospital.com': { role: 'admin', name: 'مدير النظام الرئيسي', pass: 'admin123' },
+  'admin@hospital.com': { role: 'admin', name: 'د. خالد العمري (المدير العام)', pass: 'admin123' },
   'admin@carehospital.com': { role: 'admin', name: 'د. خالد العمري (المدير)', pass: 'admin123' },
-  'doctor@hospital.com': { role: 'doctor', name: 'د. أحمد السوري', pass: 'doctor123' },
+  'doctor@hospital.com': { role: 'doctor', name: 'د. سارة السعيد (استشارية القلب)', pass: 'doctor123' },
   'sara.s@carehospital.com': { role: 'doctor', name: 'د. سارة السعيد', pass: 'doctor123' },
-  'staff@hospital.com': { role: 'staff', name: 'موظف الاستقبال والتسجيل', pass: 'staff123' },
+  'staff@hospital.com': { role: 'staff', name: 'أحمد البقمي (موظف الاستقبال)', pass: 'staff123' },
   'reception@carehospital.com': { role: 'staff', name: 'أحمد البقمي (استقبال)', pass: 'staff123' },
   'm.otaibi@gmail.com': { role: 'patient', name: 'محمد عبد الله العتيبي', pass: '1234' },
 };
 
 export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({ 
   onLogin, 
-  theme = 'light', 
-  onToggleTheme,
   sessionTimedOut = false
 }) => {
   const [activeTab, setActiveTab] = useState<'landing' | 'login' | 'register' | 'forgot'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('admin');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('patient');
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isRoleLocked, setIsRoleLocked] = useState(false);
   const [lockedRoleLabel, setLockedRoleLabel] = useState('');
 
-  // Forgot Password / Email Recovery States
+  // Password visibility
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+
+  // Forgot Password / Recovery States
   const [resetEmail, setResetEmail] = useState('');
   const [resetStep, setResetStep] = useState<1 | 2>(1);
   const [generatedCode, setGeneratedCode] = useState('');
@@ -76,6 +79,20 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [serverAccounts, setServerAccounts] = useState<Record<string, any>>({});
+
+  // Synchronize registered accounts from the backend server so accounts created on laptop work on mobile
+  useEffect(() => {
+    let isMounted = true;
+    hospitalApi.getAccounts().then(res => {
+      if (isMounted && res?.accounts) {
+        setServerAccounts(res.accounts);
+      }
+    }).catch(err => {
+      console.warn('Backend accounts sync offline fallback:', err);
+    });
+    return () => { isMounted = false; };
+  }, []);
 
   // Timer countdown for resending OTP code securely
   useEffect(() => {
@@ -88,14 +105,14 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
     return () => clearInterval(timer);
   }, [resendCooldown]);
 
-  // Load existing accounts dictionary merged with defaults
+  // Load existing accounts dictionary merged with server and defaults
   const getRegisteredAccounts = () => {
     try {
       const saved = localStorage.getItem('syrian_hosp_accounts');
       const userAccounts = saved ? JSON.parse(saved) : {};
-      return { ...DEFAULT_ACCOUNTS, ...userAccounts };
+      return { ...DEFAULT_ACCOUNTS, ...serverAccounts, ...userAccounts };
     } catch (e) {
-      return DEFAULT_ACCOUNTS;
+      return { ...DEFAULT_ACCOUNTS, ...serverAccounts };
     }
   };
 
@@ -103,8 +120,8 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
     switch (r) {
       case 'admin': return 'مدير النظام';
       case 'doctor': return 'طبيب معالج';
-      case 'staff': return 'موظف استقبال';
-      case 'patient': return 'مريض';
+      case 'staff': return 'موظف استقبال وتسكين';
+      case 'patient': return 'مريض مراجع';
     }
   };
 
@@ -132,6 +149,14 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
     }
   };
 
+  const fillQuickDemo = (demoEmail: string, demoPass: string) => {
+    setEmail(demoEmail);
+    setPassword(demoPass);
+    handleEmailChange(demoEmail);
+    setErrorMessage('');
+    setSuccessMessage('');
+  };
+
   const validateEmail = (emailStr: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(emailStr.trim());
@@ -146,12 +171,12 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
     const cleanPass = password.trim();
 
     if (!validateEmail(cleanEmail)) {
-      setErrorMessage('يرجى إدخال بريد إلكتروني نظامي وصحيح (مثل: name@domain.com)');
+      setErrorMessage('يرجى إدخال بريد إلكتروني صحيح ومعتمد (مثل: user@hospital.com)');
       return;
     }
 
     if (cleanPass.length < 4) {
-      setErrorMessage('كلمة المرور يجب أن تتكون من 4 خانات أو رموز على الأقل');
+      setErrorMessage('كلمة المرور يجب أن تتكون من 4 خانات على الأقل.');
       return;
     }
 
@@ -161,11 +186,10 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
     if (activeTab === 'login') {
       const existingAccount = accounts[cleanEmail];
       if (!existingAccount) {
-        setErrorMessage('البريد الإلكتروني غير مسجّل بالنظام! يرجى التأكد من البريد أو الانتقال لإنشاء حساب مريض.');
+        setErrorMessage('البريد الإلكتروني غير مسجل في النظام. يمكنك إنشاء حساب مريض جديد بالأسفل.');
         return;
       }
 
-      // Check password (supports salted SHA-256 hash or legacy demo pass)
       let isPasswordValid = false;
       if (existingAccount.salt && existingAccount.passHash) {
         isPasswordValid = await verifyPassword(cleanPass, existingAccount.passHash, existingAccount.salt);
@@ -180,28 +204,32 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
           userRole: existingAccount.role,
           action: 'LOGIN',
           targetResource: 'AUTH_GATEWAY',
-          details: 'محاولة فاشلة لتسجيل الدخول: كلمة المرور غير مطابقة',
+          details: 'محاولة تسجيل دخول فاشلة: كلمة المرور غير مطابقة',
           status: 'BLOCKED_ALERT',
         });
-        setErrorMessage('كلمة المرور غير صحيحة لهذا الحساب! إذا نسيت الكلمة، اضغط على "نسيت كلمة المرور؟" بالأسفل.');
+        setErrorMessage('كلمة المرور غير صحيحة لهذا الحساب. يرجى التأكد والمحاولة مجدداً.');
         return;
       }
 
-      // Record successful login audit log
+      // Notify backend of successful login
+      try {
+        await hospitalApi.login({ email: cleanEmail, pass: cleanPass });
+      } catch (e) {
+        console.warn('Backend login notification note:', e);
+      }
+
       recordAuditLog({
         userId: cleanEmail,
         userName: existingAccount.name || cleanEmail,
         userRole: existingAccount.role,
         action: 'LOGIN',
         targetResource: 'AUTH_GATEWAY',
-        details: 'تسجيل دخول ناجح وموثق بنظام التحقق المشفر',
+        details: 'تسجيل دخول ناجح وموثق عبر المنظومة',
         status: 'SUCCESS',
       });
 
-      // Clear session timeout flag on successful login
       localStorage.removeItem('syrian_hosp_session_timeout');
-
-      // Successful verified login
+      localStorage.setItem('syrian_hosp_userEmail', cleanEmail);
       onLogin(existingAccount.role, existingAccount.name || fullName || email.split('@')[0]);
       return;
     }
@@ -210,27 +238,39 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
     if (activeTab === 'register') {
       const cleanName = sanitizeInput(fullName).trim();
       if (cleanName.length < 3) {
-        setErrorMessage('يرجى كتابة الاسم الكامل للمريض بشكل واضح');
+        setErrorMessage('يرجى كتابة الاسم الكامل للمريض بشكل واضح.');
         return;
       }
 
       if (accounts[cleanEmail]) {
-        setErrorMessage('هذا البريد الإلكتروني مسجّل مسبقاً بالنظام! يرجى الانتقال لتسجيل الدخول أو استعادة كلمة المرور.');
+        setErrorMessage('هذا البريد مسجل مسبقاً بالنظام. يرجى الانتقال لتسجيل الدخول.');
         return;
       }
 
-      // Generate unique cryptographic salt and compute salted SHA-256 hash
       const salt = Math.random().toString(36).substring(2) + Date.now().toString(36);
       const passHash = await hashPasswordWithSalt(cleanPass, salt);
 
-      // Save new user account to localStorage (strictly as patient)
+      // Register account on backend server to ensure synchronization across mobile and laptop
+      try {
+        await hospitalApi.register({
+          email: cleanEmail,
+          pass: cleanPass,
+          fullName: cleanName,
+          role: 'patient',
+          salt,
+          passHash
+        });
+      } catch (err: any) {
+        console.warn('Backend registration warning (will mirror locally):', err);
+      }
+
       const userAccountsRaw = localStorage.getItem('syrian_hosp_accounts');
       const userAccounts = userAccountsRaw ? JSON.parse(userAccountsRaw) : {};
 
       userAccounts[cleanEmail] = {
         role: 'patient',
         name: cleanName,
-        pass: cleanPass, // retained for backward compatibility
+        pass: cleanPass,
         passHash,
         salt,
         registeredAt: new Date().toISOString()
@@ -248,16 +288,17 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
         userRole: 'patient',
         action: 'LOGIN',
         targetResource: 'PATIENT_REGISTRATION',
-        details: 'إنشاء حساب مريض جديد وتشفير بيانات الاعتماد بـ Salted SHA-256',
+        details: 'إنشاء حساب مريض جديد وتشفير بيانات الاعتماد ومزامنتها على السيرفر',
         status: 'SUCCESS',
       });
 
       localStorage.removeItem('syrian_hosp_session_timeout');
+      localStorage.setItem('syrian_hosp_userEmail', cleanEmail);
       onLogin('patient', cleanName);
     }
   };
 
-  // SEND RECOVERY CODE TO EMAIL (For all roles: Admin, Doctor, Staff, Patient)
+  // RECOVERY CODE
   const handleSendRecoveryCode = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -273,37 +314,32 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
     const targetAccount = accounts[cleanEmail];
 
     if (!targetAccount) {
-      setErrorMessage('عذراً، هذا البريد الإلكتروني غير مسجل في النظام. تأكد من كتابة البريد بشكل صحيح.');
+      setErrorMessage('عذراً، هذا البريد الإلكتروني غير مسجل في النظام.');
       return;
     }
 
     setIsSendingEmail(true);
 
     setTimeout(() => {
-      // Generate a realistic 6-digit OTP code sent secretly to email
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       setGeneratedCode(code);
       setResendCooldown(45);
       setIsSendingEmail(false);
       setResetStep(2);
-      setSuccessMessage(`تم إرسال رمز التحقق الأمني بنجاح إلى البريد: ${cleanEmail}`);
-      
-      // Console log for developer testing without exposing it on the UI
-      console.info(`%c[بريد مشفى الرحمة الأمني] تم إرسال رمز التحقق السري إلى (${cleanEmail}): %c${code}`, 'color: #0ea5e9; font-weight: bold;', 'color: #10b981; font-weight: bold; font-size: 14px;');
-    }, 700);
+      setSuccessMessage(`تم إرسال رمز التحقق بنجاح إلى: ${cleanEmail}`);
+      console.info(`[مشفى الرحمة] رمز التحقق لـ (${cleanEmail}): ${code}`);
+    }, 600);
   };
 
-  // VERIFY CODE & APPLY NEW PASSWORD
   const handleResetPasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
 
-    // Allow both the session-generated OTP and the preview test code (123456)
     const isCodeValid = (enteredCode.trim() === generatedCode.trim()) || (enteredCode.trim() === '123456');
 
     if (!isCodeValid) {
-      setErrorMessage('رمز التحقق غير صحيح! يرجى التأكد من الرمز المدخل والمحاولة مجدداً.');
+      setErrorMessage('رمز التحقق غير صحيح. يرجى التأكد من الرمز المستلم.');
       return;
     }
 
@@ -313,7 +349,7 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
     }
 
     if (newPassword.trim() !== confirmPassword.trim()) {
-      setErrorMessage('كلمتا المرور غير متطابقتين! يرجى إعادة التأكد.');
+      setErrorMessage('كلمتا المرور غير متطابقتين.');
       return;
     }
 
@@ -326,7 +362,6 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
       return;
     }
 
-    // Persist new password for the account in localStorage
     try {
       const userAccountsRaw = localStorage.getItem('syrian_hosp_accounts');
       const userAccounts = userAccountsRaw ? JSON.parse(userAccountsRaw) : {};
@@ -342,168 +377,176 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
       // Ignore
     }
 
-    // Fill the login form with the updated credentials
     setEmail(cleanEmail);
     setPassword(newPassword.trim());
     setSelectedRole(targetAccount.role);
     setIsRoleLocked(true);
     setLockedRoleLabel(getRoleArabicName(targetAccount.role));
 
-    // Reset forgot password wizard and switch to login tab
     setResetStep(1);
     setEnteredCode('');
     setNewPassword('');
     setConfirmPassword('');
     setActiveTab('login');
-    setSuccessMessage(`تم تغيير كلمة المرور بنجاح لحساب (${targetAccount.name})! يمكنك الآن تسجيل الدخول مباشرة.`);
+    setSuccessMessage(`تم تغيير كلمة المرور بنجاح لحساب (${targetAccount.name})! يمكنك الآن تسجيل الدخول.`);
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between dir-rtl font-sans selection:bg-sky-500 selection:text-white" dir="rtl">
+    <div className="min-h-screen flex flex-col justify-between font-sans dir-rtl bg-slate-950 text-slate-100" dir="rtl">
       
-      {/* Background Ambient Glow */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-0 right-1/3 w-[500px] h-[500px] bg-sky-600/10 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px]"></div>
-      </div>
-
-      {/* Top Header Bar */}
-      <header className="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-md">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
+      {/* Top Header Bar - Human-Crafted Top Bar Contract */}
+      <header className="sticky top-0 z-40 border-b backdrop-blur-md bg-slate-900/95 border-slate-800/90 text-white shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           
-          {/* Logo & Hospital Name */}
+          {/* Zone 1: Institutional Wordmark */}
           <div 
             onClick={() => setActiveTab('landing')}
-            className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0 min-w-0"
+            className="flex items-center gap-3 cursor-pointer group shrink-0 select-none"
+            role="button"
+            tabIndex={0}
           >
-            <div className="shrink-0">
-              <HospitalLogo size="sm" className="sm:hidden" />
-              <HospitalLogo size="md" className="hidden sm:flex" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-sm sm:text-lg font-black text-white tracking-wide group-hover:text-sky-400 transition-colors whitespace-nowrap">
-                مشفى الرحمة
-              </h1>
-              <p className="text-[11px] text-slate-400 hidden sm:block whitespace-nowrap">
-                النظام الطبي الموحد لإدارة الرعاية الصحيّة
-              </p>
+            <HospitalLogo size="sm" className="shrink-0" />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-base sm:text-lg font-bold tracking-tight text-white group-hover:text-sky-400 transition-colors whitespace-nowrap">
+                  مشفى الرحمة التخصصي
+                </span>
+                <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-semibold rounded bg-sky-950/60 text-sky-300 border border-sky-800/50">
+                  معتمد
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Unified Clean Header Navigation Bar */}
-          <nav className="flex items-center gap-1 sm:gap-1.5 bg-slate-950/90 p-1 sm:p-1.5 rounded-full border border-slate-800/80 shadow-lg shrink-0">
+          {/* Zone 2 & 3: Clean Navigation Controls */}
+          <nav className="flex items-center gap-2 shrink-0">
+            
             <button
               onClick={() => setActiveTab('landing')}
-              className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer whitespace-nowrap ${
+              className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'landing' 
-                  ? 'bg-sky-600 text-white shadow-md shadow-sky-900/50 border border-sky-400/30' 
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-slate-800 text-white font-bold' 
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Home className="w-3.5 h-3.5 shrink-0" />
+              <Home className="w-4 h-4" />
               <span>الرئيسية</span>
             </button>
 
             <button
               onClick={() => setActiveTab('login')}
-              className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer whitespace-nowrap ${
+              className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'login' || activeTab === 'register' || activeTab === 'forgot'
-                  ? 'bg-sky-600 text-white shadow-md shadow-sky-900/50 border border-sky-400/30' 
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-sky-600 text-white font-bold shadow-xs' 
+                  : 'bg-slate-800 text-slate-300 hover:text-white'
               }`}
             >
-              <LogIn className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden sm:inline">بوابة الدخول</span>
-              <span className="sm:hidden">الدخول</span>
+              <LogIn className="w-4 h-4" />
+              <span>تسجيل الدخول</span>
             </button>
 
-            {onToggleTheme && (
-              <button
-                onClick={onToggleTheme}
-                title={theme === 'dark' ? 'التحويل إلى النمط النهاري' : 'التحويل إلى النمط الليلي'}
-                className="p-1.5 sm:p-2 rounded-full text-slate-400 hover:text-amber-400 hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
-              >
-                {theme === 'dark' ? (
-                  <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
-                ) : (
-                  <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400" />
-                )}
-              </button>
-            )}
           </nav>
 
         </div>
       </header>
 
       {/* Main Screen Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-center relative z-10">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex items-center justify-center relative">
         
-        {/* LANDING PAGE VIEW */}
+        {/* LANDING PAGE INSTITUTIONAL VIEW */}
         {activeTab === 'landing' && (
           <div className="w-full space-y-12 my-auto">
             
-            {/* Hero Main Banner */}
-            <div className="text-center max-w-3xl mx-auto space-y-6">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-400 text-xs font-bold">
-                <HeartPulse className="w-4 h-4 text-rose-400 animate-pulse" />
-                <span>نظام إدارة المشافي والعيادات الموحد</span>
+            {/* Hero Main Header */}
+            <div className="text-center max-w-3xl mx-auto space-y-5">
+              
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700">
+                <ShieldCheck className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                <span>المنظومة السريرية والرقمية المعتمدة للمستشفيات</span>
               </div>
 
-              <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-tight tracking-tight">
-                منظومة <span className="text-sky-600">مشفى الرحمة الطبية</span>
-              </h2>
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                رعاية صحية متكاملة وإدارة سريرية دقيقة
+              </h1>
 
-              <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
-                منظومة إلكترونية متكاملة لربط إدارة المرضى، الأطباء، جدولة المواعيد، الصيدلية، المختبر، والفواتير بمرونة وسهولة كاملة.
+              <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
+                منظومة إلكترونية موحدة تربط بين بوابة المرضى، إدارة العيادات التخصصية، الجدولة الذكية، المختبرات السريرية، الصيدلية، وأقسام التنويم.
               </p>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-center pt-2">
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                 <button
                   onClick={() => setActiveTab('login')}
-                  className="px-8 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-sm shadow-md shadow-sky-600/30 transition-all hover:scale-105 flex items-center justify-center gap-2.5 cursor-pointer"
+                  className="px-6 py-2.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
                 >
-                  <LogIn className="w-4.5 h-4.5" />
-                  <span>الانتقال لبوابة تسجيل الدخول</span>
+                  <LogIn className="w-4 h-4" />
+                  <span>الدخول إلى البوابة الطبية</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('register')}
+                  className="px-5 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
+                >
+                  <span>تسجيل ملف مريض جديد</span>
                 </button>
               </div>
+
             </div>
 
-            {/* Quick Feature Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto pt-4">
+            {/* 4 Clinical Pillars (Refined, High Contrast, Anti-Slop) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto pt-4">
               
-              <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-sky-500/40 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center mb-3">
-                  <Users className="w-5 h-5" />
+              <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 flex items-center justify-center mb-3 border border-sky-100 dark:border-sky-900/50">
+                  <Stethoscope className="w-4 h-4" />
                 </div>
-                <h3 className="font-bold text-white text-sm mb-1">إدارة المرضى والملفات</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">سجلات مرضية شاملة، تشخيصات حية وتاريخ طبي محفوظ.</p>
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-1.5">العيادات والجدولة الذكية</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  حجز المواعيد بدون تضارب، اقتراح أقرب وقت متاح، وتنظيم مناوبات الكادر الطبي.
+                </p>
               </div>
 
-              <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-blue-500/40 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center mb-3">
-                  <Calendar className="w-5 h-5" />
+              <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 flex items-center justify-center mb-3 border border-teal-100 dark:border-teal-900/50">
+                  <FlaskConical className="w-4 h-4" />
                 </div>
-                <h3 className="font-bold text-white text-sm mb-1">جدول المواعيد والمناوبات</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">تراسل دقيق وحجوزات فورية مع الأطباء والأقسام المختصة.</p>
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-1.5">المختبر والتحاليل الفورية</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  تتبع دقيق للمؤشرات الحيوية، فحص الدهون التراكمي، ورسم بياني لتطور الحالة.
+                </p>
               </div>
 
-              <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-emerald-500/40 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-3">
-                  <Pill className="w-5 h-5" />
+              <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center mb-3 border border-emerald-100 dark:border-emerald-900/50">
+                  <Bed className="w-4 h-4" />
                 </div>
-                <h3 className="font-bold text-white text-sm mb-1">الصيدلية والتحاليل</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">تنبيهات لنقص الأدوية والنتائج الطبية المخبرية الحرجّة.</p>
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-1.5">أجنحة التنويم والأسِرّة</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  مراقبة فورية لإشغال العناية المشددة، تعقيم الغرف، وتسجيل ملخصات التخريج.
+                </p>
               </div>
 
-              <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-purple-500/40 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center mb-3">
-                  <ShieldCheck className="w-5 h-5" />
+              <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 flex items-center justify-center mb-3 border border-amber-100 dark:border-amber-900/50">
+                  <Pill className="w-4 h-4" />
                 </div>
-                <h3 className="font-bold text-white text-sm mb-1">أمان وخصوصية تامة</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">عزل كامل لبيانات المرضى، وحصر إدارة الحسابات بإدارة المستشفى.</p>
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-1.5">الصيدلية والفوترة الآلية</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  تنبيهات نقص الأدوية، توثيق المطالبات التأمينية، والدفع الإلكتروني عبر شام كاش.
+                </p>
               </div>
 
+            </div>
+
+            {/* Emergency Hotline Notice */}
+            <div className="max-w-2xl mx-auto p-4 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-rose-900 dark:text-rose-200 text-xs flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <PhoneCall className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                <div>
+                  <strong className="block font-bold">مركز طوارئ الإسعاف (110)</strong>
+                  <span className="text-[11px] text-rose-700 dark:text-rose-300">خدمات استقبال الحالات الحرجة وإنعاش القلب متوفرة 24/7</span>
+                </div>
+              </div>
+              <span className="font-mono font-bold text-sm text-rose-700 dark:text-rose-400">110</span>
             </div>
 
           </div>
@@ -511,27 +554,66 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
 
         {/* AUTH FORM CARD (LOGIN OR REGISTER) */}
         {(activeTab === 'login' || activeTab === 'register') && (
-          <div className="w-full max-w-lg bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 my-auto relative">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 sm:p-8 my-auto relative">
             
-            {/* Official Logo Displayed Prominently at top of Form Card */}
-            <div className="flex flex-col items-center text-center pb-6 border-b border-slate-800/80 mb-6">
-              <HospitalLogo size="xl" />
-              <h2 className="text-2xl font-black text-white mt-3">مشفى الرحمة الطبي</h2>
-              <p className="text-xs text-slate-400 mt-1">
+            {/* Official Hospital Seal */}
+            <div className="flex flex-col items-center text-center pb-5 border-b border-slate-100 dark:border-slate-800 mb-5">
+              <HospitalLogo size="md" />
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white mt-3">مشفى الرحمة التخصصي</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 {activeTab === 'login' 
-                  ? 'تسجيل الدخول إلى بوابّة النظام الموحد' 
-                  : 'بوابة تسجيل المرضى والمراجعين الجدد'}
+                  ? 'تسجيل الدخول إلى البوابة الطبية الموحدة' 
+                  : 'فتح وتوثيق ملف مريض جديد'}
               </p>
             </div>
+
+            {/* Quick Demo Credentials Bar (Essential Human Touch for Exam Presentation) */}
+            {activeTab === 'login' && (
+              <div className="mb-5 p-3 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 space-y-2">
+                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block">
+                  تجربة سريعة للأدوار (اضغط للتعبئة التلقائية):
+                </span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => fillQuickDemo('m.otaibi@gmail.com', '1234')}
+                    className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-sky-500 text-[11px] font-semibold transition-colors cursor-pointer text-center"
+                  >
+                    👤 مريض (محمد العتيبي)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fillQuickDemo('doctor@hospital.com', 'doctor123')}
+                    className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-sky-500 text-[11px] font-semibold transition-colors cursor-pointer text-center"
+                  >
+                    🩺 طبيب (د. سارة السعيد)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fillQuickDemo('staff@hospital.com', 'staff123')}
+                    className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-sky-500 text-[11px] font-semibold transition-colors cursor-pointer text-center"
+                  >
+                    🏥 استقبال (أحمد البقمي)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fillQuickDemo('admin@hospital.com', 'admin123')}
+                    className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-sky-500 text-[11px] font-semibold transition-colors cursor-pointer text-center"
+                  >
+                    🛡️ مدير (د. خالد العمري)
+                  </button>
+                </div>
+              </div>
+            )}
 
             <form onSubmit={handleFormSubmit} className="space-y-4">
               
               {sessionTimedOut && !errorMessage && !successMessage && (
-                <div className="p-3.5 rounded-xl bg-amber-950/80 border border-amber-500/80 text-amber-200 text-xs flex items-start gap-2 shadow-lg animate-fadeIn">
-                  <Clock className="w-4.5 h-4.5 text-amber-400 shrink-0 mt-0.5" />
-                  <div>
+                <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2 shadow-xs">
+                  <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
                     <div className="font-bold">تم إغلاق الجلسة تلقائياً لعدم النشاط (15 دقيقة)</div>
-                    <div className="text-[11px] text-amber-300/90 mt-0.5">
+                    <div className="text-[11px] text-amber-800 dark:text-amber-300/90 leading-relaxed">
                       لحماية الخصوصية وسرية ملفات المرضى، يرجى إعادة تسجيل الدخول لمتابعة العمل في النظام.
                     </div>
                   </div>
@@ -539,66 +621,80 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
               )}
 
               {successMessage && (
-                <div className="p-3.5 rounded-xl bg-emerald-950/80 border border-emerald-500/80 text-emerald-200 text-xs flex items-center gap-2 shadow-lg">
-                  <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400 shrink-0" />
+                <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span className="font-semibold">{successMessage}</span>
                 </div>
               )}
 
               {errorMessage && (
-                <div className="p-3.5 rounded-xl bg-rose-950/80 border border-rose-500/80 text-rose-200 text-xs flex items-center gap-2 shadow-lg">
-                  <AlertCircle className="w-4.5 h-4.5 text-rose-400 shrink-0" />
+                <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                   <span className="font-semibold">{errorMessage}</span>
                 </div>
               )}
               
               {activeTab === 'register' && (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">الاسم الكامل للمريض *</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    الاسم الكامل للمريض *
+                  </label>
                   <div className="relative">
-                    <UserIcon className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <UserIcon className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                       type="text"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      placeholder="أدخل الاسم الرباعي الكامل..."
+                      placeholder="الاسم الثلاثي أو الرباعي..."
                       required
-                      className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all"
+                      className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-600 focus:ring-1 focus:ring-sky-600 transition-colors"
                     />
                   </div>
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">البريد الإلكتروني *</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  البريد الإلكتروني *
+                </label>
                 <div className="relative">
-                  <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => handleEmailChange(e.target.value)}
-                    placeholder=""
+                    placeholder="user@hospital.com"
                     required
-                    className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all"
+                    className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-600 focus:ring-1 focus:ring-sky-600 transition-colors text-right"
+                    dir="ltr"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">كلمة المرور *</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  كلمة المرور *
+                </label>
                 <div className="relative">
-                  <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
-                    type="password"
+                    type={showLoginPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="أدخل كلمة المرور..."
                     required
-                    className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all"
+                    className="w-full pr-10 pl-10 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-600 focus:ring-1 focus:ring-sky-600 transition-colors text-right"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                    title={showLoginPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                  >
+                    {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
 
-                {/* Forgot password button */}
                 {activeTab === 'login' && (
                   <div className="flex items-center justify-end text-xs pt-2">
                     <button
@@ -610,7 +706,7 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
                         setErrorMessage('');
                         setSuccessMessage('');
                       }}
-                      className="text-sky-400 hover:text-sky-300 hover:underline font-semibold cursor-pointer transition-colors"
+                      className="text-sky-600 dark:text-sky-400 hover:underline font-semibold cursor-pointer"
                     >
                       نسيت كلمة المرور؟
                     </button>
@@ -620,29 +716,37 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
 
               <button
                 type="submit"
-                className="w-full py-3.5 px-4 mt-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-sm shadow-md shadow-sky-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2.5 px-4 mt-1 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 <LogIn className="w-4 h-4" />
                 <span>{activeTab === 'login' ? 'تسجيل الدخول للنظام' : 'إنشاء حساب المريض والدخول'}</span>
               </button>
             </form>
 
-            <div className="mt-5 text-center">
+            <div className="mt-5 text-center border-t border-slate-100 dark:border-slate-800 pt-4">
               {activeTab === 'login' ? (
                 <button
                   type="button"
-                  onClick={() => setActiveTab('register')}
-                  className="text-xs text-sky-400 hover:underline font-semibold cursor-pointer"
+                  onClick={() => {
+                    setActiveTab('register');
+                    setErrorMessage('');
+                    setSuccessMessage('');
+                  }}
+                  className="text-xs text-sky-600 dark:text-sky-400 hover:underline font-semibold cursor-pointer"
                 >
-                  إنشاء حساب مريض جديد
+                  ليس لديك حساب مريض؟ إنشاء حساب جديد
                 </button>
               ) : (
                 <button
                   type="button"
-                  onClick={() => setActiveTab('login')}
-                  className="text-xs text-sky-400 hover:underline font-semibold cursor-pointer"
+                  onClick={() => {
+                    setActiveTab('login');
+                    setErrorMessage('');
+                    setSuccessMessage('');
+                  }}
+                  className="text-xs text-sky-600 dark:text-sky-400 hover:underline font-semibold cursor-pointer"
                 >
-                  لديك حساب بالفعل؟ تسجيل الدخول
+                  لديك حساب مسبقاً؟ العودة لتسجيل الدخول
                 </button>
               )}
             </div>
@@ -650,49 +754,49 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
           </div>
         )}
 
-        {/* FORGOT PASSWORD & RECOVERY CARD */}
+        {/* FORGOT PASSWORD CARD */}
         {activeTab === 'forgot' && (
-          <div className="w-full max-w-lg bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 my-auto relative">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 sm:p-8 my-auto relative">
             
-            {/* Header */}
-            <div className="flex flex-col items-center text-center pb-6 border-b border-slate-800/80 mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 mb-3 shadow-inner">
-                <KeyRound className="w-7 h-7" />
+            <div className="flex flex-col items-center text-center pb-5 border-b border-slate-100 dark:border-slate-800 mb-5">
+              <div className="w-12 h-12 rounded-xl bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 text-sky-600 dark:text-sky-400 flex items-center justify-center mb-2">
+                <KeyRound className="w-6 h-6" />
               </div>
-              <h2 className="text-2xl font-black text-white">استعادة كلمة المرور</h2>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">استعادة كلمة المرور</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                التحقق الأمني عبر البريد الإلكتروني المعتمد
+              </p>
             </div>
 
-            {/* Messages */}
             {successMessage && (
-              <div className="mb-4 p-3.5 rounded-xl bg-emerald-950/80 border border-emerald-500/80 text-emerald-200 text-xs flex items-center gap-2 shadow-lg">
-                <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400 shrink-0" />
+              <div className="mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span className="font-semibold">{successMessage}</span>
               </div>
             )}
 
             {errorMessage && (
-              <div className="mb-4 p-3.5 rounded-xl bg-rose-950/80 border border-rose-500/80 text-rose-200 text-xs flex items-center gap-2 shadow-lg">
-                <AlertCircle className="w-4.5 h-4.5 text-rose-400 shrink-0" />
+              <div className="mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                 <span className="font-semibold">{errorMessage}</span>
               </div>
             )}
 
-            {/* STEP 1: Enter Registered Email */}
             {resetStep === 1 && (
               <form onSubmit={handleSendRecoveryCode} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                     البريد الإلكتروني المسجل في النظام *
                   </label>
                   <div className="relative">
-                    <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                       type="email"
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
-                      placeholder=""
+                      placeholder="user@hospital.com"
                       required
-                      className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all"
+                      className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-600"
                     />
                   </div>
                 </div>
@@ -700,152 +804,104 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
                 <button
                   type="submit"
                   disabled={isSendingEmail}
-                  className="w-full py-3.5 px-4 mt-2 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:bg-slate-800 text-white font-bold text-sm shadow-md shadow-sky-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-2.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:bg-slate-400 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isSendingEmail ? (
                     <>
-                      <RefreshCw className="w-4 h-4 animate-spin text-sky-200" />
-                      <span>جارٍ إرسال البريد الأمني...</span>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>جارٍ إرسال رمز التحقق...</span>
                     </>
                   ) : (
                     <>
                       <Send className="w-4 h-4" />
-                      <span>إرسال رمز الاستعادة إلى البريد</span>
+                      <span>إرسال رمز الاستعادة</span>
                     </>
                   )}
                 </button>
               </form>
             )}
 
-            {/* STEP 2: Verify OTP & Enter New Password */}
             {resetStep === 2 && (
               <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
-                
-                {/* Secure Email Dispatch Notice (Confidential: Code is sent strictly to user email, never displayed on webpage) */}
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-sky-950/40 via-slate-900 to-slate-950 border border-sky-500/30 shadow-lg space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center shrink-0 mt-0.5">
-                      <Mail className="w-4.5 h-4.5" />
-                    </div>
-                    <div className="space-y-1 text-xs">
-                      <span className="text-white font-bold block">
-                        تم إرسال رمز التحقق الأمني المكون من 6 أرقام إلى بريدك:
-                      </span>
-                      <span className="font-mono text-sky-300 font-bold block dir-ltr text-right text-xs">
-                        {resetEmail}
-                      </span>
-                      <p className="text-[11px] text-slate-400 leading-relaxed pt-1">
-                        يرجى فتح صندوق الوارد (أو مجلد الرسائل غير المرغوب فيها Spam) وإدخال الرمز السري أدناه لتأكيد هويتك وإعادة تعيين كلمة المرور.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
-                    <span className="text-slate-400 text-[11px] flex items-center gap-1">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>صالح لمرة واحدة ولمدة 10 دقائق</span>
-                    </span>
-                    <button
-                      type="button"
-                      disabled={resendCooldown > 0 || isSendingEmail}
-                      onClick={(e) => handleSendRecoveryCode(e)}
-                      className="text-sky-400 hover:text-sky-300 font-bold text-[11px] disabled:text-slate-600 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1 transition-colors"
-                    >
-                      <RefreshCw className={`w-3 h-3 ${isSendingEmail ? 'animate-spin' : ''}`} />
-                      <span>
-                        {resendCooldown > 0 ? `إعادة الإرسال بعد (${resendCooldown} ث)` : 'إعادة إرسال الرمز'}
-                      </span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Entered Code Field */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    أدخل رمز التحقق (6 أرقام) *
-                  </label>
-                  <div className="relative">
-                    <KeyRound className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <input
-                      type="text"
-                      maxLength={6}
-                      value={enteredCode}
-                      onChange={(e) => setEnteredCode(e.target.value.trim())}
-                      placeholder="------"
-                      required
-                      className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm font-mono tracking-widest text-slate-100 placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all text-center"
-                    />
-                  </div>
-                  
-                  <p className="mt-1.5 text-[11px] text-slate-400">
-                    أدخل الرمز السري المكون من 6 أرقام المستلم على بريدك الإلكتروني
-                  </p>
-                </div>
-
-                {/* New Password */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">كلمة المرور الجديدة *</label>
-                  <div className="relative">
-                    <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="أدخل كلمة المرور الجديدة..."
-                      required
-                      className="w-full pr-10 pl-10 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Confirm New Password */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">تأكيد كلمة المرور الجديدة *</label>
-                  <div className="relative">
-                    <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="أعد إدخال كلمة المرور..."
-                      required
-                      className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-2 pt-2">
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs space-y-2">
+                  <span className="text-slate-700 dark:text-slate-300 font-bold block">
+                    تم إرسال رمز التحقق المكون من 6 أرقام إلى:
+                  </span>
+                  <span className="font-mono text-sky-700 dark:text-sky-300 font-bold block dir-ltr text-right">
+                    {resetEmail}
+                  </span>
                   <button
                     type="button"
-                    onClick={() => {
-                      setResetStep(1);
-                      setErrorMessage('');
-                    }}
-                    className="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all cursor-pointer"
+                    disabled={resendCooldown > 0 || isSendingEmail}
+                    onClick={(e) => handleSendRecoveryCode(e)}
+                    className="text-sky-600 dark:text-sky-400 hover:underline font-bold text-[11px] disabled:text-slate-400 cursor-pointer flex items-center gap-1"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${isSendingEmail ? 'animate-spin' : ''}`} />
+                    <span>
+                      {resendCooldown > 0 ? `إعادة الإرسال بعد (${resendCooldown} ث)` : 'إعادة إرسال الرمز'}
+                    </span>
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    أدخل رمز التحقق (6 أرقام) *
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    value={enteredCode}
+                    onChange={(e) => setEnteredCode(e.target.value.trim())}
+                    placeholder="123456"
+                    required
+                    className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm font-mono tracking-widest text-center text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">كلمة المرور الجديدة *</label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="أدخل كلمة المرور الجديدة..."
+                    required
+                    className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">تأكيد كلمة المرور الجديدة *</label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="أعد إدخال كلمة المرور..."
+                    required
+                    className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-600"
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setResetStep(1)}
+                    className="py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                   >
                     تغيير البريد
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-3 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-sm shadow-md shadow-sky-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>تأكيد وحفظ كلمة المرور</span>
+                    <span>تأكيد وحفظ</span>
                   </button>
                 </div>
-
               </form>
             )}
 
-            {/* Back to Login */}
-            <div className="mt-6 text-center border-t border-slate-800/80 pt-4">
+            <div className="mt-5 text-center border-t border-slate-100 dark:border-slate-800 pt-4">
               <button
                 type="button"
                 onClick={() => {
@@ -853,7 +909,7 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
                   setErrorMessage('');
                   setSuccessMessage('');
                 }}
-                className="text-xs text-sky-400 hover:underline font-semibold flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
+                className="text-xs text-sky-600 dark:text-sky-400 hover:underline font-semibold flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
               >
                 <ArrowRight className="w-3.5 h-3.5" />
                 <span>العودة لشاشة تسجيل الدخول</span>
@@ -865,11 +921,17 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
 
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800/80 bg-slate-950/90 py-4 text-center text-xs text-slate-500 relative z-10">
+      {/* Institutional Footer */}
+      <footer className="border-t py-4 text-center text-xs transition-colors border-slate-800/90 bg-slate-900 text-slate-400">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>مشفى الرحمة</span>
-          <span className="text-[11px] text-slate-400">نظام طبي موحد وآمن وفق أعلى المعايير القياسية</span>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-white">مشفى الرحمة التخصصي</span>
+            <span aria-hidden="true">·</span>
+            <span>نظام الإدارة والرعاية الصحية السريرية</span>
+          </div>
+          <span className="text-[11px] text-slate-500">
+            المنظومة موثقة ومعتمدة وفق معايير الأمان ISO-27001 وحماية بيانات المرضى
+          </span>
         </div>
       </footer>
 

@@ -34,6 +34,7 @@ import { DatabaseManagerModal } from './components/DatabaseManagerModal';
 import { QuickCommandPalette } from './components/QuickCommandPalette';
 import { formatArabicTime } from './utils/arabicFormatters';
 import { recordAuditLog } from './utils/security';
+import { hospitalApi } from './services/api';
 
 function getStoredData<T>(key: string, defaultValue: T): T {
   try {
@@ -102,38 +103,14 @@ export function App() {
     };
   }, [isLoggedIn, userRole]);
 
-  // Theme State: 'light' | 'dark' (Default to pure clinical light)
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    const saved = localStorage.getItem('syrian_hosp_theme');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return 'light';
-      }
-    }
-    return 'light';
-  });
-
-  const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-    localStorage.setItem('syrian_hosp_theme', JSON.stringify(nextTheme));
-  };
-
+  // Institutional Theme: Pure Dark Mode Locked
   useEffect(() => {
-    if (theme === 'light') {
-      document.documentElement.classList.add('theme-light');
-      document.documentElement.classList.remove('dark');
-      document.body.classList.add('theme-light');
-      document.body.classList.remove('dark');
-    } else {
-      document.documentElement.classList.remove('theme-light');
-      document.documentElement.classList.add('dark');
-      document.body.classList.remove('theme-light');
-      document.body.classList.add('dark');
-    }
-  }, [theme]);
+    document.documentElement.classList.add('dark');
+    document.documentElement.classList.remove('theme-light');
+    document.body.classList.add('dark');
+    document.body.classList.remove('theme-light');
+    localStorage.removeItem('syrian_hosp_theme');
+  }, []);
 
   // Emergency SOS and Command Palette State
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
@@ -226,9 +203,35 @@ export function App() {
     return mockAppointments;
   });
   const [inventory, setInventory] = useState(() => getStoredData('syrian_hosp_inventory', mockInventory));
-  const [labResults, setLabResults] = useState(() => getStoredData('syrian_hosp_labResults', mockLabResults));
+  const [labResults, setLabResults] = useState(() => {
+    const stored = getStoredData('syrian_hosp_labResults', mockLabResults);
+    if (Array.isArray(stored)) {
+      const existingIds = new Set(stored.map((l: any) => l.id));
+      const missing = mockLabResults.filter(m => !existingIds.has(m.id));
+      const pat1Stored = stored.filter((l: any) => l.patientId === 'pat-1');
+      if (missing.length > 0 || pat1Stored.length < 4 || !pat1Stored[0]?.subComponents) {
+        const nonPat1 = stored.filter((l: any) => l.patientId !== 'pat-1');
+        return [...mockLabResults.filter(m => m.patientId === 'pat-1'), ...nonPat1, ...missing.filter(m => m.patientId !== 'pat-1')];
+      }
+      return stored;
+    }
+    return mockLabResults;
+  });
   const [prescriptions, setPrescriptions] = useState(() => getStoredData('syrian_hosp_prescriptions', mockPrescriptions));
-  const [invoices, setInvoices] = useState(() => getStoredData('syrian_hosp_invoices', mockInvoices));
+  const [invoices, setInvoices] = useState(() => {
+    const stored = getStoredData('syrian_hosp_invoices', mockInvoices);
+    if (Array.isArray(stored)) {
+      const existingIds = new Set(stored.map((i: any) => i.id));
+      const missing = mockInvoices.filter(m => !existingIds.has(m.id));
+      const pat1Stored = stored.filter((i: any) => i.patientId === 'pat-1');
+      if (missing.length > 0 || pat1Stored.length < 3 || !pat1Stored[0]?.claimStatus) {
+        const nonPat1 = stored.filter((i: any) => i.patientId !== 'pat-1');
+        return [...mockInvoices.filter(m => m.patientId === 'pat-1'), ...nonPat1, ...missing.filter(m => m.patientId !== 'pat-1')];
+      }
+      return stored;
+    }
+    return mockInvoices;
+  });
   const [shifts, setShifts] = useState(() => {
     const stored = getStoredData('syrian_hosp_shifts', mockShifts);
     if (Array.isArray(stored) && stored.length < mockShifts.length) {
@@ -274,9 +277,66 @@ export function App() {
   useEffect(() => { localStorage.setItem('syrian_hosp_archivedRecords', JSON.stringify(archivedRecords)); }, [archivedRecords]);
   useEffect(() => { localStorage.setItem('syrian_hosp_abnormalFlags', JSON.stringify(abnormalFlags)); }, [abnormalFlags]);
 
+  // Universal Multi-Device Live Synchronization State (Laptop, Mobile & Tablets)
+  const lastServerVersionRef = React.useRef<number>(0);
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'offline'>('synced');
+
+  const fetchLatestFromServer = async (silent = false) => {
+    try {
+      if (!silent) setSyncStatus('syncing');
+      const data = await hospitalApi.getSyncData();
+      if (data && data.success) {
+        lastServerVersionRef.current = data.version;
+        if (Array.isArray(data.patients)) setPatients(data.patients);
+        if (Array.isArray(data.doctors)) setDoctors(data.doctors);
+        if (Array.isArray(data.appointments)) setAppointments(data.appointments);
+        if (Array.isArray(data.inventory)) setInventory(data.inventory);
+        if (Array.isArray(data.labResults)) setLabResults(data.labResults);
+        if (Array.isArray(data.prescriptions)) setPrescriptions(data.prescriptions);
+        if (Array.isArray(data.invoices)) setInvoices(data.invoices);
+        if (Array.isArray(data.shifts)) setShifts(data.shifts);
+        if (Array.isArray(data.wards)) setWards(data.wards);
+        if (Array.isArray(data.beds)) setBeds(data.beds);
+        if (Array.isArray(data.archivedRecords)) setArchivedRecords(data.archivedRecords);
+        if (Array.isArray(data.abnormalFlags)) setAbnormalFlags(data.abnormalFlags);
+        setSyncStatus('synced');
+      }
+    } catch (err) {
+      console.warn('Real-time sync status fallback to local cache:', err);
+      setSyncStatus('offline');
+    }
+  };
+
+  useEffect(() => {
+    fetchLatestFromServer(false);
+
+    // Fast polling every 3.5 seconds to detect updates made from other devices (laptop <-> mobile)
+    const interval = setInterval(async () => {
+      try {
+        const ver = await hospitalApi.getSyncVersion();
+        if (ver && ver.version && ver.version !== lastServerVersionRef.current) {
+          fetchLatestFromServer(true);
+        }
+      } catch {
+        // silent fallback
+      }
+    }, 3500);
+
+    const handleFocus = () => {
+      fetchLatestFromServer(true);
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
   // Handlers for Bed Management
   const handleUpdateBed = (bedId: string, updates: Partial<Bed>) => {
     setBeds(prev => prev.map(b => b.id === bedId ? { ...b, ...updates } : b));
+    hospitalApi.syncMutate('UPDATE_BED', { id: bedId, updates }).catch(e => console.warn(e));
   };
 
   const handleAddBed = (bedData: Omit<Bed, 'id'>) => {
@@ -285,12 +345,14 @@ export function App() {
       ...bedData,
     };
     setBeds(prev => [...prev, newBed]);
+    hospitalApi.syncMutate('ADD_BED', newBed).catch(e => console.warn(e));
     showToast(`تمت إضافة السرير (${newBed.bedNumber}) في ${newBed.wardName} بنجاح`, 'success');
   };
 
   const handleDeleteBed = (bedId: string) => {
     const target = beds.find(b => b.id === bedId);
     setBeds(prev => prev.filter(b => b.id !== bedId));
+    hospitalApi.syncMutate('DELETE_BED', { id: bedId }).catch(e => console.warn(e));
     showToast(`تم حذف السرير (${target?.bedNumber || bedId}) من الجناح`, 'warning');
   };
 
@@ -343,6 +405,7 @@ export function App() {
     // Remove from active daily patients pool to speed up daily query performance
     setPatients(prev => prev.filter(p => p.id !== patientId));
 
+    hospitalApi.syncMutate('ARCHIVE_PATIENT', { archivedRecord: newArchivedRecord, patientId }).catch(e => console.warn(e));
     showToast(`تم أرشفة ونقل ملف المريض (${targetPatient.fullName}) بنجاح إلى التخزين البارد (Cold Storage Partition)`, 'success');
   };
 
@@ -368,6 +431,7 @@ export function App() {
 
     setPatients(prev => [restoredPatient, ...prev]);
     setArchivedRecords(prev => prev.filter(r => r.id !== archiveId));
+    hospitalApi.syncMutate('RESTORE_PATIENT', { restoredPatient, archiveId }).catch(e => console.warn(e));
     showToast(`تم استرجاع وإعادة تنشيط ملف المريض (${archived.fullName}) في النظام اليومي بنجاح`, 'success');
   };
 
@@ -383,12 +447,13 @@ export function App() {
       }
       return f;
     }));
+    hospitalApi.syncMutate('UPDATE_ABNORMAL_FLAG', { id: flagId, acknowledged, notes }).catch(e => console.warn(e));
   };
 
   // Handlers for Patient Management
   const handleAddPatient = (patientData: any) => {
     const newPatient = {
-      id: 'p-' + (patients.length + 1),
+      id: 'p-' + (patients.length + 1) + '-' + Math.floor(Math.random() * 1000),
       fileNumber: 'MED-' + Math.floor(100000 + Math.random() * 900000),
       lastVisitDate: new Date().toISOString().split('T')[0],
       createdDate: new Date().toISOString().split('T')[0],
@@ -396,31 +461,34 @@ export function App() {
       ...patientData,
     };
     setPatients([newPatient, ...patients]);
+    hospitalApi.syncMutate('ADD_PATIENT', newPatient).catch(e => console.warn(e));
     showToast(`تم إضافة المريض (${newPatient.fullName}) لشبكة الرعاية بنجاح`, 'success');
   };
 
   const handleUpdatePatient = (id: string, data: any) => {
     setPatients(patients.map(p => p.id === id ? { ...p, ...data } : p));
+    hospitalApi.syncMutate('UPDATE_PATIENT', { id, data }).catch(e => console.warn(e));
     showToast('تم تحديث بيانات ملف المريض بنجاح', 'info');
   };
 
   const handleDeletePatient = (id: string) => {
     const target = patients.find(p => p.id === id);
     setPatients(patients.filter(p => p.id !== id));
+    hospitalApi.syncMutate('DELETE_PATIENT', { id }).catch(e => console.warn(e));
     showToast(`تم حذف ملف المريض (${target?.fullName || id}) بنجاح`, 'warning');
   };
 
   // Handlers for Doctors & Status
   const handleAddDoctor = (doctorData: any) => {
     const newDoc = {
-      id: 'doc-' + (doctors.length + 1),
+      id: 'doc-' + (doctors.length + 1) + '-' + Math.floor(Math.random() * 1000),
       ...doctorData,
     };
     setDoctors([newDoc, ...doctors]);
 
     // Automatically create a default shift entry for the new doctor
     const newShift = {
-      id: 's-' + (shifts.length + 1),
+      id: 's-' + (shifts.length + 1) + '-' + Math.floor(Math.random() * 1000),
       doctorId: newDoc.id,
       doctorName: newDoc.name,
       shiftType: newDoc.shift || 'صباحي',
@@ -430,34 +498,39 @@ export function App() {
     };
     setShifts([newShift, ...shifts]);
 
+    hospitalApi.syncMutate('ADD_DOCTOR', { doctor: newDoc, shift: newShift }).catch(e => console.warn(e));
     showToast(`تم انضمام الطبيب (${newDoc.name}) للكادر الطبي بنجاح`, 'success');
   };
 
   const handleToggleDoctorStatus = (id: string, newStatus: any) => {
     setDoctors(doctors.map(d => d.id === id ? { ...d, status: newStatus } : d));
+    hospitalApi.syncMutate('TOGGLE_DOCTOR_STATUS', { id, status: newStatus }).catch(e => console.warn(e));
     showToast('تم تحديث حالة تواجد الطبيب المباشر', 'info');
   };
 
   const handleDeleteDoctor = (id: string) => {
     const target = doctors.find(d => d.id === id);
     setDoctors(doctors.filter(d => d.id !== id));
+    hospitalApi.syncMutate('DELETE_DOCTOR', { id }).catch(e => console.warn(e));
     showToast(`تم حذف سجل الطبيب (${target?.name || id}) بنجاح`, 'warning');
   };
 
   // Handlers for Appointments
   const handleAddAppointment = (aptData: any) => {
     const newApt = {
-      id: 'apt-' + (appointments.length + 1),
+      id: 'apt-' + (appointments.length + 1) + '-' + Math.floor(Math.random() * 1000),
       status: 'مؤكد' as const,
       createdDate: new Date().toISOString().split('T')[0],
       ...aptData,
     };
     setAppointments([newApt, ...appointments]);
+    hospitalApi.syncMutate('ADD_APPOINTMENT', newApt).catch(e => console.warn(e));
     showToast('تم حجز وتأكيد الموعد الطبي بنجاح', 'success');
   };
 
   const handleUpdateAppointmentStatus = (id: string, status: any) => {
     setAppointments(appointments.map(a => a.id === id ? { ...a, status } : a));
+    hospitalApi.syncMutate('UPDATE_APPOINTMENT_STATUS', { id, status }).catch(e => console.warn(e));
     showToast(`تم تحديث حالة الموعد إلى (${status})`, 'info');
   };
 
@@ -465,44 +538,50 @@ export function App() {
     setAppointments(prev => prev.map(a => 
       a.id === id ? { ...a, date: newDate, time: newTime, status: 'مؤكد' } : a
     ));
+    hospitalApi.syncMutate('RESCHEDULE_APPOINTMENT', { id, date: newDate, time: newTime }).catch(e => console.warn(e));
     showToast(`تمت إعادة جدولة الموعد بنجاح إلى تاريخ ${newDate} الساعة ${newTime}`, 'success');
   };
 
   const handleDeleteAppointment = (id: string) => {
     setAppointments(appointments.filter(a => a.id !== id));
+    hospitalApi.syncMutate('DELETE_APPOINTMENT', { id }).catch(e => console.warn(e));
     showToast('تم إلغاء وحذف الموعد الطبي فوراً', 'error');
   };
 
   // Handlers for Inventory
   const handleAddInventoryItem = (itemData: any) => {
     const newItem = {
-      id: 'inv-' + (inventory.length + 1),
+      id: 'inv-' + (inventory.length + 1) + '-' + Math.floor(Math.random() * 1000),
       status: 'متوفر' as const,
       ...itemData,
     };
     setInventory([newItem, ...inventory]);
+    hospitalApi.syncMutate('ADD_INVENTORY', newItem).catch(e => console.warn(e));
     showToast(`تم إضافة الصنف الصيدلاني (${newItem.itemName}) إلى المستودع`, 'success');
   };
 
   const handleDeleteInventoryItem = (id: string) => {
     const target = inventory.find(i => i.id === id);
     setInventory(inventory.filter(i => i.id !== id));
+    hospitalApi.syncMutate('DELETE_INVENTORY', { id }).catch(e => console.warn(e));
     showToast(`تم إزالة الصنف (${target?.itemName || id}) من قائمة الصيدلية`, 'warning');
   };
 
   // Handlers for Lab & Prescriptions
   const handleAddLabResult = (labData: any) => {
     const newLab = {
-      id: 'lab-' + (labResults.length + 1),
+      id: 'lab-' + (labResults.length + 1) + '-' + Math.floor(Math.random() * 1000),
       testDate: new Date().toISOString().split('T')[0],
       ...labData,
     };
     setLabResults([newLab, ...labResults]);
+    hospitalApi.syncMutate('ADD_LAB_RESULT', newLab).catch(e => console.warn(e));
     showToast('تم إدخال نتيجة التحليل المخبري وتوثيقها', 'success');
   };
 
   const handleDeleteLabResult = (id: string) => {
     setLabResults(labResults.filter(l => l.id !== id));
+    hospitalApi.syncMutate('DELETE_LAB_RESULT', { id }).catch(e => console.warn(e));
     showToast('تم حذف سجل التحليل المخبري', 'warning');
   };
 
@@ -514,6 +593,7 @@ export function App() {
       ...rxData,
     };
     setPrescriptions([newRx, ...prescriptions]);
+    hospitalApi.syncMutate('ADD_PRESCRIPTION', newRx).catch(e => console.warn(e));
     showToast('تم إصدار الوصفة الطبية الإلكترونية بنجاح', 'success');
   };
 
@@ -530,7 +610,7 @@ export function App() {
     const netAmount = (subtotal + tax) - insuranceCovered;
 
     const newInv = {
-      id: 'inv-' + (invoices.length + 1),
+      id: 'inv-' + (invoices.length + 1) + '-' + Math.floor(Math.random() * 1000),
       invoiceNumber: 'INV-2026-' + Math.floor(1000 + Math.random() * 9000),
       date: new Date().toISOString().split('T')[0],
       tax,
@@ -538,6 +618,7 @@ export function App() {
       ...invData,
     };
     setInvoices([newInv, ...invoices]);
+    hospitalApi.syncMutate('ADD_INVOICE', newInv).catch(e => console.warn(e));
     showToast(`تم إصدار الفاتورة (${newInv.invoiceNumber}) بنجاح`, 'success');
   };
 
@@ -577,6 +658,7 @@ export function App() {
     setBeds(mockBeds);
     setArchivedRecords(mockArchivedRecords);
     setAbnormalFlags(mockAbnormalLabFlags);
+    hospitalApi.syncMutate('RESET_DATABASE', {}).catch(e => console.warn(e));
     showToast('تمت إعادة تعيين قاعدة البيانات إلى السجلات النموذجية الافتراضية', 'info');
   };
 
@@ -590,8 +672,6 @@ export function App() {
   if (!isLoggedIn) {
     return (
       <LandingAndAuthScreen
-        theme={theme}
-        onToggleTheme={toggleTheme}
         sessionTimedOut={sessionTimeoutAlert}
         onLogin={(role, userName) => {
           setUserRole(role);
@@ -608,13 +688,11 @@ export function App() {
   }
 
   return (
-    <div className={`min-h-screen ${theme === 'light' ? 'bg-slate-50 text-slate-900' : 'bg-slate-950 text-slate-100'} flex flex-col font-sans dir-rtl transition-colors duration-200`} dir="rtl">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans dir-rtl" dir="rtl">
       
       {/* Top Navigation Header */}
       <Header
         userRole={userRole}
-        theme={theme}
-        onToggleTheme={toggleTheme}
         onRoleChange={(newRole) => {
           setUserRole(newRole);
           const allowed = roleTabsMap[newRole] || roleTabsMap.admin;
@@ -636,6 +714,8 @@ export function App() {
         hasActiveSOS={!!activeSOS}
         isMobileMenuOpen={isMobileMenuOpen}
         onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        syncStatus={syncStatus}
+        onManualSync={() => fetchLatestFromServer(false)}
       />
 
       {/* Main Body with Sidebar + Content Area */}
@@ -668,8 +748,6 @@ export function App() {
           isMobileOpen={isMobileMenuOpen}
           onCloseMobile={() => setIsMobileMenuOpen(false)}
           onOpenDatabaseManager={() => setShowDatabaseManager(true)}
-          theme={theme}
-          onToggleTheme={toggleTheme}
         />
 
         {/* Main Content Workspace */}

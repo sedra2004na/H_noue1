@@ -15,7 +15,8 @@ import {
   Trash2,
   Plus,
   LayoutGrid,
-  List
+  List,
+  X
 } from 'lucide-react';
 
 interface DoctorsSectionProps {
@@ -145,15 +146,15 @@ export const DoctorsSection: React.FC<DoctorsSectionProps> = ({
     <div className="space-y-6">
       
       {/* Header & Main Summary */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-900/90 p-6 rounded-2xl border border-slate-800 shadow-xl">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center">
               <Stethoscope className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">إدارة الكادر الطبي وتوزيع الاختصاصات</h2>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">إدارة الكادر الطبي وتوزيع الاختصاصات</h2>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 font-medium">
                 توزيع استشاريي وأخصائيي المشفى على الأقسام والورديات السريرية
               </p>
             </div>
@@ -165,26 +166,26 @@ export const DoctorsSection: React.FC<DoctorsSectionProps> = ({
           {canManageDoctors && onAddDoctor && (
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md shadow-sky-600/25 transition-all flex items-center gap-2 cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>إضافة طبيب لاختصاص</span>
             </button>
           )}
 
-          <div className="flex items-center p-1 bg-slate-800 rounded-xl border border-slate-700">
+          <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
             <button
               onClick={() => setActiveTab('doctors')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'doctors' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'doctors' ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               دليل الأطباء ({doctors.length})
             </button>
             <button
               onClick={() => setActiveTab('shifts')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'shifts' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'shifts' ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               جدول المناوبات ({shifts.length})
@@ -195,25 +196,25 @@ export const DoctorsSection: React.FC<DoctorsSectionProps> = ({
 
       {/* KPI Stats Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-          <span className="text-[11px] text-slate-400 font-medium">إجمالي الأطباء</span>
-          <p className="text-xl font-black text-white mt-1">{doctors.length} طبيب</p>
-          <span className="text-[10px] text-sky-400 font-semibold">استشاري وأخصائي</span>
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+          <span className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">إجمالي الأطباء</span>
+          <p className="text-xl font-black text-slate-900 dark:text-white mt-1">{doctors.length} طبيب</p>
+          <span className="text-[10px] text-sky-600 dark:text-sky-400 font-semibold">استشاري وأخصائي</span>
         </div>
-        <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-          <span className="text-[11px] text-slate-400 font-medium">الاختصاصات الطبية</span>
-          <p className="text-xl font-black text-white mt-1">{specialties.length} تخصص</p>
-          <span className="text-[10px] text-teal-400 font-semibold">مغطاة بالكامل</span>
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+          <span className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">الاختصاصات الطبية</span>
+          <p className="text-xl font-black text-slate-900 dark:text-white mt-1">{specialties.length} تخصص</p>
+          <span className="text-[10px] text-teal-600 dark:text-teal-400 font-semibold">مغطاة بالكامل</span>
         </div>
-        <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-          <span className="text-[11px] text-slate-400 font-medium">الأطباء على رأس العمل</span>
-          <p className="text-xl font-black text-emerald-400 mt-1">{activeDoctorsCount} طبيب</p>
-          <span className="text-[10px] text-emerald-400/80 font-semibold">جاهزية واستقبال</span>
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+          <span className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">الأطباء على رأس العمل</span>
+          <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{activeDoctorsCount} طبيب</p>
+          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">جاهزية واستقبال</span>
         </div>
-        <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-          <span className="text-[11px] text-slate-400 font-medium">تغطية الورديات</span>
-          <p className="text-xl font-black text-sky-300 mt-1">100%</p>
-          <span className="text-[10px] text-slate-400 font-semibold">صباحي / مسائي / ليلي</span>
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+          <span className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">تغطية الورديات</span>
+          <p className="text-xl font-black text-sky-600 dark:text-sky-300 mt-1">100%</p>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">صباحي / مسائي / ليلي</span>
         </div>
       </div>
 
@@ -597,188 +598,197 @@ export const DoctorsSection: React.FC<DoctorsSectionProps> = ({
 
       {/* Add Doctor Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAddModal(false);
+          }}
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl max-w-lg w-full flex flex-col max-h-[90vh] overflow-hidden my-auto shadow-2xl text-slate-900 dark:text-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50/50 dark:bg-slate-900/50">
               <div className="flex items-center gap-2.5">
-                <div className="p-2.5 bg-sky-500/20 text-sky-400 rounded-2xl border border-sky-500/30">
+                <div className="p-2 bg-sky-500/10 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 rounded-xl border border-sky-500/20">
                   <Stethoscope className="w-5 h-5" />
                 </div>
-                <h3 className="font-bold text-base text-white">إضافة طبيب / استشاري جديد</h3>
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">إضافة طبيب / استشاري جديد</h3>
               </div>
               <button
+                type="button"
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition-colors"
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                aria-label="إغلاق النافذة"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleAddDoctorSubmit} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">اسم الطبيب الكامل *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="مثال: د. خالد إبراهيم السعيد"
-                  value={newDocData.name}
-                  onChange={(e) => setNewDocData({ ...newDocData, name: e.target.value })}
-                  className="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <form onSubmit={handleAddDoctorSubmit} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-4 sm:p-6 overflow-y-auto space-y-4 text-xs flex-1">
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1">الاختصاص الطبي *</label>
-                  <select
-                    value={newDocData.specialty}
-                    onChange={(e) => {
-                      const sp = e.target.value;
-                      let dept = newDocData.department;
-                      let room = newDocData.roomNumber;
-                      if (sp === 'أمراض القلب والشرايين') { dept = 'قسم القلب والأوعية الدموية'; room = 'عيادة 201'; }
-                      else if (sp === 'جراحة العظام والمفاصل') { dept = 'قسم العظام والكسور'; room = 'عيادة 105'; }
-                      else if (sp === 'طب الأطفال وحديثي الولادة') { dept = 'قسم الأطفال والخدج'; room = 'عيادة 302'; }
-                      else if (sp === 'الأمراض الباطنية والسكري') { dept = 'قسم الباطنية العام'; room = 'عيادة 108'; }
-                      else if (sp === 'الجراحة العامة والمناظير') { dept = 'قسم الجراحة العامة'; room = 'عيادة 101'; }
-                      else if (sp === 'طب النساء والتوليد') { dept = 'قسم النساء والولادة'; room = 'عيادة 305'; }
-                      else if (sp === 'أمراض وجراحة العيون') { dept = 'قسم طب العيون'; room = 'عيادة 204'; }
-                      else if (sp === 'أمراض الأنف والأذن والحنجرة') { dept = 'قسم الأذن والأنف والحنجرة (ENT)'; room = 'عيادة 206'; }
-                      else if (sp === 'الأمراض الجلدية والتجميل') { dept = 'قسم الجلدية'; room = 'عيادة 401'; }
-                      else if (sp === 'الأشعة والتصوير الطبي') { dept = 'قسم الأشعة والتشخيص المقطعي'; room = 'جناح الأشعة R-1'; }
-                      else if (sp === 'التخدير والعناية المشددة') { dept = 'قسم العناية المركزة والتخدير (ICU)'; room = 'غرفة الإنعاش ICU-01'; }
-                      else if (sp === 'طب وجراحة الفم والأسنان') { dept = 'قسم طب وجراحة الأسنان'; room = 'عيادة الأسنان D-1'; }
-                      setNewDocData({ ...newDocData, specialty: sp, department: dept, roomNumber: room });
-                    }}
-                    className="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500"
-                  >
-                    <option value="أمراض القلب والشرايين">أمراض القلب والشرايين (Cardiology)</option>
-                    <option value="جراحة العظام والمفاصل">جراحة العظام والمفاصل (Orthopedics)</option>
-                    <option value="طب الأطفال وحديثي الولادة">طب الأطفال وحديثي الولادة (Pediatrics)</option>
-                    <option value="الأمراض الباطنية والسكري">الأمراض الباطنية والسكري (Internal Medicine)</option>
-                    <option value="الجراحة العامة والمناظير">الجراحة العامة والمناظير (General Surgery)</option>
-                    <option value="طب النساء والتوليد">طب النساء والتوليد (OB/GYN)</option>
-                    <option value="أمراض وجراحة العيون">أمراض وجراحة العيون (Ophthalmology)</option>
-                    <option value="أمراض الأنف والأذن والحنجرة">أمراض الأنف والأذن والحنجرة (ENT)</option>
-                    <option value="الأمراض الجلدية والتجميل">الأمراض الجلدية والتجميل (Dermatology)</option>
-                    <option value="الأشعة والتصوير الطبي">الأشعة والتصوير الطبي (Radiology)</option>
-                    <option value="التخدير والعناية المشددة">التخدير والعناية المشددة (ICU & Anesthesia)</option>
-                    <option value="طب وجراحة الفم والأسنان">طب وجراحة الفم والأسنان (Dentistry)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1">القسم بالمستشفى</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">اسم الطبيب الكامل *</label>
                   <input
                     type="text"
                     required
-                    placeholder="مثال: قسم الجراحة العامة"
-                    value={newDocData.department}
-                    onChange={(e) => setNewDocData({ ...newDocData, department: e.target.value })}
-                    className="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500"
+                    placeholder="مثال: د. خالد إبراهيم السعيد"
+                    value={newDocData.name}
+                    onChange={(e) => setNewDocData({ ...newDocData, name: e.target.value })}
+                    className="w-full p-2.5 sm:p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-sky-500"
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1">سنوات الخبرة</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="50"
-                    value={newDocData.experienceYears}
-                    onChange={(e) => setNewDocData({ ...newDocData, experienceYears: Number(e.target.value) })}
-                    className="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">الاختصاص الطبي *</label>
+                    <select
+                      value={newDocData.specialty}
+                      onChange={(e) => {
+                        const sp = e.target.value;
+                        let dept = newDocData.department;
+                        let room = newDocData.roomNumber;
+                        if (sp === 'أمراض القلب والشرايين') { dept = 'قسم القلب والأوعية الدموية'; room = 'عيادة 201'; }
+                        else if (sp === 'جراحة العظام والمفاصل') { dept = 'قسم العظام والكسور'; room = 'عيادة 105'; }
+                        else if (sp === 'طب الأطفال وحديثي الولادة') { dept = 'قسم الأطفال والخدج'; room = 'عيادة 302'; }
+                        else if (sp === 'الأمراض الباطنية والسكري') { dept = 'قسم الباطنية العام'; room = 'عيادة 108'; }
+                        else if (sp === 'الجراحة العامة والمناظير') { dept = 'قسم الجراحة العامة'; room = 'عيادة 101'; }
+                        else if (sp === 'طب النساء والتوليد') { dept = 'قسم النساء والولادة'; room = 'عيادة 305'; }
+                        else if (sp === 'أمراض وجراحة العيون') { dept = 'قسم طب العيون'; room = 'عيادة 204'; }
+                        else if (sp === 'أمراض الأنف والأذن والحنجرة') { dept = 'قسم الأذن والأنف والحنجرة (ENT)'; room = 'عيادة 206'; }
+                        else if (sp === 'الأمراض الجلدية والتجميل') { dept = 'قسم الجلدية'; room = 'عيادة 401'; }
+                        else if (sp === 'الأشعة والتصوير الطبي') { dept = 'قسم الأشعة والتشخيص المقطعي'; room = 'جناح الأشعة R-1'; }
+                        else if (sp === 'التخدير والعناية المشددة') { dept = 'قسم العناية المركزة والتخدير (ICU)'; room = 'غرفة الإنعاش ICU-01'; }
+                        else if (sp === 'طب وجراحة الفم والأسنان') { dept = 'قسم طب وجراحة الأسنان'; room = 'عيادة الأسنان D-1'; }
+                        setNewDocData({ ...newDocData, specialty: sp, department: dept, roomNumber: room });
+                      }}
+                      className="w-full p-2.5 sm:p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                    >
+                      <option value="أمراض القلب والشرايين">أمراض القلب والشرايين (Cardiology)</option>
+                      <option value="جراحة العظام والمفاصل">جراحة العظام والمفاصل (Orthopedics)</option>
+                      <option value="طب الأطفال وحديثي الولادة">طب الأطفال وحديثي الولادة (Pediatrics)</option>
+                      <option value="الأمراض الباطنية والسكري">الأمراض الباطنية والسكري (Internal Medicine)</option>
+                      <option value="الجراحة العامة والمناظير">الجراحة العامة والمناظير (General Surgery)</option>
+                      <option value="طب النساء والتوليد">طب النساء والتوليد (OB/GYN)</option>
+                      <option value="أمراض وجراحة العيون">أمراض وجراحة العيون (Ophthalmology)</option>
+                      <option value="أمراض الأنف والأذن والحنجرة">أمراض الأنف والأذن والحنجرة (ENT)</option>
+                      <option value="الأمراض الجلدية والتجميل">الأمراض الجلدية والتجميل (Dermatology)</option>
+                      <option value="الأشعة والتصوير الطبي">الأشعة والتصوير الطبي (Radiology)</option>
+                      <option value="التخدير والعناية المشددة">التخدير والعناية المشددة (ICU & Anesthesia)</option>
+                      <option value="طب وجراحة الفم والأسنان">طب وجراحة الفم والأسنان (Dentistry)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">القسم بالمستشفى</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="مثال: قسم الجراحة العامة"
+                      value={newDocData.department}
+                      onChange={(e) => setNewDocData({ ...newDocData, department: e.target.value })}
+                      className="w-full p-2.5 sm:p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1">رسوم الاستشارة (ل.س)</label>
-                  <input
-                    type="number"
-                    min="50"
-                    step="10"
-                    value={newDocData.consultingFee}
-                    onChange={(e) => setNewDocData({ ...newDocData, consultingFee: Number(e.target.value) })}
-                    className="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500"
-                  />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1">رقم العيادة / الغرفة</label>
-                  <input
-                    type="text"
-                    value={newDocData.roomNumber}
-                    onChange={(e) => setNewDocData({ ...newDocData, roomNumber: e.target.value })}
-                    className="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1">الشفت / الدوام</label>
-                  <select
-                    value={newDocData.shift}
-                    onChange={(e) => setNewDocData({ ...newDocData, shift: e.target.value })}
-                    className="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500"
-                  >
-                    <option value="صباحي">صباحي (08:00 - 16:00)</option>
-                    <option value="مسائي">مسائي (16:00 - 00:00)</option>
-                    <option value="ليلي">ليلي (00:00 - 08:00)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">رقم الهاتف للتواصل</label>
-                <input
-                  type="text"
-                  value={newDocData.phone}
-                  onChange={(e) => setNewDocData({ ...newDocData, phone: e.target.value })}
-                  className="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-sky-500"
-                />
-              </div>
-
-              {/* Login Account Details for Doctor */}
-              <div className="p-3.5 bg-slate-950/80 rounded-2xl border border-slate-800 space-y-3">
-                <p className="text-[11px] font-bold text-sky-400 flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5" />
-                  <span>بيانات تسجيل الدخول لحساب الطبيب (اختياري)</span>
-                </p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-400 text-[10px] mb-1">البريد الإلكتروني</label>
+                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">سنوات الخبرة</label>
                     <input
-                      type="email"
-                      placeholder="doctor@hospital.com"
-                      value={newDocData.email}
-                      onChange={(e) => setNewDocData({ ...newDocData, email: e.target.value })}
-                      className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs placeholder-slate-600 focus:outline-none focus:border-sky-500"
+                      type="number"
+                      min="1"
+                      max="50"
+                      value={newDocData.experienceYears}
+                      onChange={(e) => setNewDocData({ ...newDocData, experienceYears: Number(e.target.value) })}
+                      className="w-full p-2.5 sm:p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-400 text-[10px] mb-1">كلمة المرور</label>
+                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">رسوم الاستشارة (ل.س)</label>
                     <input
-                      type="password"
-                      placeholder="••••••••"
-                      value={newDocData.password}
-                      onChange={(e) => setNewDocData({ ...newDocData, password: e.target.value })}
-                      className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs placeholder-slate-600 focus:outline-none focus:border-sky-500"
+                      type="number"
+                      min="50"
+                      step="10"
+                      value={newDocData.consultingFee}
+                      onChange={(e) => setNewDocData({ ...newDocData, consultingFee: Number(e.target.value) })}
+                      className="w-full p-2.5 sm:p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
                     />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">رقم العيادة / الغرفة</label>
+                    <input
+                      type="text"
+                      value={newDocData.roomNumber}
+                      onChange={(e) => setNewDocData({ ...newDocData, roomNumber: e.target.value })}
+                      className="w-full p-2.5 sm:p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">الشفت / الدوام</label>
+                    <select
+                      value={newDocData.shift}
+                      onChange={(e) => setNewDocData({ ...newDocData, shift: e.target.value })}
+                      className="w-full p-2.5 sm:p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                    >
+                      <option value="صباحي">صباحي (08:00 - 16:00)</option>
+                      <option value="مسائي">مسائي (16:00 - 00:00)</option>
+                      <option value="ليلي">ليلي (00:00 - 08:00)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">رقم الهاتف للتواصل</label>
+                  <input
+                    type="text"
+                    value={newDocData.phone}
+                    onChange={(e) => setNewDocData({ ...newDocData, phone: e.target.value })}
+                    className="w-full p-2.5 sm:p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                  />
+                </div>
+
+                {/* Login Account Details for Doctor */}
+                <div className="p-3.5 bg-slate-50 dark:bg-slate-950/80 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+                  <p className="text-[11px] font-bold text-sky-600 dark:text-sky-400 flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>بيانات تسجيل الدخول لحساب الطبيب (اختياري)</span>
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-500 dark:text-slate-400 text-[10px] mb-1">البريد الإلكتروني</label>
+                      <input
+                        type="email"
+                        placeholder="doctor@hospital.com"
+                        value={newDocData.email}
+                        onChange={(e) => setNewDocData({ ...newDocData, email: e.target.value })}
+                        className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs placeholder-slate-400 focus:outline-none focus:border-sky-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-500 dark:text-slate-400 text-[10px] mb-1">كلمة المرور</label>
+                      <input
+                        type="password"
+                        placeholder="••••••••"
+                        value={newDocData.password}
+                        onChange={(e) => setNewDocData({ ...newDocData, password: e.target.value })}
+                        className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs placeholder-slate-400 focus:outline-none focus:border-sky-500"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-3 p-4 border-t border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50/50 dark:bg-slate-900/50">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 font-bold hover:bg-slate-700 transition-colors"
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold transition-colors shadow-lg shadow-sky-600/30"
+                  className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold transition-all shadow-md shadow-sky-600/30 cursor-pointer"
                 >
                   حفظ إضافة الطبيب
                 </button>

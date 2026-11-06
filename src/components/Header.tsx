@@ -21,8 +21,6 @@ import {
   Calendar,
   Siren,
   Menu,
-  Sun,
-  Moon,
   Database
 } from 'lucide-react';
 
@@ -39,8 +37,6 @@ export interface NotificationItem {
 interface HeaderProps {
   currentUser?: User;
   userRole?: UserRole;
-  theme?: 'dark' | 'light';
-  onToggleTheme?: () => void;
   onSwitchRole?: (role: UserRole) => void;
   onRoleChange?: (role: UserRole) => void;
   inventoryAlerts?: InventoryItem[];
@@ -57,18 +53,20 @@ interface HeaderProps {
   hasActiveSOS?: boolean;
   isMobileMenuOpen?: boolean;
   onToggleMobileMenu?: () => void;
+  syncStatus?: 'synced' | 'syncing' | 'offline';
+  onManualSync?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   currentUser,
   userRole,
-  theme = 'dark',
-  onToggleTheme,
   onSwitchRole,
   onRoleChange,
   inventoryAlerts = [],
   labAlerts = [],
   lowStockCount = 0,
+  syncStatus = 'synced',
+  onManualSync,
   criticalLabCount = 0,
   onNavigateTab,
   onNavigate,
@@ -198,10 +196,10 @@ export const Header: React.FC<HeaderProps> = ({
 
   const getRoleLabel = (role: UserRole) => {
     switch (role) {
-      case 'admin': return 'مدير النظام (Admin)';
-      case 'doctor': return 'طبيب معالج (Doctor)';
-      case 'staff': return 'إداري / استقبال (Staff)';
-      case 'patient': return 'مريض (Patient)';
+      case 'admin': return 'مدير النظام';
+      case 'doctor': return 'طبيب معالج';
+      case 'staff': return 'إداري واستقبال';
+      case 'patient': return 'بوابة المريض';
     }
   };
 
@@ -214,7 +212,7 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  const { dateText: formattedDate, timeText: formattedTime } = formatArabicClock(currentTime);
+  const { dateText: formattedDate, timeDigits, period } = formatArabicClock(currentTime);
 
   return (
     <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/90 text-white shadow-2xl">
@@ -261,10 +259,11 @@ export const Header: React.FC<HeaderProps> = ({
           {onOpenCommandPalette ? (
             <button
               onClick={onOpenCommandPalette}
-              className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-950/80 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs text-slate-400 transition-all text-start"
+              aria-label="فتح لوحة الأوامر والبحث السريع (اختصار Ctrl+K)"
+              className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-950/80 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs text-slate-400 transition-all text-start focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
             >
               <div className="flex items-center gap-2">
-                <Search className="w-3.5 h-3.5 text-sky-400" />
+                <Search className="w-3.5 h-3.5 text-sky-400" aria-hidden="true" />
                 <span className="text-slate-400">بحث سريع أو أمر...</span>
               </div>
               <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
@@ -273,12 +272,13 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           ) : onSearchChange && (
             <div className="relative w-full">
-              <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" aria-hidden="true" />
               <input
                 type="text"
                 placeholder="بحث شامل في النظام..."
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
+                aria-label="حقل البحث الشامل في النظام"
                 className="w-full pl-4 pr-10 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-500 transition-all"
               />
             </div>
@@ -289,39 +289,55 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-1.5 sm:gap-2.5 lg:gap-3 shrink-0">
           
           {/* Live Dynamic Date & Ticking Clock Display (Visible on lg+) */}
-          <div className="hidden lg:flex flex-col items-end px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-800 text-slate-200 shadow-inner">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-sky-400">
-              <Clock className="w-3.5 h-3.5 text-sky-400 animate-spin" style={{ animationDuration: '10s' }} />
-              <span className="font-mono tracking-wider">{formattedTime}</span>
+          <div className="hidden lg:flex flex-col items-end px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-800 text-slate-200 shadow-inner" aria-live="polite">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-sky-600 dark:text-sky-400">
+              <Clock className="w-3.5 h-3.5 text-sky-500 shrink-0" aria-hidden="true" />
+              <div className="flex items-center gap-1 font-mono tracking-wider" dir="rtl">
+                <span dir="ltr">{timeDigits}</span>
+                <span className="font-sans text-xs text-sky-600 dark:text-sky-300">{period}</span>
+              </div>
             </div>
-            <span className="text-[10px] text-slate-400 font-medium">{formattedDate}</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">{formattedDate}</span>
           </div>
 
-          {/* Theme Toggle (Light / Dark Mode) */}
-          {onToggleTheme && (
-            <button
-              type="button"
-              onClick={onToggleTheme}
-              className="p-2 sm:p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-amber-300 hover:text-amber-200 transition-all shadow-inner cursor-pointer group shrink-0"
-              title={theme === 'dark' ? 'التحويل إلى النمط الفاتح (Clinical Light)' : 'التحويل إلى النمط الليلي (Dark Luxury)'}
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 group-hover:rotate-90 transition-transform duration-300" />
-              ) : (
-                <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400 group-hover:-rotate-12 transition-transform duration-300" />
-              )}
-            </button>
-          )}
+          {/* Live Server Sync Indicator (Laptop & Mobile Sync) */}
+          <button
+            type="button"
+            onClick={onManualSync}
+            title={
+              syncStatus === 'syncing' 
+                ? 'جارِ مزامنة البيانات مع الخادم...' 
+                : syncStatus === 'offline' 
+                  ? 'السيرفر غير متصل حالياً (يعمل بنمط الذاكرة المحلية). اضغط لإعادة المحاولة' 
+                  : 'متصل بالسيرفر ومُزامن لحظياً بين الحاسوب والجوال (اضغط للمزامنة الفورية)'
+            }
+            className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-[11px] font-medium text-slate-300 transition-colors cursor-pointer select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-sky-500"
+          >
+            <span 
+              className={`w-2 h-2 rounded-full shrink-0 ${
+                syncStatus === 'syncing' 
+                  ? 'bg-amber-400 animate-spin' 
+                  : syncStatus === 'offline' 
+                    ? 'bg-rose-400' 
+                    : 'bg-emerald-400 animate-pulse'
+              }`} 
+              aria-hidden="true"
+            />
+            <span className="truncate">
+              {syncStatus === 'syncing' ? 'مزامنة...' : syncStatus === 'offline' ? 'غير متصل' : 'سيرفر متزامن'}
+            </span>
+          </button>
 
           {/* Database Health & Validation Manager Button - visible on sm+ screens */}
           {onOpenDatabaseManager && (userRole === 'admin' || userRole === 'staff') && (
             <button
               type="button"
               onClick={onOpenDatabaseManager}
-              className="hidden sm:flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-600/50 text-emerald-300 hover:text-white transition-all shadow-md text-xs font-bold cursor-pointer shrink-0"
+              aria-label="إدارة وفحص قاعدة البيانات والنسخ الاحتياطي"
+              className="hidden sm:flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 hover:bg-emerald-100 dark:hover:bg-emerald-900 border border-emerald-300 dark:border-emerald-600/50 text-emerald-800 dark:text-emerald-300 transition-all shadow-xs text-xs font-bold cursor-pointer shrink-0 focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none"
               title="فحص وتدقيق سلامة قاعدة البيانات والنسخ الاحتياطي"
             >
-              <Database className="w-4 h-4 text-emerald-400" />
+              <Database className="w-4 h-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
               <span className="hidden lg:inline">إدارة البيانات</span>
             </button>
           )}
@@ -330,16 +346,17 @@ export const Header: React.FC<HeaderProps> = ({
           {onOpenEmergencyModal && (
             <button
               onClick={onOpenEmergencyModal}
-              className={`flex items-center gap-1 sm:gap-2 p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-extrabold transition-all shadow-lg cursor-pointer shrink-0 ${
+              aria-label="نداء الطوارئ والإسعاف السريع (110)"
+              className={`flex items-center gap-1 sm:gap-2 p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-extrabold transition-all shadow-xs cursor-pointer shrink-0 focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:outline-none ${
                 hasActiveSOS 
-                  ? 'bg-rose-600 text-white animate-bounce ring-4 ring-rose-500/50 shadow-rose-600/50' 
-                  : 'bg-rose-950/80 hover:bg-rose-900 text-rose-200 border border-rose-700/60 shadow-rose-950/40'
+                  ? 'bg-rose-600 text-white ring-2 ring-rose-500/50' 
+                  : 'bg-rose-50 dark:bg-rose-950/80 hover:bg-rose-100 dark:hover:bg-rose-900 text-rose-700 dark:text-rose-200 border border-rose-200 dark:border-rose-700/60'
               }`}
               title="مركز الطوارئ والإسعاف السريع (أرقام 110 وحجز غرف الإنعاش)"
             >
-              <Siren className={`w-4 h-4 text-rose-400 ${hasActiveSOS ? 'animate-spin text-white' : ''}`} />
+              <Siren className="w-4 h-4 text-rose-500 shrink-0" aria-hidden="true" />
               <span className="hidden md:inline">طوارئ (110)</span>
-              {hasActiveSOS && <span className="w-2 h-2 rounded-full bg-white animate-ping"></span>}
+              {hasActiveSOS && <span className="w-2 h-2 rounded-full bg-rose-400"></span>}
             </button>
           )}
 
@@ -350,15 +367,15 @@ export const Header: React.FC<HeaderProps> = ({
                 setShowNotifications(!showNotifications);
                 triggerBellShake();
               }}
-              onMouseEnter={triggerBellShake}
-              className={`relative p-2 sm:p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition-all shadow-inner cursor-pointer ${
-                isRinging || unreadNotificationsCount > 0 ? 'ring-2 ring-rose-500/40' : ''
+              aria-label="مركز التنبيهات والإشعارات"
+              aria-expanded={showNotifications}
+              className={`relative p-2 sm:p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-950 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none ${
+                unreadNotificationsCount > 0 ? 'ring-2 ring-rose-500/30' : ''
               }`}
-              title="التنبيهات والإشعارات"
             >
-              <Bell className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform ${isRinging ? 'animate-[bounce_0.5s_infinite] text-amber-400' : ''}`} />
+              <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
               {unreadNotificationsCount > 0 && (
-                <span className="absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5 min-w-4 h-4 sm:min-w-5 sm:h-5 px-1 bg-rose-600 text-white text-[9px] sm:text-[11px] font-black rounded-full flex items-center justify-center border-2 border-slate-900 animate-pulse shadow-md">
+                <span className="absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5 min-w-4 h-4 sm:min-w-5 sm:h-5 px-1 bg-rose-600 text-white text-[9px] sm:text-[11px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-xs">
                   {unreadNotificationsCount}
                 </span>
               )}
@@ -373,11 +390,11 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={() => setShowNotifications(false)}
                 />
 
-                <div className="fixed inset-x-3 top-20 sm:top-auto sm:inset-auto sm:absolute sm:top-full sm:left-0 sm:mt-2.5 w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl z-50 overflow-hidden text-right">
-                  <div className="p-3.5 sm:p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                <div className="fixed inset-x-3 top-20 sm:top-auto sm:inset-auto sm:absolute sm:top-full sm:left-0 sm:mt-2.5 w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-2xl shadow-xl z-50 overflow-hidden text-right">
+                  <div className="p-3.5 sm:p-4 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
-                        <AlertTriangle className="w-4 h-4 animate-bounce" />
+                      <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 shrink-0">
+                        <AlertTriangle className="w-4 h-4" />
                       </div>
                       <div>
                         <h3 className="font-bold text-xs sm:text-sm text-white flex items-center gap-2">

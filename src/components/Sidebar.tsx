@@ -19,9 +19,7 @@ import {
   HeartPulse,
   Activity,
   ClipboardList,
-  Database,
-  Sun,
-  Moon
+  Database
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -40,8 +38,6 @@ interface SidebarProps {
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
   onOpenDatabaseManager?: () => void;
-  theme?: 'light' | 'dark';
-  onToggleTheme?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -59,8 +55,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isMobileOpen = false,
   onCloseMobile,
   onOpenDatabaseManager,
-  theme,
-  onToggleTheme,
 }) => {
   const effectiveLowStock = lowStockCount || inventoryAlertsCount;
 
@@ -373,7 +367,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      <nav className="p-4 space-y-4 flex-1 overflow-y-auto">
+      <nav className="p-4 space-y-4 flex-1 overflow-y-auto" aria-label="أقسام النظام الرئيسية">
         {currentNavigationGroups.map((group, gIdx) => {
           // Filter items allowed for this role
           const visibleItems = group.items.filter(item => currentRoleInfo.allowedTabs.includes(item.id));
@@ -385,7 +379,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span>{group.groupTitle}</span>
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1" role="list">
                 {visibleItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
@@ -394,14 +388,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <button
                       key={item.id}
                       onClick={() => handleTabClick(item.id)}
-                      className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-xs transition-all duration-150 group cursor-pointer ${
+                      aria-label={item.label}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-xs transition-all duration-150 group cursor-pointer focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none ${
                         isActive
                           ? 'bg-sky-600 text-white font-bold shadow-md shadow-sky-600/25'
                           : 'hover:bg-slate-100 dark:hover:bg-slate-800/70 text-slate-800 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white font-semibold'
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <Icon className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-105 ${isActive ? 'text-white' : 'text-slate-600 dark:text-slate-300 group-hover:text-sky-500'}`} />
+                        <Icon className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-105 ${isActive ? 'text-white' : 'text-slate-600 dark:text-slate-300 group-hover:text-sky-500'}`} aria-hidden="true" />
                         <span className="truncate">{item.label}</span>
                       </div>
 
@@ -411,7 +407,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             {item.badge}
                           </span>
                         )}
-                        <ChevronLeft className={`w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity ${isActive ? 'opacity-100 text-white' : 'text-slate-400'}`} />
+                        <ChevronLeft className={`w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity ${isActive ? 'opacity-100 text-white' : 'text-slate-400'}`} aria-hidden="true" />
                       </div>
                     </button>
                   );
@@ -422,23 +418,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </nav>
 
-      {/* Sidebar Footer with Database Manager, Theme Switcher & Logout */}
-      <div className="p-3 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-950/40 text-xs mt-auto space-y-2">
-        {onToggleTheme && (
-          <button
-            onClick={onToggleTheme}
-            className="w-full flex items-center justify-between py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 transition-all text-xs font-bold cursor-pointer"
-          >
-            <div className="flex items-center gap-2">
-              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
-              <span>{theme === 'dark' ? 'النمط النهاري (Light)' : 'النمط الليلي (Dark)'}</span>
-            </div>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono text-slate-600 dark:text-slate-300">
-              {theme === 'dark' ? 'نهاري' : 'ليلي'}
-            </span>
-          </button>
-        )}
-
+      {/* Sidebar Footer with Database Manager & Logout */}
+      <div className="p-3 border-t border-slate-800/80 bg-slate-950/40 text-xs mt-auto space-y-2">
         {onOpenDatabaseManager && (userRole === 'admin' || userRole === 'staff') && (
           <button
             onClick={() => {

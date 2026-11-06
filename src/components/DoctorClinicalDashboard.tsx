@@ -180,23 +180,21 @@ export const DoctorClinicalDashboard: React.FC<DoctorClinicalDashboardProps> = (
   return (
     <div className="space-y-6">
       {/* Doctor Header & Active Shift Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
-
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm relative overflow-hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-950/50 border border-blue-400/30 shrink-0">
+            <div className="w-12 h-12 rounded-xl bg-sky-50 dark:bg-sky-950/60 flex items-center justify-center text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800 shrink-0">
               <Stethoscope className="w-6 h-6" />
             </div>
             <div>
-              <div className="flex items-center gap-2 text-blue-400 text-xs font-bold uppercase tracking-wider">
-                <span>اللوحة السريرية المتخصصة للطبيب (Clinical Doctor Workspace)</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <div className="flex items-center gap-2 text-sky-700 dark:text-sky-400 text-xs font-bold uppercase tracking-wider">
+                <span>اللوحة السريرية المتخصصة للطبيب</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-black text-white mt-0.5">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-0.5">
                 {selectedDoctor?.name} - {selectedDoctor?.specialty}
               </h1>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                 {selectedDoctor?.department} • العيادة: {selectedDoctor?.roomNumber} • المناوبة: {selectedDoctor?.shift}
               </p>
             </div>
@@ -600,207 +598,257 @@ export const DoctorClinicalDashboard: React.FC<DoctorClinicalDashboardProps> = (
 
       {/* MODAL: CLINICAL PROGRESS NOTE */}
       {activeModal?.type === 'note' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-150">
-            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto animate-fade-in"
+          onClick={(e) => { if (e.target === e.currentTarget) setActiveModal(null); }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden my-auto shadow-2xl text-slate-900 dark:text-slate-100">
+            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50 dark:bg-slate-950">
               <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-400" />
-                <h3 className="font-black text-white text-base">توثيق ملاحظة تطور سريري (Progress Note)</h3>
+                <FileText className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+                <h3 className="font-bold text-slate-900 dark:text-white text-base">توثيق ملاحظة تطور سريري</h3>
               </div>
-              <button onClick={() => setActiveModal(null)} className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white">
-                <X className="w-4 h-4" />
+              <button 
+                type="button"
+                onClick={() => setActiveModal(null)} 
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="إغلاق النافذة"
+                aria-label="إغلاق النافذة"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveClinicalNote} className="p-4 sm:p-6 space-y-4 text-xs">
-              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
-                <div className="font-bold text-white text-sm">{activeModal.patient?.fullName}</div>
-                <div className="text-[11px] text-slate-400 font-mono mt-0.5">الملف الطبي: {activeModal.patient?.fileNumber || 'MED-2026'}</div>
-              </div>
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4 text-xs">
+              <form id="note-form" onSubmit={handleSaveClinicalNote} className="space-y-4">
+                <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <div className="font-bold text-slate-900 dark:text-white text-sm">{activeModal.patient?.fullName}</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">الملف الطبي: {activeModal.patient?.fileNumber || 'MED-2026'}</div>
+                </div>
 
-              <div>
-                <label className="block font-bold text-slate-300 mb-1">ملاحظة الطبيب السريرية (SOAP Note) *</label>
-                <textarea
-                  rows={4}
-                  value={clinicalNoteText}
-                  onChange={(e) => setClinicalNoteText(e.target.value)}
-                  placeholder="مثال: الحالة مستقرة، استجابة جيدة للمضاد الحيوي، علامات حيوية ضمن الطبيعي، يُنصح بالبدء بالمشي الخفيف..."
-                  required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                />
-              </div>
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">ملاحظة الطبيب السريرية (SOAP Note) *</label>
+                  <textarea
+                    rows={4}
+                    value={clinicalNoteText}
+                    onChange={(e) => setClinicalNoteText(e.target.value)}
+                    placeholder="مثال: الحالة مستقرة، استجابة جيدة للمضاد الحيوي، علامات حيوية ضمن الطبيعي، يُنصح بالبدء بالمشي الخفيف..."
+                    required
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-3 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-sky-500"
+                  />
+                </div>
+              </form>
+            </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
-                <button type="button" onClick={() => setActiveModal(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-semibold hover:bg-slate-700">
-                  إلغاء
-                </button>
-                <button type="submit" className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-950/50">
-                  حفظ وتوثيق في الملف الطبي
-                </button>
-              </div>
-            </form>
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex items-center justify-end gap-2.5 shrink-0">
+              <button type="button" onClick={() => setActiveModal(null)} className="px-4 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors cursor-pointer">
+                إلغاء
+              </button>
+              <button type="submit" form="note-form" className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold shadow-xs transition-colors cursor-pointer">
+                حفظ وتوثيق في الملف الطبي
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* MODAL: STAT LAB ORDER */}
       {activeModal?.type === 'stat_lab' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-150">
-            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto animate-fade-in"
+          onClick={(e) => { if (e.target === e.currentTarget) setActiveModal(null); }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden my-auto shadow-2xl text-slate-900 dark:text-slate-100">
+            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50 dark:bg-slate-950">
               <div className="flex items-center gap-2">
-                <FlaskConical className="w-5 h-5 text-amber-400" />
-                <h3 className="font-black text-white text-base">طلب تحليل مخبري عاجل (STAT Order)</h3>
+                <FlaskConical className="w-5 h-5 text-amber-500" />
+                <h3 className="font-bold text-slate-900 dark:text-white text-base">طلب تحليل مخبري عاجل (STAT Order)</h3>
               </div>
-              <button onClick={() => setActiveModal(null)} className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white">
-                <X className="w-4 h-4" />
+              <button 
+                type="button"
+                onClick={() => setActiveModal(null)} 
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="إغلاق النافذة"
+                aria-label="إغلاق النافذة"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleStatLabSubmit} className="p-4 sm:p-6 space-y-4 text-xs">
-              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
-                <div className="font-bold text-white text-sm">{activeModal.patient?.fullName}</div>
-                <div className="text-[11px] text-slate-400 font-mono mt-0.5">الملف: {activeModal.patient?.fileNumber || 'MED-2026'}</div>
-              </div>
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4 text-xs">
+              <form id="stat-lab-form" onSubmit={handleStatLabSubmit} className="space-y-4">
+                <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <div className="font-bold text-slate-900 dark:text-white text-sm">{activeModal.patient?.fullName}</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">الملف: {activeModal.patient?.fileNumber || 'MED-2026'}</div>
+                </div>
 
-              <div>
-                <label className="block font-bold text-slate-300 mb-1">اسم الفحص أو التحليل المطلوب *</label>
-                <input
-                  type="text"
-                  value={statTestName}
-                  onChange={(e) => setStatTestName(e.target.value)}
-                  placeholder="مثال: غازات الدم الشرياني (ABG)، تروبونين قلبي، وظائف كلى وشوارد (K+, Na+)..."
-                  required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                />
-              </div>
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">اسم الفحص أو التحليل المطلوب *</label>
+                  <input
+                    type="text"
+                    value={statTestName}
+                    onChange={(e) => setStatTestName(e.target.value)}
+                    placeholder="مثال: غازات الدم الشرياني (ABG)، تروبونين قلبي، وظائف كلى وشوارد (K+, Na+)..."
+                    required
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-amber-500"
+                  />
+                </div>
 
-              <div>
-                <label className="block font-bold text-slate-300 mb-1">درجة الاستعجال *</label>
-                <select
-                  value={statUrgency}
-                  onChange={(e) => setStatUrgency(e.target.value as any)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
-                >
-                  <option value="عاجل جداً (STAT)">عاجل جداً (STAT) - خلال 15 دقيقة</option>
-                  <option value="خلال ساعتين">خلال ساعتين (Urgent)</option>
-                  <option value="روتيني">روتيني مع جولة الصباح</option>
-                </select>
-              </div>
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">درجة الاستعجال *</label>
+                  <select
+                    value={statUrgency}
+                    onChange={(e) => setStatUrgency(e.target.value as any)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer"
+                  >
+                    <option value="عاجل جداً (STAT)">عاجل جداً (STAT) - خلال 15 دقيقة</option>
+                    <option value="خلال ساعتين">خلال ساعتين (Urgent)</option>
+                    <option value="روتيني">روتيني مع جولة الصباح</option>
+                  </select>
+                </div>
+              </form>
+            </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
-                <button type="button" onClick={() => setActiveModal(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-semibold hover:bg-slate-700">
-                  إلغاء
-                </button>
-                <button type="submit" className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-lg shadow-amber-950/50">
-                  إرسال الأمر للمختبر فوراً
-                </button>
-              </div>
-            </form>
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex items-center justify-end gap-2.5 shrink-0">
+              <button type="button" onClick={() => setActiveModal(null)} className="px-4 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors cursor-pointer">
+                إلغاء
+              </button>
+              <button type="submit" form="stat-lab-form" className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold shadow-xs transition-colors cursor-pointer">
+                إرسال الأمر للمختبر فوراً
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* MODAL: QUICK PRESCRIPTION */}
       {activeModal?.type === 'rx' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-150">
-            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto animate-fade-in"
+          onClick={(e) => { if (e.target === e.currentTarget) setActiveModal(null); }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden my-auto shadow-2xl text-slate-900 dark:text-slate-100">
+            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50 dark:bg-slate-950">
               <div className="flex items-center gap-2">
-                <Pill className="w-5 h-5 text-emerald-400" />
-                <h3 className="font-black text-white text-base">إصدار وصفة علاج سريع</h3>
+                <Pill className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <h3 className="font-bold text-slate-900 dark:text-white text-base">إصدار وصفة علاج سريع</h3>
               </div>
-              <button onClick={() => setActiveModal(null)} className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white">
-                <X className="w-4 h-4" />
+              <button 
+                type="button"
+                onClick={() => setActiveModal(null)} 
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="إغلاق النافذة"
+                aria-label="إغلاق النافذة"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleRxSubmit} className="p-4 sm:p-6 space-y-4 text-xs">
-              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
-                <div className="font-bold text-white text-sm">{activeModal.patient?.fullName}</div>
-                <div className="text-[11px] text-slate-400 font-mono mt-0.5">الملف: {activeModal.patient?.fileNumber || 'MED-2026'}</div>
-              </div>
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4 text-xs">
+              <form id="rx-form" onSubmit={handleRxSubmit} className="space-y-4">
+                <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <div className="font-bold text-slate-900 dark:text-white text-sm">{activeModal.patient?.fullName}</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">الملف: {activeModal.patient?.fileNumber || 'MED-2026'}</div>
+                </div>
 
-              <div>
-                <label className="block font-bold text-slate-300 mb-1">اسم الدواء *</label>
-                <input
-                  type="text"
-                  value={rxMedicine}
-                  onChange={(e) => setRxMedicine(e.target.value)}
-                  placeholder="مثال: لازكس (Furosemide IV)، أنسولين نظامي، كبريتات المغنيزيوم..."
-                  required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-                />
-              </div>
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">اسم الدواء *</label>
+                  <input
+                    type="text"
+                    value={rxMedicine}
+                    onChange={(e) => setRxMedicine(e.target.value)}
+                    placeholder="مثال: لازكس (Furosemide IV)، أنسولين نظامي، كبريتات المغنيزيوم..."
+                    required
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
 
-              <div>
-                <label className="block font-bold text-slate-300 mb-1">الجرعة وطريقة الإعطاء</label>
-                <input
-                  type="text"
-                  value={rxDose}
-                  onChange={(e) => setRxDose(e.target.value)}
-                  placeholder="مثال: 40 mg وريدياً فوراً مع مراقبة ضغط الدم..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-                />
-              </div>
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">الجرعة وطريقة الإعطاء</label>
+                  <input
+                    type="text"
+                    value={rxDose}
+                    onChange={(e) => setRxDose(e.target.value)}
+                    placeholder="مثال: 40 mg وريدياً فوراً مع مراقبة ضغط الدم..."
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </form>
+            </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
-                <button type="button" onClick={() => setActiveModal(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-semibold hover:bg-slate-700">
-                  إلغاء
-                </button>
-                <button type="submit" className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-950/50">
-                  إصدار وإرسال للصيدلية السريرية
-                </button>
-              </div>
-            </form>
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex items-center justify-end gap-2.5 shrink-0">
+              <button type="button" onClick={() => setActiveModal(null)} className="px-4 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors cursor-pointer">
+                إلغاء
+              </button>
+              <button type="submit" form="rx-form" className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-xs transition-colors cursor-pointer">
+                إصدار وإرسال للصيدلية السريرية
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* MODAL: ACTION ON ABNORMAL FLAG */}
       {activeModal?.type === 'flag_action' && activeModal.flag && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-150">
-            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto animate-fade-in"
+          onClick={(e) => { if (e.target === e.currentTarget) setActiveModal(null); }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden my-auto shadow-2xl text-slate-900 dark:text-slate-100">
+            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50 dark:bg-slate-950">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-amber-400" />
-                <h3 className="font-black text-white text-base">قرار الطبيب بشأن النتيجة المخبرية الحرجة</h3>
+                <AlertTriangle className="w-5 h-5 text-amber-500" />
+                <h3 className="font-bold text-slate-900 dark:text-white text-base">قرار الطبيب بشأن النتيجة المخبرية الحرجة</h3>
               </div>
-              <button onClick={() => setActiveModal(null)} className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white">
-                <X className="w-4 h-4" />
+              <button 
+                type="button"
+                onClick={() => setActiveModal(null)} 
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="إغلاق النافذة"
+                aria-label="إغلاق النافذة"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-4 sm:p-6 space-y-4 text-xs">
-              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
-                <div className="font-bold text-white text-sm">{activeModal.flag.patientName}</div>
-                <div className="text-amber-300 font-bold">{activeModal.flag.testName}: <span className="font-mono text-rose-400">{activeModal.flag.resultValue}</span></div>
-                <p className="text-[11px] text-slate-400">{activeModal.flag.flagDescription}</p>
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4 text-xs">
+              <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
+                <div className="font-bold text-slate-900 dark:text-white text-sm">{activeModal.flag.patientName}</div>
+                <div className="text-amber-700 dark:text-amber-300 font-bold">{activeModal.flag.testName}: <span className="font-mono text-rose-600 dark:text-rose-400">{activeModal.flag.resultValue}</span></div>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400">{activeModal.flag.flagDescription}</p>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-300 mb-1">القرار الطبي والإجراء المتخذ *</label>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">القرار الطبي والإجراء المتخذ *</label>
                 <textarea
                   rows={3}
                   value={flagDoctorNote}
                   onChange={(e) => setFlagDoctorNote(e.target.value)}
                   placeholder="اكتب التوجيه الطبي المتخذ، مثال: تم طلب قسطرة قلبية فورية، أو تم تعديل جرعة الأدوية وبدء المحلول الوريدي..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-3 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-amber-500"
                 />
               </div>
+            </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
-                <button type="button" onClick={() => setActiveModal(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-semibold hover:bg-slate-700">
-                  إلغاء
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleAcknowledgeFlag(activeModal.flag!)}
-                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-lg shadow-amber-950/50"
-                >
-                  تأكيد الاطلاع وتوثيق القرار
-                </button>
-              </div>
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex items-center justify-end gap-2.5 shrink-0">
+              <button type="button" onClick={() => setActiveModal(null)} className="px-4 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors cursor-pointer">
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAcknowledgeFlag(activeModal.flag!)}
+                className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold shadow-xs transition-colors cursor-pointer"
+              >
+                تأكيد الاطلاع وتوثيق القرار
+              </button>
             </div>
           </div>
         </div>

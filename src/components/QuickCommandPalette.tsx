@@ -20,11 +20,14 @@ import { Patient, Doctor, Appointment, Bed as BedType } from '../types';
 interface QuickCommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
-  onNavigateTab: (tabId: string) => void;
+  onNavigateTab?: (tabId: string) => void;
+  onNavigate?: (tabId: string) => void;
   patients: Patient[];
   doctors: Doctor[];
   appointments: Appointment[];
-  beds: BedType[];
+  beds?: BedType[];
+  inventory?: any[];
+  userRole?: string;
   onOpenQuickModal?: (modalType: 'appointment' | 'patient' | 'inventory' | 'invoice') => void;
   onOpenEmergencyModal?: () => void;
 }
@@ -33,29 +36,22 @@ export const QuickCommandPalette: React.FC<QuickCommandPaletteProps> = ({
   isOpen,
   onClose,
   onNavigateTab,
+  onNavigate,
   patients,
   doctors,
   appointments,
-  beds,
+  beds = [],
   onOpenQuickModal,
   onOpenEmergencyModal,
 }) => {
   const [query, setQuery] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        // Toggle palette
-      } else if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
+  const navigate = (tabId: string) => {
+    if (onNavigate) onNavigate(tabId);
+    else if (onNavigateTab) onNavigateTab(tabId);
+    onClose();
+  };
 
   const normalizedQuery = query.toLowerCase().trim();
 
@@ -90,37 +86,112 @@ export const QuickCommandPalette: React.FC<QuickCommandPaletteProps> = ({
     )
   ).slice(0, 4);
 
+  // Combined flat list of actionable items for keyboard navigation
+  const flatItems: Array<{ type: 'patient' | 'doctor' | 'nav' | 'action'; id: string; action: () => void }> = [];
+
+  matchingPatients.forEach(p => {
+    flatItems.push({
+      type: 'patient',
+      id: p.id,
+      action: () => { navigate('patients'); }
+    });
+  });
+
+  matchingDoctors.forEach(d => {
+    flatItems.push({
+      type: 'doctor',
+      id: d.id,
+      action: () => { navigate('doctors'); }
+    });
+  });
+
+  navigationCommands.forEach(cmd => {
+    flatItems.push({
+      type: 'nav',
+      id: cmd.id,
+      action: () => { navigate(cmd.tab); }
+    });
+  });
+
+  // Handle keyboard events: ArrowUp, ArrowDown, Enter, Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex(prev => (flatItems.length > 0 ? (prev + 1) % flatItems.length : 0));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex(prev => (flatItems.length > 0 ? (prev - 1 + flatItems.length) % flatItems.length : 0));
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (flatItems.length > 0 && flatItems[selectedIndex]) {
+          flatItems[selectedIndex].action();
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, flatItems, selectedIndex, onClose]);
+
+  // Reset selected index when query changes
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [query]);
+
+  if (!isOpen) return null;
+
   const handleSelectNav = (tabId: string) => {
-    onNavigateTab(tabId);
-    onClose();
+    navigate(tabId);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn">
-      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden text-slate-800 dark:text-slate-100 flex flex-col max-h-[80vh]">
+    <div 
+      className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-20 p-4 bg-slate-950/75 backdrop-blur-sm animate-fadeIn"
+      role="dialog"
+      aria-modal="true"
+      aria-label="لوحة الأوامر السريعة والبحث الشامل"
+      dir="rtl"
+    >
+      <div 
+        className="relative w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden text-slate-800 dark:text-slate-100 flex flex-col max-h-[85vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
         
-        {/* Search Header Bar */}
+        {/* Search Header Bar with Keyboard hints */}
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 bg-slate-50/50 dark:bg-slate-950/40">
-          <Search className="w-5 h-5 text-sky-500 shrink-0" />
+          <Search className="w-5 h-5 text-sky-500 shrink-0" aria-hidden="true" />
           <input
             type="text"
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="ابحث عن مريض، طبيب، قسم، أو اكتب أمراً..."
+            aria-label="حقل البحث في لوحة الأوامر"
             className="w-full bg-transparent border-0 text-sm focus:outline-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400"
           />
           {query ? (
             <button
               onClick={() => setQuery('')}
+              aria-label="مسح نص البحث"
               className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
             >
               <X className="w-4 h-4" />
             </button>
           ) : (
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-500">
-              ESC
-            </span>
+            <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-400 shrink-0">
+              <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                Ctrl K
+              </span>
+              <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-500">
+                ESC
+              </span>
+            </div>
           )}
         </div>
 
@@ -283,12 +354,22 @@ export const QuickCommandPalette: React.FC<QuickCommandPaletteProps> = ({
 
         </div>
 
-        {/* Footer */}
+        {/* Footer with Accessibility Navigation Hints */}
         <div className="p-3 px-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 flex items-center justify-between text-[11px] text-slate-400">
-          <span>نظام مشفى الرحمة السريع</span>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" aria-hidden="true" />
+            <span>نظام مشفى الرحمة السريع</span>
+          </div>
           <div className="flex items-center gap-3">
-            <span>التنقل السريع</span>
-            <span className="font-mono bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300">ESC للإغلاق</span>
+            <span className="hidden sm:inline font-mono bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300">
+              ↑ ↓ للتنقل
+            </span>
+            <span className="font-mono bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300">
+              ↵ للاختيار
+            </span>
+            <span className="font-mono bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300">
+              ESC للإغلاق
+            </span>
           </div>
         </div>
 

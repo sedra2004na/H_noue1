@@ -113,7 +113,21 @@ export interface InventoryItem {
   manufacturer: string;
 }
 
-export type LabStatus = 'طبيعي' | 'تحذير' | 'حرج' | 'قيد المعالجة';
+export type LabStatus = 'طبيعي' | 'مرتفع' | 'منخفض' | 'حرج' | 'تحذير' | 'قيد المعالجة';
+
+export interface LabSubComponent {
+  id: string;
+  name: string;
+  resultValue: string;
+  normalRange: string;
+  unit: string;
+  status: LabStatus;
+}
+
+export interface LabHistoricalPoint {
+  date: string;
+  value: number;
+}
 
 export interface LabResult {
   id: string;
@@ -122,12 +136,15 @@ export interface LabResult {
   doctorId: string;
   doctorName: string;
   testName: string;
-  testDate: string;
+  testDate: string; // تاريخ أخذ العينة
+  issuedDate?: string; // تاريخ صدور النتيجة
   status: LabStatus;
   resultValue: string;
   normalRange: string;
   unit: string;
   notes?: string;
+  subComponents?: LabSubComponent[];
+  historicalPoints?: LabHistoricalPoint[];
 }
 
 export interface PrescriptionMedicine {
@@ -152,6 +169,7 @@ export interface Prescription {
 }
 
 export type InvoiceStatus = 'مدفوع' | 'معلق' | 'جزئي' | 'ملغى';
+export type InsuranceClaimStatus = 'موافق عليها' | 'قيد المراجعة' | 'مرفوضة';
 
 export interface InvoiceItem {
   description: string;
@@ -165,14 +183,20 @@ export interface Invoice {
   invoiceNumber: string;
   patientId: string;
   patientName: string;
+  doctorName?: string;
+  serviceDescription?: string;
   date: string;
   items: InvoiceItem[];
   subtotal: number;
   tax: number;
   insuranceCovered: number;
   netAmount: number;
+  amount?: number; // fallback compatibility
   status: InvoiceStatus;
+  claimStatus?: InsuranceClaimStatus;
   paymentMethod?: 'نقدي' | 'بطاقة ائتمان' | 'تأمين طبي' | 'تحويل بنكي' | 'شام كاش (Sham Cash)';
+  transferCode?: string;
+  paidDate?: string;
 }
 
 export interface SystemStats {

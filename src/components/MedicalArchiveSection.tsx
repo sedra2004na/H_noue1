@@ -160,17 +160,15 @@ export const MedicalArchiveSection: React.FC<MedicalArchiveSectionProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Header & Overview Card */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
-
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm relative overflow-hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
           <div>
-            <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-1">
+            <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider mb-1">
               <Archive className="w-4 h-4" />
-              <span>مساحة التخزين الباردة والأرشفة الطبية (Cold Storage & Data Partitioning)</span>
+              <span>مساحة التخزين الباردة والأرشفة الطبية</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-white">أرشيف السجلات الطبية القديمة</h1>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">أرشيف السجلات الطبية القديمة</h1>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 font-medium">
               عزل وأرشفة إقامات وسجلات المرضى المنتهية في مساحة تخزين سريعة وآمنة لتسريع أداء النظام والاستعلامات اليومية
             </p>
           </div>
@@ -404,192 +402,211 @@ export const MedicalArchiveSection: React.FC<MedicalArchiveSectionProps> = ({
 
       {/* VIEW ARCHIVE RECORD DETAIL MODAL */}
       {viewRecord && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-150">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setViewRecord(null);
+          }}
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden my-auto shadow-2xl animate-in fade-in zoom-in duration-150 text-slate-900 dark:text-slate-100">
             
             {/* Modal Header */}
-            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+            <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/60 shrink-0">
               <div className="flex items-center gap-2.5">
-                <Archive className="w-5 h-5 text-indigo-400" />
+                <Archive className="w-5 h-5 text-indigo-500" />
                 <div>
-                  <h3 className="font-black text-white text-base">الملف الطبي الأرشيفي: {viewRecord.fullName}</h3>
-                  <p className="text-xs text-slate-400 font-mono">رقم السجل: {viewRecord.id} | الملف: {viewRecord.fileNumber}</p>
+                  <h3 className="font-black text-slate-900 dark:text-white text-base">الملف الطبي الأرشيفي: {viewRecord.fullName}</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">رقم السجل: {viewRecord.id} | الملف: {viewRecord.fileNumber}</p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setViewRecord(null)}
-                className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
+                aria-label="إغلاق النافذة"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-4 sm:p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+            <div className="p-4 sm:p-6 space-y-4 flex-1 overflow-y-auto">
               {/* Patient Basic Info Card */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-slate-50 dark:bg-slate-950/80 p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
                 <div>
-                  <span className="text-slate-400 text-[11px]">الرقم الوطني:</span>
-                  <p className="font-mono font-bold text-white mt-0.5">{viewRecord.nationalId}</p>
+                  <span className="text-slate-500 dark:text-slate-400 text-[11px]">الرقم الوطني:</span>
+                  <p className="font-mono font-bold text-slate-900 dark:text-white mt-0.5">{viewRecord.nationalId}</p>
                 </div>
                 <div>
-                  <span className="text-slate-400 text-[11px]">العمر / الجنس:</span>
-                  <p className="font-bold text-white mt-0.5">{viewRecord.age} سنة ({viewRecord.gender})</p>
+                  <span className="text-slate-500 dark:text-slate-400 text-[11px]">العمر / الجنس:</span>
+                  <p className="font-bold text-slate-900 dark:text-white mt-0.5">{viewRecord.age} سنة ({viewRecord.gender})</p>
                 </div>
                 <div>
-                  <span className="text-slate-400 text-[11px]">زمرة الدم:</span>
-                  <p className="font-mono font-bold text-sky-400 mt-0.5">{viewRecord.bloodType}</p>
+                  <span className="text-slate-500 dark:text-slate-400 text-[11px]">زمرة الدم:</span>
+                  <p className="font-mono font-bold text-sky-600 dark:text-sky-400 mt-0.5">{viewRecord.bloodType}</p>
                 </div>
                 <div>
-                  <span className="text-slate-400 text-[11px]">رقم الهاتف:</span>
-                  <p className="font-mono text-slate-300 mt-0.5">{viewRecord.phone}</p>
+                  <span className="text-slate-500 dark:text-slate-400 text-[11px]">رقم الهاتف:</span>
+                  <p className="font-mono text-slate-700 dark:text-slate-300 mt-0.5">{viewRecord.phone}</p>
                 </div>
               </div>
 
               {/* Admission and Stay Details */}
-              <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80 space-y-2 text-xs">
-                <div className="flex items-center justify-between border-b border-slate-800/60 pb-2">
+              <div className="bg-slate-50 dark:bg-slate-950/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 space-y-2 text-xs">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800/60 pb-2">
                   <div className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-sky-400" />
-                    <span className="font-bold text-white">{viewRecord.department}</span>
+                    <Building2 className="w-4 h-4 text-sky-500" />
+                    <span className="font-bold text-slate-900 dark:text-white">{viewRecord.department}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-slate-300">
-                    <Stethoscope className="w-3.5 h-3.5 text-indigo-400" />
+                  <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                    <Stethoscope className="w-3.5 h-3.5 text-indigo-500" />
                     <span>الطبيب المشرف: {viewRecord.attendingDoctor}</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-400 pt-1">
-                  <div>تاريخ الدخول: <span className="font-mono text-slate-200 font-bold">{viewRecord.admissionDate}</span></div>
-                  <div>تاريخ الخروج: <span className="font-mono text-slate-200 font-bold">{viewRecord.dischargeDate}</span></div>
-                  <div>تاريخ الأرشفة: <span className="font-mono text-slate-200">{viewRecord.archivedDate}</span></div>
-                  <div>سبب الأرشفة: <span className="text-indigo-300 font-bold">{viewRecord.archiveReason}</span></div>
+                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-500 dark:text-slate-400 pt-1">
+                  <div>تاريخ الدخول: <span className="font-mono text-slate-800 dark:text-slate-200 font-bold">{viewRecord.admissionDate}</span></div>
+                  <div>تاريخ الخروج: <span className="font-mono text-slate-800 dark:text-slate-200 font-bold">{viewRecord.dischargeDate}</span></div>
+                  <div>تاريخ الأرشفة: <span className="font-mono text-slate-800 dark:text-slate-200">{viewRecord.archivedDate}</span></div>
+                  <div>سبب الأرشفة: <span className="text-indigo-600 dark:text-indigo-300 font-bold">{viewRecord.archiveReason}</span></div>
                 </div>
               </div>
 
               {/* Clinical Diagnoses & Medical Summary */}
               <div className="space-y-3 text-xs">
-                <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-xs font-bold text-indigo-300 block mb-1">التشخيص النهائي عند الخروج:</span>
-                  <p className="text-slate-200 leading-relaxed">{viewRecord.dischargeDiagnosis}</p>
+                <div className="bg-slate-50 dark:bg-slate-950/80 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <span className="text-xs font-bold text-indigo-600 dark:text-indigo-300 block mb-1">التشخيص النهائي عند الخروج:</span>
+                  <p className="text-slate-800 dark:text-slate-200 leading-relaxed">{viewRecord.dischargeDiagnosis}</p>
                 </div>
 
-                <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-xs font-bold text-sky-300 block mb-1">ملخص المسار العلاجي والإجراءات الجراحية السابقة:</span>
-                  <p className="text-slate-300 leading-relaxed text-[11px]">{viewRecord.medicalSummary}</p>
+                <div className="bg-slate-50 dark:bg-slate-950/80 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <span className="text-xs font-bold text-sky-600 dark:text-sky-300 block mb-1">ملخص المسار العلاجي والإجراءات الجراحية السابقة:</span>
+                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-[11px]">{viewRecord.medicalSummary}</p>
                 </div>
               </div>
-
-              {/* Action Buttons in Modal */}
-              <div className="flex items-center justify-between pt-3 border-t border-slate-800">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handlePrintRecord(viewRecord)}
-                    className="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-sky-950/40 cursor-pointer"
-                  >
-                    <Printer className="w-4 h-4" />
-                    <span>طباعة التقرير الأرشيفي</span>
-                  </button>
-                  {(userRole === 'admin' || userRole === 'staff') && (
-                    <button
-                      onClick={() => {
-                        onRestorePatient(viewRecord.id);
-                        setViewRecord(null);
-                      }}
-                      className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-950/40 cursor-pointer"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                      <span>إعادة التنشيط (Re-admission)</span>
-                    </button>
-                  )}
-                </div>
-
-                <button
-                  onClick={() => setViewRecord(null)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
-                >
-                  إغلاق
-                </button>
-              </div>
-
             </div>
+
+            {/* Action Buttons in Modal */}
+            <div className="flex items-center justify-between p-4 border-t border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50/50 dark:bg-slate-950/50">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handlePrintRecord(viewRecord)}
+                  className="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-sky-600/30 cursor-pointer transition-all"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>طباعة التقرير الأرشيفي</span>
+                </button>
+                {(userRole === 'admin' || userRole === 'staff') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onRestorePatient(viewRecord.id);
+                      setViewRecord(null);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-600/30 cursor-pointer transition-all"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span>إعادة التنشيط (Re-admission)</span>
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setViewRecord(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              >
+                إغلاق
+              </button>
+            </div>
+
           </div>
         </div>
       )}
 
       {/* ARCHIVE CURRENT PATIENT MODAL */}
       {showArchiveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-150">
-            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowArchiveModal(false);
+          }}
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden my-auto shadow-2xl animate-in fade-in zoom-in duration-150 text-slate-900 dark:text-slate-100">
+            <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/60 shrink-0">
               <div className="flex items-center gap-2">
-                <Archive className="w-5 h-5 text-indigo-400" />
-                <h3 className="font-black text-white text-base">نقل ملف مريض إلى التخزين البارد الأرشيفي</h3>
+                <Archive className="w-5 h-5 text-indigo-500" />
+                <h3 className="font-black text-slate-900 dark:text-white text-base">نقل ملف مريض إلى التخزين البارد الأرشيفي</h3>
               </div>
               <button
+                type="button"
                 onClick={() => setShowArchiveModal(false)}
-                className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
+                aria-label="إغلاق النافذة"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleArchiveSubmit} className="p-4 sm:p-6 space-y-4 text-xs">
-              <div>
-                <label className="block font-bold text-slate-300 mb-1">اختر المريض المراد أرشفة ملفه *</label>
-                <select
-                  value={formPatientId}
-                  onChange={(e) => setFormPatientId(e.target.value)}
-                  required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                >
-                  <option value="">-- اختر المريض --</option>
-                  {activePatients.map(p => (
-                    <option key={p.id} value={p.id}>{p.fullName} ({p.fileNumber}) - آخر زيارة: {p.lastVisitDate}</option>
-                  ))}
-                </select>
+            <form onSubmit={handleArchiveSubmit} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-4 sm:p-6 space-y-4 text-xs flex-1 overflow-y-auto">
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">اختر المريض المراد أرشفة ملفه *</label>
+                  <select
+                    value={formPatientId}
+                    onChange={(e) => setFormPatientId(e.target.value)}
+                    required
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="">-- اختر المريض --</option>
+                    {activePatients.map(p => (
+                      <option key={p.id} value={p.id}>{p.fullName} ({p.fileNumber}) - آخر زيارة: {p.lastVisitDate}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">سبب الأرشفة *</label>
+                  <select
+                    value={formReason}
+                    onChange={(e) => setFormReason(e.target.value as any)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="تخريج واستقرار">تخريج واستقرار الحالة السريرية</option>
+                    <option value="نقل لمشفى آخر">نقل المريض لمشفى أو مركز آخر</option>
+                    <option value="أرشفة دورية قديمة">أرشفة دورية لمرور أكثر من سنة على آخر زيارة</option>
+                    <option value="وفاة">وفاة (رحمه الله)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">ملخص الخروج وملاحظات الأرشفة</label>
+                  <textarea
+                    rows={3}
+                    value={formNotes}
+                    onChange={(e) => setFormNotes(e.target.value)}
+                    placeholder="اكتب ملخصاً موجزاً عن الحالة والمسار العلاجي وتوصيات المتابعة..."
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-3 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-500/30 rounded-xl text-[11px] text-indigo-900 dark:text-indigo-200 leading-relaxed">
+                  ملاحظة: سيتم نقل هذا السجل بالكامل إلى مساحة التخزين الباردة (Cold Storage Partition)، مما يحافظ على السجل الطبي مع إبقائه متاحاً للاسترجاع الفوري في أي وقت عند إعادة دخول المريض.
+                </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-300 mb-1">سبب الأرشفة *</label>
-                <select
-                  value={formReason}
-                  onChange={(e) => setFormReason(e.target.value as any)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                >
-                  <option value="تخريج واستقرار">تخريج واستقرار الحالة السريرية</option>
-                  <option value="نقل لمشفى آخر">نقل المريض لمشفى أو مركز آخر</option>
-                  <option value="أرشفة دورية قديمة">أرشفة دورية لمرور أكثر من سنة على آخر زيارة</option>
-                  <option value="وفاة">وفاة (رحمه الله)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-300 mb-1">ملخص الخروج وملاحظات الأرشفة</label>
-                <textarea
-                  rows={3}
-                  value={formNotes}
-                  onChange={(e) => setFormNotes(e.target.value)}
-                  placeholder="اكتب ملخصاً موجزاً عن الحالة والمسار العلاجي وتوصيات المتابعة..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="p-3 bg-indigo-950/30 border border-indigo-500/30 rounded-xl text-[11px] text-indigo-200 leading-relaxed">
-                ملاحظة: سيتم نقل هذا السجل بالكامل إلى مساحة التخزين الباردة (Cold Storage Partition)، مما يحافظ على السجل الطبي مع إبقائه متاحاً للاسترجاع الفوري في أي وقت عند إعادة دخول المريض.
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-2 p-4 border-t border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50/50 dark:bg-slate-950/50">
                 <button
                   type="button"
                   onClick={() => setShowArchiveModal(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-950/50"
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition-all cursor-pointer"
                 >
                   تأكيد الأرشفة والنقل للتخزين البارد
                 </button>

@@ -729,6 +729,13 @@ export const mockInventory: InventoryItem[] = [
   },
 ];
 
+// Helper to compute dynamic relative dates for mock data
+const getRelativeDate = (offsetDays: number): string => {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return d.toISOString().split('T')[0];
+};
+
 export const mockLabResults: LabResult[] = [
   {
     id: 'lab-1',
@@ -736,38 +743,227 @@ export const mockLabResults: LabResult[] = [
     patientName: 'محمد عبد الله العتيبي',
     doctorId: 'doc-101',
     doctorName: 'د. سارة السعيد',
-    testName: 'تحليل الكوليسترول الشامل (Lipid Profile)',
-    testDate: '2026-08-06',
-    status: 'تحذير',
-    resultValue: '235 mg/dL (مرتفع)',
+    testName: 'تحليل الكوليسترول والدهون الشامل (Lipid Profile)',
+    testDate: getRelativeDate(-4),
+    issuedDate: getRelativeDate(-3),
+    status: 'مرتفع',
+    resultValue: '235 mg/dL',
     normalRange: '< 200 mg/dL',
     unit: 'mg/dL',
-    notes: 'ارتفاع في الدهون الثلاثية والكوليسترول الضار LDL. ينصح بنظام غذائي قليل الدهون.',
+    notes: 'ارتفاع الكوليسترول الكلي والكوليسترول الضار LDL. يوصى بنظام غذائي قليل الدهون المشبعة ومتابعة دورية مع د. سارة.',
+    subComponents: [
+      {
+        id: 'sub-1',
+        name: 'الكوليسترول الكلي (Total Cholesterol)',
+        resultValue: '235 mg/dL',
+        normalRange: '< 200 mg/dL',
+        unit: 'mg/dL',
+        status: 'مرتفع'
+      },
+      {
+        id: 'sub-2',
+        name: 'الكوليسترول الضار (LDL - Low Density Lipoprotein)',
+        resultValue: '155 mg/dL',
+        normalRange: '< 100 mg/dL',
+        unit: 'mg/dL',
+        status: 'مرتفع'
+      },
+      {
+        id: 'sub-3',
+        name: 'الكوليسترول النافع (HDL - High Density Lipoprotein)',
+        resultValue: '44 mg/dL',
+        normalRange: '> 40 mg/dL',
+        unit: 'mg/dL',
+        status: 'طبيعي'
+      },
+      {
+        id: 'sub-4',
+        name: 'الدهون الثلاثية (Triglycerides)',
+        resultValue: '190 mg/dL',
+        normalRange: '< 150 mg/dL',
+        unit: 'mg/dL',
+        status: 'مرتفع'
+      }
+    ],
+    historicalPoints: [
+      { date: getRelativeDate(-120), value: 254 },
+      { date: getRelativeDate(-80), value: 246 },
+      { date: getRelativeDate(-40), value: 240 },
+      { date: getRelativeDate(-4), value: 235 }
+    ]
   },
   {
     id: 'lab-2',
+    patientId: 'pat-1',
+    patientName: 'محمد عبد الله العتيبي',
+    doctorId: 'doc-104',
+    doctorName: 'د. طارق المالكي',
+    testName: 'تحليل السكر التراكمي (HbA1c Glycated Hemoglobin)',
+    testDate: getRelativeDate(-6),
+    issuedDate: getRelativeDate(-5),
+    status: 'مرتفع',
+    resultValue: '6.8 %',
+    normalRange: '4.0 - 5.6 %',
+    unit: '%',
+    notes: 'تحسن طفيف في معدل السكر التراكمي مقارنة بالقراءة السابقة. الاستمرار على الخطة العلاجية الحالية.',
+    subComponents: [
+      {
+        id: 'sub-hba1c-1',
+        name: 'السكر التراكمي (HbA1c)',
+        resultValue: '6.8 %',
+        normalRange: '4.0 - 5.6 %',
+        unit: '%',
+        status: 'مرتفع'
+      },
+      {
+        id: 'sub-hba1c-2',
+        name: 'متوسط سكر الدم المقدر (Estimated Average Glucose - eAG)',
+        resultValue: '148 mg/dL',
+        normalRange: '< 126 mg/dL',
+        unit: 'mg/dL',
+        status: 'مرتفع'
+      }
+    ],
+    historicalPoints: [
+      { date: getRelativeDate(-150), value: 7.6 },
+      { date: getRelativeDate(-90), value: 7.2 },
+      { date: getRelativeDate(-6), value: 6.8 }
+    ]
+  },
+  {
+    id: 'lab-3',
+    patientId: 'pat-1',
+    patientName: 'محمد عبد الله العتيبي',
+    doctorId: 'doc-101',
+    doctorName: 'د. سارة السعيد',
+    testName: 'صورة الدم الكاملة (CBC - Complete Blood Count)',
+    testDate: getRelativeDate(-10),
+    issuedDate: getRelativeDate(-9),
+    status: 'طبيعي',
+    resultValue: '14.2 g/dL',
+    normalRange: '13.5 - 17.5 g/dL',
+    unit: 'g/dL',
+    notes: 'جميع خلايا وتعداد الدم الكامل ضمن الحدود الطبيعية الفسيولوجية السليمة.',
+    subComponents: [
+      {
+        id: 'sub-cbc-1',
+        name: 'الهيموجلوبين (Hemoglobin Hb)',
+        resultValue: '14.2 g/dL',
+        normalRange: '13.5 - 17.5 g/dL',
+        unit: 'g/dL',
+        status: 'طبيعي'
+      },
+      {
+        id: 'sub-cbc-2',
+        name: 'كريات الدم البيضاء (WBC Total)',
+        resultValue: '6.5 x10^3/uL',
+        normalRange: '4.0 - 11.0 x10^3/uL',
+        unit: 'x10^3/uL',
+        status: 'طبيعي'
+      },
+      {
+        id: 'sub-cbc-3',
+        name: 'الصفائح الدموية (Platelets Count)',
+        resultValue: '240 x10^3/uL',
+        normalRange: '150 - 450 x10^3/uL',
+        unit: 'x10^3/uL',
+        status: 'طبيعي'
+      },
+      {
+        id: 'sub-cbc-4',
+        name: 'الهيماتوكريت (Hematocrit HCT)',
+        resultValue: '42.8 %',
+        normalRange: '40.0 - 52.0 %',
+        unit: '%',
+        status: 'طبيعي'
+      }
+    ],
+    historicalPoints: [
+      { date: getRelativeDate(-180), value: 13.9 },
+      { date: getRelativeDate(-100), value: 14.0 },
+      { date: getRelativeDate(-10), value: 14.2 }
+    ]
+  },
+  {
+    id: 'lab-4',
+    patientId: 'pat-1',
+    patientName: 'محمد عبد الله العتيبي',
+    doctorId: 'doc-104',
+    doctorName: 'د. طارق المالكي',
+    testName: 'وظائف الكلى والأملاح (Kidney Function & Electrolytes)',
+    testDate: getRelativeDate(-12),
+    issuedDate: getRelativeDate(-11),
+    status: 'طبيعي',
+    resultValue: '0.92 mg/dL',
+    normalRange: '0.70 - 1.30 mg/dL',
+    unit: 'mg/dL',
+    notes: 'وظائف الكلى سليمة وتصفية الكرياتينين ممتازة.',
+    subComponents: [
+      {
+        id: 'sub-kid-1',
+        name: 'الكرياتينين المصلي (Serum Creatinine)',
+        resultValue: '0.92 mg/dL',
+        normalRange: '0.70 - 1.30 mg/dL',
+        unit: 'mg/dL',
+        status: 'طبيعي'
+      },
+      {
+        id: 'sub-kid-2',
+        name: 'نيتروجين يوريا الدم (BUN)',
+        resultValue: '15.4 mg/dL',
+        normalRange: '7.0 - 20.0 mg/dL',
+        unit: 'mg/dL',
+        status: 'طبيعي'
+      },
+      {
+        id: 'sub-kid-3',
+        name: 'الصوديوم (Serum Sodium)',
+        resultValue: '141 mEq/L',
+        normalRange: '135 - 145 mEq/L',
+        unit: 'mEq/L',
+        status: 'طبيعي'
+      },
+      {
+        id: 'sub-kid-4',
+        name: 'البوتاسيوم (Serum Potassium)',
+        resultValue: '4.3 mEq/L',
+        normalRange: '3.5 - 5.0 mEq/L',
+        unit: 'mEq/L',
+        status: 'طبيعي'
+      }
+    ],
+    historicalPoints: [
+      { date: getRelativeDate(-120), value: 0.95 },
+      { date: getRelativeDate(-60), value: 0.94 },
+      { date: getRelativeDate(-12), value: 0.92 }
+    ]
+  },
+  {
+    id: 'lab-5',
     patientId: 'pat-3',
     patientName: 'عمر فهد الشهري',
     doctorId: 'doc-104',
     doctorName: 'د. طارق المالكي',
     testName: 'السكر التراكمي (HbA1c)',
-    testDate: '2026-08-04',
+    testDate: getRelativeDate(-3),
+    issuedDate: getRelativeDate(-2),
     status: 'حرج',
-    resultValue: '9.2 % (مرتفع جداً)',
+    resultValue: '9.2 %',
     normalRange: '4.0 - 5.6 %',
     unit: '%',
     notes: 'مستوى السكر التراكمي غير متناسق مع الجرعة الحالية. يتطلب تعديل خطة العلاج فوراً.',
   },
   {
-    id: 'lab-3',
+    id: 'lab-6',
     patientId: 'pat-2',
     patientName: 'سارة عبد الرحمن القحطاني',
     doctorId: 'doc-103',
     doctorName: 'د. نورة الغامدي',
     testName: 'صورة الدم الكاملة (CBC)',
-    testDate: '2026-08-07',
+    testDate: getRelativeDate(-5),
+    issuedDate: getRelativeDate(-4),
     status: 'طبيعي',
-    resultValue: 'الهيموجلوبين: 13.8 g/dL',
+    resultValue: '13.8 g/dL',
     normalRange: '12.0 - 15.5 g/dL',
     unit: 'g/dL',
     notes: 'جميع المؤشرات العصبية والدموية ضمن النطاق الطبيعي السليم.',
@@ -783,7 +979,7 @@ export const mockPrescriptions: Prescription[] = [
     doctorId: 'doc-101',
     doctorName: 'د. سارة السعيد',
     specialty: 'أمراض القلب والشرايين',
-    date: '2026-08-09',
+    date: getRelativeDate(-4),
     diagnosis: 'ارتفاع ضغط الدم الشرياني الخفيف مع زيادة نسبة الدهون',
     medicines: [
       { medicineName: 'أملوديبين (Amlodipine)', dosage: '5 mg', frequency: 'مرة واحدة صباحاً', duration: '30 يوماً' },
@@ -799,7 +995,7 @@ export const mockPrescriptions: Prescription[] = [
     doctorId: 'doc-103',
     doctorName: 'د. نورة الغامدي',
     specialty: 'طب الأطفال',
-    date: '2026-08-09',
+    date: getRelativeDate(-6),
     diagnosis: 'التهاب البلعوم واللوزتين البكتيري الحاد',
     medicines: [
       { medicineName: 'شراب أموكسيسيلين (Amoxicillin Syrup)', dosage: '250 mg / 5ml', frequency: 'كل 8 ساعات', duration: '7 أيام' },
@@ -815,34 +1011,88 @@ export const mockInvoices: Invoice[] = [
     invoiceNumber: 'INV-2026-8801',
     patientId: 'pat-1',
     patientName: 'محمد عبد الله العتيبي',
-    date: '2026-08-09',
+    doctorName: 'د. سارة السعيد (استشارية القلب)',
+    serviceDescription: 'كشف استشاري للقلب وتخطيط كهربائي (ECG)',
+    date: getRelativeDate(-14),
     items: [
-      { description: 'رسوم كشف عيادة القلب (د. سارة السعيد)', quantity: 1, unitPrice: 350, total: 350 },
-      { description: 'فحص تخطيط القلب الكهربائي (ECG)', quantity: 1, unitPrice: 150, total: 150 },
-      { description: 'تحليل الكوليسترول الشامل (Lipid Panel)', quantity: 1, unitPrice: 200, total: 200 },
+      { description: 'رسوم كشف عيادة القلب (د. سارة السعيد)', quantity: 1, unitPrice: 35000, total: 35000 },
+      { description: 'فحص تخطيط القلب الكهربائي (ECG)', quantity: 1, unitPrice: 15000, total: 15000 },
+      { description: 'تحليل الكوليسترول والدهون الشامل (Lipid Panel)', quantity: 1, unitPrice: 20000, total: 20000 },
     ],
-    subtotal: 700,
-    tax: 105, // 15% VAT
-    insuranceCovered: 563.5, // 70% insurance
-    netAmount: 241.5,
+    subtotal: 70000,
+    tax: 10500, // 15% VAT
+    insuranceCovered: 56350, // 70% coverage of (subtotal + tax)
+    netAmount: 24150,
+    amount: 24150,
     status: 'مدفوع',
+    claimStatus: 'موافق عليها',
     paymentMethod: 'تأمين طبي',
+    paidDate: getRelativeDate(-14),
   },
   {
     id: 'inv-902',
     invoiceNumber: 'INV-2026-8802',
+    patientId: 'pat-1',
+    patientName: 'محمد عبد الله العتيبي',
+    doctorName: 'د. طارق المالكي (استشاري الباطنية)',
+    serviceDescription: 'تحاليل السكر التراكمي ومتابعة وظائف الكلى',
+    date: getRelativeDate(-6),
+    items: [
+      { description: 'استشارة عيادة السكر والباطنية', quantity: 1, unitPrice: 32000, total: 32000 },
+      { description: 'تحليل السكر التراكمي (HbA1c)', quantity: 1, unitPrice: 12000, total: 12000 },
+      { description: 'تحليل وظائف الكلى والأملاح (Electrolytes)', quantity: 1, unitPrice: 16000, total: 16000 },
+    ],
+    subtotal: 60000,
+    tax: 9000, // 15% VAT
+    insuranceCovered: 48300, // 70% coverage
+    netAmount: 20700,
+    amount: 20700,
+    status: 'مدفوع',
+    claimStatus: 'موافق عليها',
+    paymentMethod: 'شام كاش (Sham Cash)',
+    transferCode: 'SHAM-TX-990412',
+    paidDate: getRelativeDate(-5),
+  },
+  {
+    id: 'inv-903',
+    invoiceNumber: 'INV-2026-8803',
+    patientId: 'pat-1',
+    patientName: 'محمد عبد الله العتيبي',
+    doctorName: 'د. سارة السعيد (استشارية القلب)',
+    serviceDescription: 'فحص إيكو دوبلر قلبي ملوّن واستشارة متابعة',
+    date: getRelativeDate(-1),
+    items: [
+      { description: 'فحص إيكو دوبلر للقلب (Echocardiography)', quantity: 1, unitPrice: 45000, total: 45000 },
+      { description: 'متابعة سريرية وضبط جرعات العلاج', quantity: 1, unitPrice: 15000, total: 15000 },
+    ],
+    subtotal: 60000,
+    tax: 9000, // 15% VAT
+    insuranceCovered: 48300, // 70% coverage
+    netAmount: 20700,
+    amount: 20700,
+    status: 'معلق',
+    claimStatus: 'قيد المراجعة',
+    paymentMethod: 'شام كاش (Sham Cash)',
+  },
+  {
+    id: 'inv-904',
+    invoiceNumber: 'INV-2026-8804',
     patientId: 'pat-3',
     patientName: 'عمر فهد الشهري',
-    date: '2026-08-08',
+    doctorName: 'د. طارق المالكي',
+    serviceDescription: 'استشارة عيادة السكر وتحاليل مخبرية',
+    date: getRelativeDate(-3),
     items: [
-      { description: 'استشارة عيادة الباطنية والسكر', quantity: 1, unitPrice: 320, total: 320 },
-      { description: 'تحليل السكر التراكمي (HbA1c)', quantity: 1, unitPrice: 120, total: 120 },
+      { description: 'استشارة عيادة الباطنية والسكر', quantity: 1, unitPrice: 32000, total: 32000 },
+      { description: 'تحليل السكر التراكمي (HbA1c)', quantity: 1, unitPrice: 12000, total: 12000 },
     ],
-    subtotal: 440,
-    tax: 66,
+    subtotal: 44000,
+    tax: 6600,
     insuranceCovered: 0,
-    netAmount: 506,
+    netAmount: 50600,
+    amount: 50600,
     status: 'معلق',
+    claimStatus: 'مرفوضة',
     paymentMethod: 'نقدي',
   },
 ];

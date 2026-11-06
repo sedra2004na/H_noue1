@@ -361,30 +361,30 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
     <div className="space-y-6">
       
       {/* Header & Controls Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/90 p-6 rounded-2xl border border-slate-800 shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div>
           <div className="flex items-center gap-2">
-            <Users className="w-6 h-6 text-sky-400" />
-            <h2 className="text-xl font-bold text-white">إدارة المرضى والملفات الطبية</h2>
+            <Users className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">إدارة المرضى والملفات الطبية</h2>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
-            إجمالي المرضى المسجلين بالنظام: <span className="font-bold text-sky-400">{patients.length} مريض</span>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-medium">
+            إجمالي المرضى المسجلين بالنظام: <span className="font-bold text-sky-600 dark:text-sky-400">{patients.length} مريض</span>
           </p>
         </div>
 
         {canAddPatient && (
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-lg shadow-sky-600/30 transition-all hover:scale-105 cursor-pointer"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>إضافة مريض جديد</span>
+            <span>تسجيل مريض جديد</span>
           </button>
         )}
       </div>
 
       {/* Filters Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
         
         {/* Search Input */}
         <div className="relative sm:col-span-2">
@@ -394,7 +394,7 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
             placeholder="ابحث بالاسم، رقم الملف (MED-...)، رقم الهوية، أو الهاتف..."
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
-            className="w-full pl-4 pr-10 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-500"
+            className="w-full pl-4 pr-10 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-500"
           />
         </div>
 
@@ -402,9 +402,9 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
         <select
           value={selectedBlood}
           onChange={(e) => setSelectedBlood(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-sky-500"
+          className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-sky-500 cursor-pointer"
         >
-          <option value="all">كافة فصائل الدم (All Blood Types)</option>
+          <option value="all">كافة فصائل الدم</option>
           <option value="A+">فصيلة A+</option>
           <option value="A-">فصيلة A-</option>
           <option value="B+">فصيلة B+</option>
@@ -636,25 +636,39 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
 
       {/* Comprehensive Patient Medical History Modal */}
       {selectedPatient && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl text-right p-6 space-y-6 text-slate-200">
+        <div 
+          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedPatient(null); }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto text-right text-slate-900 dark:text-slate-100">
             
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+            {/* Modal Header (Always Visible) */}
+            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50 dark:bg-slate-950">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-sky-600/20 text-sky-400 border border-sky-500/30 flex items-center justify-center font-bold text-xl">
+                <div className="w-11 h-11 rounded-xl bg-sky-50 dark:bg-sky-600/20 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-500/30 flex items-center justify-center font-bold text-lg shrink-0">
                   {selectedPatient.fullName.charAt(0)}
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">{selectedPatient.fullName}</h3>
-                  <p className="text-xs text-sky-400 font-mono">الملف الطبي: {selectedPatient.fileNumber} | الهوية: {selectedPatient.nationalId}</p>
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">{selectedPatient.fullName}</h3>
+                  <p className="text-xs text-sky-600 dark:text-sky-400 font-mono">الملف الطبي: {selectedPatient.fileNumber} | الهوية: {selectedPatient.nationalId}</p>
                 </div>
               </div>
 
-              <button onClick={() => setSelectedPatient(null)} className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white">
+              <button 
+                type="button"
+                onClick={() => setSelectedPatient(null)} 
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="إغلاق النافذة"
+                aria-label="إغلاق النافذة"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {/* Scrollable Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5 text-xs">
 
             {/* Modal Navigation Tabs & Export Action */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-slate-800 pb-3">
@@ -885,11 +899,14 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
               </div>
             )}
 
-            {/* Footer Close */}
-            <div className="flex justify-end pt-2 border-t border-slate-800">
+            </div>
+
+            {/* Sticky Footer Close */}
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-end shrink-0">
               <button
+                type="button"
                 onClick={() => setSelectedPatient(null)}
-                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs"
+                className="px-5 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs cursor-pointer transition-colors"
               >
                 إغلاق الملف
               </button>
@@ -901,11 +918,17 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
 
       {/* Fullscreen Image Preview Lightbox */}
       {previewImage && (
-        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="relative max-w-4xl max-h-[90vh] flex flex-col items-center">
+        <div 
+          className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setPreviewImage(null); }}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] flex flex-col items-center my-auto">
             <button
+              type="button"
               onClick={() => setPreviewImage(null)}
-              className="absolute -top-12 right-0 p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white shadow-xl"
+              className="absolute -top-12 right-0 p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white shadow-xl cursor-pointer"
+              title="إغلاق المعاينة"
+              aria-label="إغلاق المعاينة"
             >
               <X className="w-6 h-6" />
             </button>
@@ -920,102 +943,119 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
 
       {/* Add New Patient Multi-Step Wizard Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl text-right p-6 space-y-6 text-slate-800 dark:text-slate-100">
+        <div 
+          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
+          onClick={(e) => { 
+            if (e.target === e.currentTarget) {
+              setShowAddModal(false);
+              setFormStep(1);
+              setFormErrors({});
+            }
+          }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto text-right text-slate-800 dark:text-slate-100">
             
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+            {/* Modal Header (Always Visible) */}
+            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50 dark:bg-slate-950">
               <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Plus className="w-5 h-5 text-sky-500" />
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Plus className="w-5 h-5 text-sky-600 dark:text-sky-400" />
                   <span>تسجيل ملف مريض جديد (معالج الإدخال المنظم)</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   إدخال بيانات المريض عبر 3 خطوات سهلة للتحقق من الدقة الطبية
                 </p>
               </div>
               <button 
+                type="button"
                 onClick={() => {
                   setShowAddModal(false);
                   setFormStep(1);
                   setFormErrors({});
                 }} 
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg"
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="إغلاق النافذة"
+                aria-label="إغلاق النافذة"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Stepper Progress Bar */}
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => setFormStep(1)}
-                className={`p-2.5 rounded-xl border text-start transition-all ${
-                  formStep === 1
-                    ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 font-bold'
-                    : formStep > 1
-                      ? 'border-emerald-500/40 bg-emerald-50/40 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300'
-                      : 'border-slate-200 dark:border-slate-800 text-slate-400'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                    formStep === 1 ? 'bg-sky-500 text-white' : formStep > 1 ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600'
-                  }`}>
-                    {formStep > 1 ? '✓' : '1'}
-                  </span>
-                  <span className="text-xs truncate">1. البيانات الشخصية</span>
-                </div>
-              </button>
+            {/* Form */}
+            <form onSubmit={handleSubmitNewPatient} className="flex flex-col flex-1 overflow-hidden">
+              {/* Scrollable Form Body */}
+              <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5 text-xs">
 
-              <button
-                type="button"
-                onClick={() => {
-                  if (formData.fullName && formData.nationalId && formData.phone) setFormStep(2);
-                  else handleSubmitNewPatient({ preventDefault: () => {} } as any);
-                }}
-                className={`p-2.5 rounded-xl border text-start transition-all ${
-                  formStep === 2
-                    ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 font-bold'
-                    : formStep > 2
-                      ? 'border-emerald-500/40 bg-emerald-50/40 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300'
-                      : 'border-slate-200 dark:border-slate-800 text-slate-400'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                    formStep === 2 ? 'bg-sky-500 text-white' : formStep > 2 ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600'
-                  }`}>
-                    {formStep > 2 ? '✓' : '2'}
-                  </span>
-                  <span className="text-xs truncate">2. السجل الطبي</span>
-                </div>
-              </button>
+                {/* Stepper Progress Bar */}
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormStep(1)}
+                    className={`p-2.5 rounded-xl border text-start transition-all ${
+                      formStep === 1
+                        ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 font-bold'
+                        : formStep > 1
+                          ? 'border-emerald-500/40 bg-emerald-50/40 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300'
+                          : 'border-slate-200 dark:border-slate-800 text-slate-400'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                        formStep === 1 ? 'bg-sky-500 text-white' : formStep > 1 ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600'
+                      }`}>
+                        {formStep > 1 ? '✓' : '1'}
+                      </span>
+                      <span className="text-xs truncate">1. البيانات الشخصية</span>
+                    </div>
+                  </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  if (formData.fullName && formData.nationalId && formData.phone) setFormStep(3);
-                }}
-                className={`p-2.5 rounded-xl border text-start transition-all ${
-                  formStep === 3
-                    ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 font-bold'
-                    : 'border-slate-200 dark:border-slate-800 text-slate-400'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                    formStep === 3 ? 'bg-sky-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600'
-                  }`}>
-                    3
-                  </span>
-                  <span className="text-xs truncate">3. التأمين والمراجعة</span>
-                </div>
-              </button>
-            </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (formData.fullName && formData.nationalId && formData.phone) setFormStep(2);
+                      else handleSubmitNewPatient({ preventDefault: () => {} } as any);
+                    }}
+                    className={`p-2.5 rounded-xl border text-start transition-all ${
+                      formStep === 2
+                        ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 font-bold'
+                        : formStep > 2
+                          ? 'border-emerald-500/40 bg-emerald-50/40 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300'
+                          : 'border-slate-200 dark:border-slate-800 text-slate-400'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                        formStep === 2 ? 'bg-sky-500 text-white' : formStep > 2 ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600'
+                      }`}>
+                        {formStep > 2 ? '✓' : '2'}
+                      </span>
+                      <span className="text-xs truncate">2. السجل الطبي</span>
+                    </div>
+                  </button>
 
-            <form onSubmit={handleSubmitNewPatient} className="space-y-4 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (formData.fullName && formData.nationalId && formData.phone) setFormStep(3);
+                    }}
+                    className={`p-2.5 rounded-xl border text-start transition-all ${
+                      formStep === 3
+                        ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 font-bold'
+                        : 'border-slate-200 dark:border-slate-800 text-slate-400'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                        formStep === 3 ? 'bg-sky-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600'
+                      }`}>
+                        3
+                      </span>
+                      <span className="text-xs truncate">3. التأمين والمراجعة</span>
+                    </div>
+                  </button>
+                </div>
               
               {/* Validation Warning Alert if Errors exist */}
               {Object.keys(formErrors).length > 0 && (
@@ -1231,8 +1271,10 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
                 </div>
               )}
 
+              </div>
+
               {/* Wizard Navigation Footer */}
-              <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50/50 dark:bg-slate-950/50">
                 {formStep > 1 ? (
                   <button
                     type="button"

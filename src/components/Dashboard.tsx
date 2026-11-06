@@ -913,12 +913,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* 6. MODAL 1: APPOINTMENT DETAILS MODAL */}
       {detailsModalApt && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in" dir="rtl">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-6 text-right shadow-2xl space-y-4">
+        <div 
+          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in" 
+          dir="rtl"
+          onClick={(e) => { if (e.target === e.currentTarget) setDetailsModalApt(null); }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto text-right text-slate-900 dark:text-slate-100">
             
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            {/* Sticky Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50 dark:bg-slate-950">
               <div className="flex items-center gap-2.5">
-                <div className="p-2.5 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                <div className="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400">
                   <FileText className="w-5 h-5" />
                 </div>
                 <div>
@@ -931,13 +938,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 type="button"
                 onClick={() => setDetailsModalApt(null)}
                 className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                title="إغلاق النافذة"
+                aria-label="إغلاق النافذة"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-3 text-xs">
-              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-3">
+            {/* Scrollable Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4 text-xs">
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 grid grid-cols-2 gap-3.5">
                 <div>
                   <span className="text-slate-500 dark:text-slate-400 block mb-0.5">اسم المريض:</span>
                   <strong className="text-slate-900 dark:text-white text-sm">{detailsModalApt.patientName}</strong>
@@ -964,7 +974,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </div>
                 <div>
                   <span className="text-slate-500 dark:text-slate-400 block mb-0.5">الحالة الحالية:</span>
-                  <span className="inline-block px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 font-bold border border-sky-300 dark:border-sky-800">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 font-bold border border-sky-300 dark:border-sky-800">
                     {detailsModalApt.status}
                   </span>
                 </div>
@@ -975,8 +985,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
 
-            {/* Quick Actions inside Details Modal */}
-            <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            {/* Sticky Footer Actions */}
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex items-center gap-2.5 shrink-0">
               <button
                 type="button"
                 onClick={() => {
@@ -1015,6 +1025,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <span>إلغاء</span>
                 </button>
               )}
+
+              <button
+                type="button"
+                onClick={() => setDetailsModalApt(null)}
+                className="py-2.5 px-3 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs cursor-pointer"
+              >
+                إغلاق
+              </button>
             </div>
           </div>
         </div>
@@ -1022,12 +1040,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* 7. MODAL 2: RESCHEDULE APPOINTMENT MODAL */}
       {rescheduleModalApt && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in" dir="rtl">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 text-right shadow-2xl space-y-4">
+        <div 
+          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in" 
+          dir="rtl"
+          onClick={(e) => { if (e.target === e.currentTarget) setRescheduleModalApt(null); }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto text-right text-slate-900 dark:text-slate-100">
             
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            {/* Sticky Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50 dark:bg-slate-950">
               <div className="flex items-center gap-2.5">
-                <div className="p-2.5 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                <div className="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400">
                   <CalendarDays className="w-5 h-5" />
                 </div>
                 <div>
@@ -1040,80 +1065,93 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 type="button"
                 onClick={() => setRescheduleModalApt(null)}
                 className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                title="إغلاق النافذة"
+                aria-label="إغلاق النافذة"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 text-xs text-slate-700 dark:text-slate-300 space-y-1">
-              <p>المريض: <strong className="text-slate-900 dark:text-white font-bold">{rescheduleModalApt.patientName}</strong></p>
-              <p>الطبيب: <strong className="text-slate-900 dark:text-white font-bold">{rescheduleModalApt.doctorName}</strong> ({rescheduleModalApt.specialty})</p>
-              <p className="text-slate-500 dark:text-slate-400">الموعد الحالي: {formatArabicDate(rescheduleModalApt.date)} - {formatArabicTime(rescheduleModalApt.time)}</p>
+            {/* Scrollable Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4 text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 text-xs text-slate-700 dark:text-slate-300 space-y-1">
+                <p>المريض: <strong className="text-slate-900 dark:text-white font-bold">{rescheduleModalApt.patientName}</strong></p>
+                <p>الطبيب: <strong className="text-slate-900 dark:text-white font-bold">{rescheduleModalApt.doctorName}</strong> ({rescheduleModalApt.specialty})</p>
+                <p className="text-slate-500 dark:text-slate-400">الموعد الحالي: {formatArabicDate(rescheduleModalApt.date)} - {formatArabicTime(rescheduleModalApt.time)}</p>
+              </div>
+
+              <form id="dash-reschedule-form" onSubmit={handleConfirmReschedule} className="space-y-4 text-xs">
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1.5">
+                    اختر التاريخ الجديد للموعد *
+                  </label>
+                  <input
+                    type="date"
+                    min={todayStr}
+                    value={rescheduleDate}
+                    onChange={(e) => setRescheduleDate(e.target.value)}
+                    required
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-sky-500 cursor-pointer"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1.5">
+                    اختر التوقيت الجديد المتاح *
+                  </label>
+                  <select
+                    value={rescheduleTime}
+                    onChange={(e) => setRescheduleTime(e.target.value)}
+                    required
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-sky-500 cursor-pointer"
+                  >
+                    <option value="09:00">09:00 صباحاً (الفترة الصباحية الأولى)</option>
+                    <option value="10:00">10:00 صباحاً (عيادة كشفية)</option>
+                    <option value="11:30">11:30 صباحاً (استشارة متقدمة)</option>
+                    <option value="13:00">01:00 ظهراً (فترة منتصف النهار)</option>
+                    <option value="15:30">03:30 عصراً (الفترة المسائية)</option>
+                    <option value="17:00">05:00 مساءً (عيادة مسائية)</option>
+                    <option value="18:30">06:30 مساءً (آخر المواعيد)</option>
+                  </select>
+                </div>
+              </form>
             </div>
 
-            <form onSubmit={handleConfirmReschedule} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1.5">
-                  اختر التاريخ الجديد للموعد *
-                </label>
-                <input
-                  type="date"
-                  min={todayStr}
-                  value={rescheduleDate}
-                  onChange={(e) => setRescheduleDate(e.target.value)}
-                  required
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-sky-500 cursor-pointer"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1.5">
-                  اختر التوقيت الجديد المتاح *
-                </label>
-                <select
-                  value={rescheduleTime}
-                  onChange={(e) => setRescheduleTime(e.target.value)}
-                  required
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-sky-500 cursor-pointer"
-                >
-                  <option value="09:00">09:00 صباحاً (الفترة الصباحية الأولى)</option>
-                  <option value="10:00">10:00 صباحاً (عيادة كشفية)</option>
-                  <option value="11:30">11:30 صباحاً (استشارة متقدمة)</option>
-                  <option value="13:00">01:00 ظهراً (فترة منتصف النهار)</option>
-                  <option value="15:30">03:30 عصراً (الفترة المسائية)</option>
-                  <option value="17:00">05:00 مساءً (عيادة مسائية)</option>
-                  <option value="18:30">06:30 مساءً (آخر المواعيد)</option>
-                </select>
-              </div>
-
-              <div className="flex items-center gap-3 pt-2">
-                <button
-                  type="submit"
-                  className="flex-1 py-3 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md transition-transform hover:scale-102"
-                >
-                  <CalendarCheck className="w-4 h-4" />
-                  <span>تثبيت الموعد الجديد</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRescheduleModalApt(null)}
-                  className="py-3 px-4 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs cursor-pointer"
-                >
-                  إلغاء
-                </button>
-              </div>
-            </form>
+            {/* Sticky Footer */}
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex items-center justify-end gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setRescheduleModalApt(null)}
+                className="py-2.5 px-4 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs cursor-pointer transition-colors"
+              >
+                إلغاء
+              </button>
+              <button
+                type="submit"
+                form="dash-reschedule-form"
+                className="py-2.5 px-5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors"
+              >
+                <CalendarCheck className="w-4 h-4" />
+                <span>تثبيت الموعد الجديد</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* 8. MODAL 3: CANCEL APPOINTMENT CONFIRMATION */}
       {cancelModalApt && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in" dir="rtl">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl space-y-4">
+        <div 
+          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in" 
+          dir="rtl"
+          onClick={(e) => { if (e.target === e.currentTarget) setCancelModalApt(null); }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto p-5 sm:p-6 text-center space-y-4">
             
-            <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-500/10 text-rose-500 border border-rose-300 dark:border-rose-800 flex items-center justify-center animate-bounce">
-              <AlertTriangle className="w-7 h-7 text-rose-500" />
+            <div className="w-12 h-12 mx-auto rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-6 h-6 text-rose-600 dark:text-rose-400" />
             </div>
 
             <div>
@@ -1131,7 +1169,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <button
                 type="button"
                 onClick={handleConfirmCancel}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors"
               >
                 <XCircle className="w-4 h-4" />
                 <span>نعم، تأكيد الإلغاء</span>
@@ -1139,7 +1177,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <button
                 type="button"
                 onClick={() => setCancelModalApt(null)}
-                className="py-2.5 px-4 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs cursor-pointer"
+                className="py-2.5 px-4 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs cursor-pointer transition-colors"
               >
                 تراجع
               </button>

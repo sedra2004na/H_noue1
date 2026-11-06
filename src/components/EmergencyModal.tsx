@@ -178,8 +178,14 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in" dir="rtl">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-4xl w-full overflow-hidden shadow-2xl text-slate-100 flex flex-col max-h-[92vh] relative">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in overflow-y-auto" 
+      dir="rtl"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-4xl w-full overflow-hidden shadow-2xl text-slate-100 flex flex-col max-h-[92vh] my-auto relative">
         
         {/* Header Bar */}
         <div className="p-4 sm:p-5 bg-gradient-to-r from-rose-950 via-slate-900 to-slate-950 border-b border-rose-900/50 flex items-center justify-between gap-3">
@@ -218,7 +224,7 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({
           {activeSOS && (
             <div className="p-4 rounded-2xl bg-rose-950/90 border-2 border-rose-500 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-pulse">
               <div className="flex items-center gap-3">
-                <ShieldAlert className="w-8 h-8 text-rose-400 shrink-0 animate-bounce" />
+                <ShieldAlert className="w-7 h-7 text-rose-400 shrink-0" />
                 <div>
                   <h3 className="font-extrabold text-sm text-rose-200 flex items-center gap-2">
                     <span>🚨 نداء طوارئ سريري قائم حالياً:</span>
@@ -579,8 +585,8 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({
         {showConfirmDialog && pendingPayload && (
           <div className="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
             <div className="bg-slate-900 border-2 border-rose-500 rounded-3xl max-w-md w-full p-6 text-center shadow-2xl space-y-4">
-              <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-600/20 border border-rose-500/40 text-rose-400 flex items-center justify-center animate-bounce">
-                <AlertTriangle className="w-8 h-8 text-rose-500" />
+              <div className="w-12 h-12 mx-auto rounded-xl bg-rose-600/20 border border-rose-500/40 text-rose-400 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-rose-400" />
               </div>
 
               <div>

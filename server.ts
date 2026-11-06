@@ -1,14 +1,199 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
-import { mockPatients, mockDoctors, mockAppointments, mockInventory, mockLabResults, mockPrescriptions, mockInvoices, mockShifts } from './src/data/mockData.ts';
+import { 
+  mockPatients, 
+  mockDoctors, 
+  mockAppointments, 
+  mockInventory, 
+  mockLabResults, 
+  mockPrescriptions, 
+  mockInvoices, 
+  mockShifts,
+  mockWards,
+  mockBeds,
+  mockArchivedRecords,
+  mockAbnormalLabFlags
+} from './src/data/mockData.ts';
 import { db } from './src/db/index.ts';
 import * as schema from './src/db/schema.ts';
-import { eq, desc } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { seedDatabaseIfEmpty } from './src/db/seed.ts';
 
 dotenv.config();
+
+// Default official accounts dictionary
+const DEFAULT_SYSTEM_ACCOUNTS: Record<string, { role: string; name: string; pass: string; salt?: string; passHash?: string; registeredAt?: string }> = {
+  'admin@hospital.com': { role: 'admin', name: 'د. خالد العمري (المدير العام)', pass: 'admin123' },
+  'admin@carehospital.com': { role: 'admin', name: 'د. خالد العمري (المدير)', pass: 'admin123' },
+  'doctor@hospital.com': { role: 'doctor', name: 'د. سارة السعيد (استشارية القلب)', pass: 'doctor123' },
+  'sara.s@carehospital.com': { role: 'doctor', name: 'د. سارة السعيد', pass: 'doctor123' },
+  'staff@hospital.com': { role: 'staff', name: 'أحمد البقمي (موظف الاستقبال)', pass: 'staff123' },
+  'reception@carehospital.com': { role: 'staff', name: 'أحمد البقمي (استقبال)', pass: 'staff123' },
+  'm.otaibi@gmail.com': { role: 'patient', name: 'محمد عبد الله العتيبي', pass: '1234' },
+};
+
+// Initial audit logs
+const INITIAL_AUDIT_LOGS = [
+  {
+    id: 'aud-101',
+    timestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
+    userId: 'u-admin-1',
+    userName: 'د. خالد العمري (المدير)',
+    userRole: 'admin',
+    action: 'LOGIN',
+    targetResource: 'AUTH_GATEWAY',
+    details: 'تسجيل دخول موثوق إلى بوابة إدارة النظام (TLS 1.3 / HSTS Enforced)',
+    status: 'SUCCESS',
+    ipAddress: '192.168.1.10'
+  },
+  {
+    id: 'aud-102',
+    timestamp: new Date(Date.now() - 3600000 * 1.5).toISOString(),
+    userId: 'u-doc-101',
+    userName: 'د. سارة السعيد',
+    userRole: 'doctor',
+    action: 'VIEW_RECORD',
+    targetResource: 'PATIENT_FILE:MED-2026-1001',
+    patientId: 'p-1001',
+    patientName: 'سامر المحمود',
+    details: 'معاينة السجل السريري ونتائج التحاليل لعيادة القلبية',
+    status: 'SUCCESS',
+    ipAddress: '192.168.1.42'
+  },
+  {
+    id: 'aud-103',
+    timestamp: new Date(Date.now() - 3600000 * 0.8).toISOString(),
+    userId: 'pat-1',
+    userName: 'محمد عبد الله العتيبي',
+    userRole: 'patient',
+    action: 'VIEW_RECORD',
+    targetResource: 'PERSONAL_RECORD:pat-1',
+    patientId: 'pat-1',
+    patientName: 'محمد عبد الله العتيبي',
+    details: 'استعراض مواعيده السريرية وفواتيره الشخصية عبر بوابته المعتمدة',
+    status: 'SUCCESS',
+    ipAddress: '185.12.94.33'
+  },
+  {
+    id: 'aud-104',
+    timestamp: new Date(Date.now() - 3600000 * 0.3).toISOString(),
+    userId: 'pat-1',
+    userName: 'محمد عبد الله العتيبي',
+    userRole: 'patient',
+    action: 'IDOR_BLOCKED',
+    targetResource: 'PATIENT_RECORD:pat-2',
+    patientId: 'pat-2',
+    details: 'محاولة وصول مباشر غير مصرح بها (IDOR Blocked) - تم حظر الطلب ومنع تسريب بيانات المريض الآخر فوراً',
+    status: 'BLOCKED_ALERT',
+    ipAddress: '185.12.94.33'
+  }
+];
+
+// Persistent File-Backed Database Store Path
+const DATA_DIR = path.join(process.cwd(), 'data');
+const DB_FILE_PATH = path.join(DATA_DIR, 'hospital_db.json');
+
+interface DatabaseStore {
+  version: number;
+  lastUpdated: string;
+  accounts: Record<string, any>;
+  patients: any[];
+  doctors: any[];
+  appointments: any[];
+  inventory: any[];
+  labResults: any[];
+  prescriptions: any[];
+  invoices: any[];
+  shifts: any[];
+  wards: any[];
+  beds: any[];
+  archivedRecords: any[];
+  abnormalFlags: any[];
+  auditLogs: any[];
+}
+
+function initDatabaseStore(): DatabaseStore {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+
+    if (fs.existsSync(DB_FILE_PATH)) {
+      const content = fs.readFileSync(DB_FILE_PATH, 'utf-8');
+      const parsed = JSON.parse(content);
+      // Ensure all collections exist
+      return {
+        version: parsed.version || 1,
+        lastUpdated: parsed.lastUpdated || new Date().toISOString(),
+        accounts: { ...DEFAULT_SYSTEM_ACCOUNTS, ...(parsed.accounts || {}) },
+        patients: Array.isArray(parsed.patients) ? parsed.patients : [...mockPatients],
+        doctors: Array.isArray(parsed.doctors) ? parsed.doctors : [...mockDoctors],
+        appointments: Array.isArray(parsed.appointments) ? parsed.appointments : [...mockAppointments],
+        inventory: Array.isArray(parsed.inventory) ? parsed.inventory : [...mockInventory],
+        labResults: Array.isArray(parsed.labResults) ? parsed.labResults : [...mockLabResults],
+        prescriptions: Array.isArray(parsed.prescriptions) ? parsed.prescriptions : [...mockPrescriptions],
+        invoices: Array.isArray(parsed.invoices) ? parsed.invoices : [...mockInvoices],
+        shifts: Array.isArray(parsed.shifts) ? parsed.shifts : [...mockShifts],
+        wards: Array.isArray(parsed.wards) ? parsed.wards : [...mockWards],
+        beds: Array.isArray(parsed.beds) ? parsed.beds : [...mockBeds],
+        archivedRecords: Array.isArray(parsed.archivedRecords) ? parsed.archivedRecords : [...mockArchivedRecords],
+        abnormalFlags: Array.isArray(parsed.abnormalFlags) ? parsed.abnormalFlags : [...mockAbnormalLabFlags],
+        auditLogs: Array.isArray(parsed.auditLogs) ? parsed.auditLogs : [...INITIAL_AUDIT_LOGS],
+      };
+    }
+  } catch (err) {
+    console.warn('Failed to read existing database file, falling back to initial state:', err);
+  }
+
+  // Create fresh initial store
+  const freshStore: DatabaseStore = {
+    version: 1,
+    lastUpdated: new Date().toISOString(),
+    accounts: { ...DEFAULT_SYSTEM_ACCOUNTS },
+    patients: [...mockPatients],
+    doctors: [...mockDoctors],
+    appointments: [...mockAppointments],
+    inventory: [...mockInventory],
+    labResults: [...mockLabResults],
+    prescriptions: [...mockPrescriptions],
+    invoices: [...mockInvoices],
+    shifts: [...mockShifts],
+    wards: [...mockWards],
+    beds: [...mockBeds],
+    archivedRecords: [...mockArchivedRecords],
+    abnormalFlags: [...mockAbnormalLabFlags],
+    auditLogs: [...INITIAL_AUDIT_LOGS],
+  };
+
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(DB_FILE_PATH, JSON.stringify(freshStore, null, 2), 'utf-8');
+  } catch (writeErr) {
+    console.error('Failed to write initial db file:', writeErr);
+  }
+
+  return freshStore;
+}
+
+let dbStore: DatabaseStore = initDatabaseStore();
+
+function saveDb() {
+  dbStore.version += 1;
+  dbStore.lastUpdated = new Date().toISOString();
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(DB_FILE_PATH, JSON.stringify(dbStore, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Error saving database to file:', err);
+  }
+}
 
 async function startServer() {
   const app = express();
@@ -19,16 +204,12 @@ async function startServer() {
 
   // HTTPS Enforcement & Defensive Security Headers Middleware
   app.use((req, res, next) => {
-    // 1. HTTP Strict Transport Security (HSTS) - 2 years + subdomains + preload
     res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
-
-    // 2. Browser Security & MIME Sniffing Protections
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     res.setHeader('X-XSS-Protection', '1; mode=block');
 
-    // 3. Fix Render 302 loops: Upgrade unencrypted HTTP connections permanently to HTTPS
     const forwardedProto = req.headers['x-forwarded-proto'];
     if (process.env.NODE_ENV === 'production' && forwardedProto && forwardedProto !== 'https') {
       return res.redirect(301, `https://${req.headers.host}${req.url}`);
@@ -39,77 +220,10 @@ async function startServer() {
 
   app.use(express.json({ limit: '10mb' }));
 
-  // In-memory fallback dataset
-  let patientsData = [...mockPatients];
-  let doctorsData = [...mockDoctors];
-  let appointmentsData = [...mockAppointments];
-  let inventoryData = [...mockInventory];
-  let labResultsData = [...mockLabResults];
-  let prescriptionsData = [...mockPrescriptions];
-  let invoicesData = [...mockInvoices];
-  let shiftsData = [...mockShifts];
-
-  // Clinical Audit Log Store (Tracks record views, edits, and IDOR blocked attempts)
-  let serverAuditLogs: any[] = [
-    {
-      id: 'aud-101',
-      timestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
-      userId: 'u-admin-1',
-      userName: 'د. خالد العمري (المدير)',
-      userRole: 'admin',
-      action: 'LOGIN',
-      targetResource: 'AUTH_GATEWAY',
-      details: 'تسجيل دخول موثوق إلى بوابة إدارة النظام (TLS 1.3 / HSTS Enforced)',
-      status: 'SUCCESS',
-      ipAddress: '192.168.1.10'
-    },
-    {
-      id: 'aud-102',
-      timestamp: new Date(Date.now() - 3600000 * 1.5).toISOString(),
-      userId: 'u-doc-101',
-      userName: 'د. سارة السعيد',
-      userRole: 'doctor',
-      action: 'VIEW_RECORD',
-      targetResource: 'PATIENT_FILE:MED-2026-1001',
-      patientId: 'p-1001',
-      patientName: 'سامر المحمود',
-      details: 'معاينة السجل السريري ونتائج التحاليل لعيادة القلبية',
-      status: 'SUCCESS',
-      ipAddress: '192.168.1.42'
-    },
-    {
-      id: 'aud-103',
-      timestamp: new Date(Date.now() - 3600000 * 0.8).toISOString(),
-      userId: 'pat-1',
-      userName: 'محمد عبد الله العتيبي',
-      userRole: 'patient',
-      action: 'VIEW_RECORD',
-      targetResource: 'PERSONAL_RECORD:pat-1',
-      patientId: 'pat-1',
-      patientName: 'محمد عبد الله العتيبي',
-      details: 'استعراض مواعيده السريرية وفواتيره الشخصية عبر بوابته المعتمدة',
-      status: 'SUCCESS',
-      ipAddress: '185.12.94.33'
-    },
-    {
-      id: 'aud-104',
-      timestamp: new Date(Date.now() - 3600000 * 0.3).toISOString(),
-      userId: 'pat-1',
-      userName: 'محمد عبد الله العتيبي',
-      userRole: 'patient',
-      action: 'IDOR_BLOCKED',
-      targetResource: 'PATIENT_RECORD:pat-2',
-      patientId: 'pat-2',
-      details: 'محاولة وصول مباشر غير مصرح بها (IDOR Blocked) - تم حظر الطلب ومنع تسريب بيانات المريض الآخر فوراً',
-      status: 'BLOCKED_ALERT',
-      ipAddress: '185.12.94.33'
-    }
-  ];
-
   // Try seed database if PostgreSQL / Cloud SQL is connected
   seedDatabaseIfEmpty().catch(e => console.warn('Seed error (safe fallback):', e));
 
-  // API Routes
+  // =================== SYSTEM HEALTH & SECURITY ===================
   app.get('/api/health', (req, res) => {
     res.json({ 
       status: 'ok', 
@@ -117,21 +231,19 @@ async function startServer() {
       system: 'Care Hospital Management System',
       httpsEnforced: true,
       hstsActive: true,
-      database: process.env.SQL_HOST ? 'Cloud SQL (PostgreSQL / Relational)' : 'In-Memory / Local Storage'
+      dbVersion: dbStore.version,
+      lastUpdated: dbStore.lastUpdated,
+      persistedRecords: {
+        accounts: Object.keys(dbStore.accounts).length,
+        patients: dbStore.patients.length,
+        doctors: dbStore.doctors.length,
+        appointments: dbStore.appointments.length,
+        beds: dbStore.beds.length,
+      },
+      storageMode: 'Persistent Server Disk (Multi-Device Live Sync) + Cloud SQL Fallback',
     });
   });
 
-  // Clinical Audit Log & IDOR Defense Report Endpoint
-  app.get('/api/audit-logs', enforceRole(['admin', 'doctor', 'staff']), (req, res) => {
-    res.json({
-      success: true,
-      totalLogs: serverAuditLogs.length,
-      logs: serverAuditLogs.slice(0, 100),
-      timestamp: new Date().toISOString()
-    });
-  });
-
-  // Security Hardening Verification Endpoint
   app.get('/api/security-status', (req, res) => {
     res.json({
       httpsEnforced: true,
@@ -158,7 +270,6 @@ async function startServer() {
         return normalized as SystemRole;
       }
     }
-    // Default fallback: least privilege (patient)
     return 'patient';
   }
 
@@ -166,17 +277,15 @@ async function startServer() {
     return ((req.headers['x-patient-id'] as string) || (req.query.patient_id as string) || 'pat-1').trim();
   }
 
-  // Middleware to strictly enforce allowed roles on API routes
   function enforceRole(allowedRoles: SystemRole[]) {
     return (req: express.Request, res: express.Response, next: express.NextFunction) => {
       const currentRole = getRequestRole(req);
       if (!allowedRoles.includes(currentRole)) {
         return res.status(403).json({
           success: false,
-          error: `غير مصرح بالوصول: هذا الإجراء محمي ويتطلب صلاحية إدارية أو سريرية [${allowedRoles.join(' أو ')}]، بينما دورك الحالي هو [${currentRole}].`,
+          error: `غير مصرح بالوصول: هذا الإجراء محمي ويتطلب صلاحية [${allowedRoles.join(' أو ')}]، بينما دورك الحالي هو [${currentRole}].`,
           code: 'FORBIDDEN_ROLE_ACCESS',
           endpoint: req.originalUrl || req.path,
-          method: req.method,
           currentRole,
           allowedRoles,
           timestamp: new Date().toISOString()
@@ -186,117 +295,359 @@ async function startServer() {
     };
   }
 
-  // RBAC Status & Permissions Verification Endpoints
-  app.get('/api/auth/permissions', (req, res) => {
-    const role = getRequestRole(req);
-    const permissionsMap = {
-      admin: {
-        title: 'مدير النظام (Admin)',
-        canManageDoctors: true,
-        canManageInventory: true,
-        canViewAllPatients: true,
-        canViewHospitalRevenue: true,
-        canManageAppointments: true,
-        canIssuePrescriptions: true,
-        canIssueLabResults: true,
-        allowedTabs: ['dashboard', 'doctor_portal', 'beds', 'patients', 'archive', 'doctors', 'appointments', 'inventory', 'lab', 'billing']
-      },
-      doctor: {
-        title: 'طبيب معالج (Doctor)',
-        canManageDoctors: false,
-        canManageInventory: false,
-        canViewAllPatients: true,
-        canViewHospitalRevenue: false,
-        canManageAppointments: true,
-        canIssuePrescriptions: true,
-        canIssueLabResults: true,
-        allowedTabs: ['doctor_portal', 'patients', 'beds', 'archive', 'appointments', 'lab', 'doctors', 'dashboard']
-      },
-      staff: {
-        title: 'موظف استقبال وتسكين (Staff)',
-        canManageDoctors: false,
-        canManageInventory: true,
-        canViewAllPatients: true,
-        canViewHospitalRevenue: false,
-        canManageAppointments: true,
-        canIssuePrescriptions: false,
-        canIssueLabResults: false,
-        allowedTabs: ['dashboard', 'patients', 'appointments', 'beds', 'billing', 'inventory', 'archive']
-      },
-      patient: {
-        title: 'مريض (Patient)',
-        canManageDoctors: false,
-        canManageInventory: false,
-        canViewAllPatients: false,
-        canViewHospitalRevenue: false,
-        canManageAppointments: false,
-        canIssuePrescriptions: false,
-        canIssueLabResults: false,
-        allowedTabs: ['dashboard', 'appointments', 'lab', 'billing']
-      }
+  // =================== MULTI-DEVICE AUTH & USER ACCOUNTS ===================
+  app.get('/api/auth/accounts', (req, res) => {
+    res.json({
+      success: true,
+      accounts: dbStore.accounts,
+      version: dbStore.version,
+    });
+  });
+
+  app.post('/api/auth/register', (req, res) => {
+    const { email, pass, fullName, role = 'patient', salt, passHash } = req.body;
+    if (!email || !pass || !fullName) {
+      return res.status(400).json({ success: false, error: 'جميع الحقول مطلوبة' });
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    if (dbStore.accounts[cleanEmail]) {
+      return res.status(400).json({ success: false, error: 'هذا البريد مسجل مسبقاً بالنظام' });
+    }
+
+    const newAccount = {
+      role: (role === 'admin' || role === 'doctor' || role === 'staff') ? role : 'patient',
+      name: String(fullName).trim(),
+      pass: String(pass),
+      salt: salt || '',
+      passHash: passHash || '',
+      registeredAt: new Date().toISOString(),
     };
 
-    res.json({
-      role,
-      permissions: permissionsMap[role],
-      enforcedOnServer: true,
-      timestamp: new Date().toISOString()
+    dbStore.accounts[cleanEmail] = newAccount;
+
+    // If registered as patient, ensure a patient profile exists in database
+    const patientExists = dbStore.patients.some(p => p.phone === cleanEmail || p.fullName === newAccount.name);
+    if (!patientExists) {
+      const newPatientProfile = {
+        id: `pat-${Date.now()}`,
+        fileNumber: `MED-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+        fullName: newAccount.name,
+        age: 35,
+        gender: 'ذكر',
+        phone: cleanEmail,
+        bloodType: 'O+',
+        createdDate: new Date().toISOString().split('T')[0],
+        lastVisitDate: new Date().toISOString().split('T')[0],
+        status: 'active',
+        assignedDoctor: 'د. سارة السعيد',
+        medicalHistory: ['تسجيل حساب شخصي عبر البوابة الإلكترونية الموحدة'],
+        activeAllergies: [],
+        vitals: { bloodPressure: '120/80', heartRate: 72, temperature: 36.8, weight: 70 },
+      };
+      dbStore.patients.unshift(newPatientProfile);
+    }
+
+    // Add audit log
+    dbStore.auditLogs.unshift({
+      id: `aud-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      userId: cleanEmail,
+      userName: newAccount.name,
+      userRole: newAccount.role,
+      action: 'REGISTER',
+      targetResource: 'AUTH_GATEWAY',
+      details: `تسجيل حساب جديد بنجاح (${newAccount.name} - ${newAccount.role}) ومزامنته عبر السيرفر لكل الأجهزة`,
+      status: 'SUCCESS',
+      ipAddress: req.ip || '127.0.0.1',
+    });
+
+    saveDb();
+
+    res.status(201).json({
+      success: true,
+      message: 'تم تسجيل الحساب ومزامنته على السيرفر بنجاح',
+      user: {
+        email: cleanEmail,
+        role: newAccount.role,
+        name: newAccount.name,
+      },
+      version: dbStore.version,
     });
   });
 
-  app.get('/api/server-rbac-status', (req, res) => {
+  app.post('/api/auth/login', (req, res) => {
+    const { email, pass } = req.body;
+    if (!email || !pass) {
+      return res.status(400).json({ success: false, error: 'يرجى إدخال البريد الإلكتروني وكلمة المرور' });
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    const account = dbStore.accounts[cleanEmail];
+
+    if (!account) {
+      return res.status(401).json({ success: false, error: 'البريد الإلكتروني غير مسجل في النظام' });
+    }
+
+    // Accept plain pass match or passHash
+    const isMatch = account.pass === pass || (account.passHash && account.passHash === pass);
+    if (!isMatch) {
+      dbStore.auditLogs.unshift({
+        id: `aud-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        userId: cleanEmail,
+        userName: account.name || cleanEmail,
+        userRole: account.role,
+        action: 'LOGIN',
+        targetResource: 'AUTH_GATEWAY',
+        details: 'محاولة تسجيل دخول فاشلة: كلمة المرور غير مطابقة',
+        status: 'BLOCKED_ALERT',
+        ipAddress: req.ip || '127.0.0.1'
+      });
+      saveDb();
+      return res.status(401).json({ success: false, error: 'كلمة المرور غير صحيحة لهذا الحساب' });
+    }
+
+    dbStore.auditLogs.unshift({
+      id: `aud-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      userId: cleanEmail,
+      userName: account.name || cleanEmail,
+      userRole: account.role,
+      action: 'LOGIN',
+      targetResource: 'AUTH_GATEWAY',
+      details: `تسجيل دخول ناجح للمستخدم (${account.name}) ومزامنة بياناته`,
+      status: 'SUCCESS',
+      ipAddress: req.ip || '127.0.0.1'
+    });
+    saveDb();
+
     res.json({
-      rbacActive: true,
-      enforcementMode: 'strict',
-      protectedEndpoints: [
-        { path: '/api/inventory', allowedRoles: ['admin', 'staff', 'doctor'], patientAccess: 'FORBIDDEN (403)' },
-        { path: '/api/invoices (creation/overall revenue)', allowedRoles: ['admin', 'staff'], patientAccess: 'SELF_ONLY_FILTERED' },
-        { path: '/api/doctors (management)', allowedRoles: ['admin'], patientAccess: 'READ_ONLY' },
-        { path: '/api/lab-results (creation)', allowedRoles: ['doctor', 'admin'], patientAccess: 'SELF_ONLY_FILTERED' },
-        { path: '/api/prescriptions (creation)', allowedRoles: ['doctor', 'admin'], patientAccess: 'SELF_ONLY_FILTERED' },
-        { path: '/api/patients (directory)', allowedRoles: ['admin', 'staff', 'doctor'], patientAccess: 'SELF_ONLY_FILTERED' },
-        { path: '/api/shifts', allowedRoles: ['admin', 'doctor', 'staff'], patientAccess: 'FORBIDDEN (403)' },
-      ],
-      serverTime: new Date().toISOString()
+      success: true,
+      user: {
+        email: cleanEmail,
+        role: account.role,
+        name: account.name,
+        token: `care-token-${cleanEmail}-${Date.now()}`,
+      },
+      version: dbStore.version,
     });
   });
 
-  // =================== PATIENTS ===================
+  // =================== UNIVERSAL REAL-TIME DATABASE SYNC ===================
+  // Returns all collections in one single roundtrip to synchronize laptop and mobile phones perfectly
+  app.get('/api/sync', (req, res) => {
+    res.json({
+      success: true,
+      version: dbStore.version,
+      lastUpdated: dbStore.lastUpdated,
+      accounts: dbStore.accounts,
+      patients: dbStore.patients,
+      doctors: dbStore.doctors,
+      appointments: dbStore.appointments,
+      inventory: dbStore.inventory,
+      labResults: dbStore.labResults,
+      prescriptions: dbStore.prescriptions,
+      invoices: dbStore.invoices,
+      shifts: dbStore.shifts,
+      wards: dbStore.wards,
+      beds: dbStore.beds,
+      archivedRecords: dbStore.archivedRecords,
+      abnormalFlags: dbStore.abnormalFlags,
+      auditLogs: dbStore.auditLogs,
+    });
+  });
+
+  // Fast polling endpoint: returns version and timestamp so clients poll with near-zero overhead
+  app.get('/api/sync/version', (req, res) => {
+    res.json({
+      version: dbStore.version,
+      lastUpdated: dbStore.lastUpdated,
+    });
+  });
+
+  // Central Mutation Endpoint: applies any client change, writes to persistent file, increments version
+  app.post('/api/sync/mutate', (req, res) => {
+    const { action, payload } = req.body;
+    if (!action) {
+      return res.status(400).json({ error: 'Action is required' });
+    }
+
+    switch (action) {
+      // Patients
+      case 'ADD_PATIENT':
+        dbStore.patients.unshift(payload);
+        break;
+      case 'UPDATE_PATIENT':
+        dbStore.patients = dbStore.patients.map(p => p.id === payload.id ? { ...p, ...payload.data } : p);
+        break;
+      case 'DELETE_PATIENT':
+        dbStore.patients = dbStore.patients.filter(p => p.id !== payload.id);
+        break;
+
+      // Doctors
+      case 'ADD_DOCTOR':
+        dbStore.doctors.unshift(payload.doctor || payload);
+        if (payload.shift) {
+          dbStore.shifts.unshift(payload.shift);
+        }
+        break;
+      case 'TOGGLE_DOCTOR_STATUS':
+        dbStore.doctors = dbStore.doctors.map(d => d.id === payload.id ? { ...d, status: payload.status } : d);
+        break;
+      case 'DELETE_DOCTOR':
+        dbStore.doctors = dbStore.doctors.filter(d => d.id !== payload.id);
+        break;
+
+      // Appointments
+      case 'ADD_APPOINTMENT':
+        dbStore.appointments.unshift(payload);
+        break;
+      case 'UPDATE_APPOINTMENT_STATUS':
+        dbStore.appointments = dbStore.appointments.map(a => a.id === payload.id ? { ...a, status: payload.status } : a);
+        break;
+      case 'RESCHEDULE_APPOINTMENT':
+        dbStore.appointments = dbStore.appointments.map(a => 
+          a.id === payload.id ? { ...a, date: payload.date, time: payload.time, status: 'مؤكد' } : a
+        );
+        break;
+      case 'DELETE_APPOINTMENT':
+        dbStore.appointments = dbStore.appointments.filter(a => a.id !== payload.id);
+        break;
+
+      // Inventory
+      case 'ADD_INVENTORY':
+        dbStore.inventory.unshift(payload);
+        break;
+      case 'DELETE_INVENTORY':
+        dbStore.inventory = dbStore.inventory.filter(i => i.id !== payload.id);
+        break;
+
+      // Lab & Prescriptions
+      case 'ADD_LAB_RESULT':
+        dbStore.labResults.unshift(payload);
+        break;
+      case 'DELETE_LAB_RESULT':
+        dbStore.labResults = dbStore.labResults.filter(l => l.id !== payload.id);
+        break;
+      case 'ADD_PRESCRIPTION':
+        dbStore.prescriptions.unshift(payload);
+        break;
+
+      // Invoices
+      case 'ADD_INVOICE':
+        dbStore.invoices.unshift(payload);
+        break;
+      case 'UPDATE_INVOICE_STATUS':
+        dbStore.invoices = dbStore.invoices.map(i => i.id === payload.id ? { ...i, status: payload.status } : i);
+        break;
+
+      // Beds & Wards
+      case 'ADD_BED':
+        dbStore.beds.push(payload);
+        break;
+      case 'UPDATE_BED':
+        dbStore.beds = dbStore.beds.map(b => b.id === payload.id ? { ...b, ...payload.updates } : b);
+        break;
+      case 'DELETE_BED':
+        dbStore.beds = dbStore.beds.filter(b => b.id !== payload.id);
+        break;
+
+      // Cold Storage Archive
+      case 'ARCHIVE_PATIENT':
+        if (payload.archivedRecord) {
+          dbStore.archivedRecords.unshift(payload.archivedRecord);
+        }
+        if (payload.patientId) {
+          dbStore.patients = dbStore.patients.filter(p => p.id !== payload.patientId);
+          // Free assigned bed
+          dbStore.beds = dbStore.beds.map(b => {
+            if (b.patientId === payload.patientId) {
+              return { ...b, status: 'cleaning', patientId: undefined, patientName: undefined };
+            }
+            return b;
+          });
+        }
+        break;
+      case 'RESTORE_PATIENT':
+        if (payload.restoredPatient) {
+          dbStore.patients.unshift(payload.restoredPatient);
+        }
+        if (payload.archiveId) {
+          dbStore.archivedRecords = dbStore.archivedRecords.filter(r => r.id !== payload.archiveId);
+        }
+        break;
+
+      // Abnormal Flags
+      case 'UPDATE_ABNORMAL_FLAG':
+        dbStore.abnormalFlags = dbStore.abnormalFlags.map(f => 
+          f.id === payload.id ? { ...f, acknowledgedByDoctor: payload.acknowledged, doctorNotes: payload.notes || f.doctorNotes } : f
+        );
+        break;
+
+      // Audit Logs
+      case 'ADD_AUDIT_LOG':
+        dbStore.auditLogs.unshift(payload);
+        break;
+
+      // Reset Database
+      case 'RESET_DATABASE':
+        dbStore = {
+          version: dbStore.version + 1,
+          lastUpdated: new Date().toISOString(),
+          accounts: { ...DEFAULT_SYSTEM_ACCOUNTS },
+          patients: [...mockPatients],
+          doctors: [...mockDoctors],
+          appointments: [...mockAppointments],
+          inventory: [...mockInventory],
+          labResults: [...mockLabResults],
+          prescriptions: [...mockPrescriptions],
+          invoices: [...mockInvoices],
+          shifts: [...mockShifts],
+          wards: [...mockWards],
+          beds: [...mockBeds],
+          archivedRecords: [...mockArchivedRecords],
+          abnormalFlags: [...mockAbnormalLabFlags],
+          auditLogs: [...INITIAL_AUDIT_LOGS],
+        };
+        break;
+
+      default:
+        console.warn('Unknown sync mutation action:', action);
+    }
+
+    saveDb();
+
+    res.json({
+      success: true,
+      action,
+      version: dbStore.version,
+      lastUpdated: dbStore.lastUpdated,
+    });
+  });
+
+  // =================== REST PATIENTS ===================
   app.get('/api/patients', async (req, res) => {
     const role = getRequestRole(req);
     const patientId = getRequestPatientId(req);
 
-    let all = patientsData;
-    if (process.env.SQL_HOST) {
-      try {
-        const rows = await db.select().from(schema.patients);
-        if (rows.length > 0) all = rows as any;
-      } catch (err) {
-        console.warn('DB read failed, falling back to memory:', err);
-      }
-    }
-
-    // Role-based filtering: Patients can only see their own profile!
     if (role === 'patient') {
-      const myRecord = all.filter(p => p.id === patientId || p.fullName?.includes('محمد'));
-      return res.json(myRecord.length > 0 ? myRecord : [all[0]]);
+      const myRecord = dbStore.patients.filter(p => p.id === patientId || p.fullName?.includes('محمد'));
+      return res.json(myRecord.length > 0 ? myRecord : [dbStore.patients[0]]);
     }
 
-    res.json(all);
+    res.json(dbStore.patients);
   });
 
-  // GET /api/patients/:id with strict IDOR verification & Clinical Audit Trail
   app.get('/api/patients/:id', async (req, res) => {
     const { id } = req.params;
     const role = getRequestRole(req);
     const authPatientId = getRequestPatientId(req);
 
-    // IDOR Protection: Patients are strictly forbidden from viewing another patient's ID
     if (role === 'patient') {
       const isAuthorized = id === authPatientId || id === 'pat-1';
       if (!isAuthorized) {
-        // Record security violation in audit log
-        serverAuditLogs.unshift({
+        dbStore.auditLogs.unshift({
           id: `sec-${Date.now()}`,
           timestamp: new Date().toISOString(),
           userId: authPatientId,
@@ -309,25 +660,22 @@ async function startServer() {
           status: 'BLOCKED_ALERT',
           ipAddress: req.ip || '127.0.0.1'
         });
+        saveDb();
 
         return res.status(403).json({
           success: false,
           error: 'انتهاك أمني (IDOR Access Denied): محاولة الوصول إلى ملف مريض آخر محظورة تماماً.',
           code: 'IDOR_ACCESS_BLOCKED',
-          targetRequested: id,
-          authorizedIdentity: authPatientId,
-          timestamp: new Date().toISOString()
         });
       }
     }
 
-    const patient = patientsData.find(p => p.id === id);
+    const patient = dbStore.patients.find(p => p.id === id);
     if (!patient) {
       return res.status(404).json({ error: 'ملف المريض غير موجود' });
     }
 
-    // Log authorized medical access
-    serverAuditLogs.unshift({
+    dbStore.auditLogs.unshift({
       id: `aud-${Date.now()}`,
       timestamp: new Date().toISOString(),
       userId: role === 'patient' ? authPatientId : 'clinical-staff',
@@ -341,6 +689,7 @@ async function startServer() {
       status: 'SUCCESS',
       ipAddress: req.ip || '127.0.0.1'
     });
+    saveDb();
 
     res.json(patient);
   });
@@ -350,6 +699,7 @@ async function startServer() {
       id: `pat-${Date.now()}`,
       fileNumber: `MED-2026-${Math.floor(1000 + Math.random() * 9000)}`,
       lastVisitDate: new Date().toISOString().split('T')[0],
+      createdDate: new Date().toISOString().split('T')[0],
       medicalHistory: req.body.medicalHistory || [],
       activeAllergies: req.body.activeAllergies || [],
       vitals: req.body.vitals || { bloodPressure: '120/80', heartRate: 75, temperature: 37.0, weight: 70 },
@@ -377,29 +727,18 @@ async function startServer() {
       }
     }
 
-    patientsData.unshift(newPatient);
+    dbStore.patients.unshift(newPatient);
+    saveDb();
     res.status(201).json(newPatient);
   });
 
   app.put('/api/patients/:id', enforceRole(['admin', 'staff', 'doctor']), async (req, res) => {
     const { id } = req.params;
-    if (process.env.SQL_HOST) {
-      try {
-        await db.update(schema.patients).set({
-          fullName: req.body.fullName,
-          status: req.body.status,
-          phone: req.body.phone,
-          notes: req.body.notes,
-        }).where(eq(schema.patients.id, id));
-      } catch (err) {
-        console.warn('DB update failed:', err);
-      }
-    }
-
-    const index = patientsData.findIndex(p => p.id === id);
+    const index = dbStore.patients.findIndex(p => p.id === id);
     if (index !== -1) {
-      patientsData[index] = { ...patientsData[index], ...req.body };
-      res.json(patientsData[index]);
+      dbStore.patients[index] = { ...dbStore.patients[index], ...req.body };
+      saveDb();
+      res.json(dbStore.patients[index]);
     } else {
       res.status(404).json({ error: 'المريض غير موجود' });
     }
@@ -407,21 +746,14 @@ async function startServer() {
 
   app.delete('/api/patients/:id', enforceRole(['admin']), (req, res) => {
     const { id } = req.params;
-    patientsData = patientsData.filter(p => p.id !== id);
+    dbStore.patients = dbStore.patients.filter(p => p.id !== id);
+    saveDb();
     res.json({ success: true, message: 'تم حذف ملف المريض بنجاح' });
   });
 
-  // =================== DOCTORS ===================
+  // =================== REST DOCTORS ===================
   app.get('/api/doctors', async (req, res) => {
-    if (process.env.SQL_HOST) {
-      try {
-        const rows = await db.select().from(schema.doctors);
-        if (rows.length > 0) return res.json(rows);
-      } catch (err) {
-        console.warn('DB read failed:', err);
-      }
-    }
-    res.json(doctorsData);
+    res.json(dbStore.doctors);
   });
 
   app.post('/api/doctors', enforceRole(['admin']), async (req, res) => {
@@ -432,58 +764,29 @@ async function startServer() {
       ...req.body,
     };
 
-    if (process.env.SQL_HOST) {
-      try {
-        await db.insert(schema.doctors).values({
-          id: newDoc.id,
-          name: newDoc.name,
-          specialty: newDoc.specialty,
-          department: newDoc.department,
-          experienceYears: Number(newDoc.experienceYears) || 5,
-          consultingFee: Number(newDoc.consultingFee) || 25000,
-          phone: newDoc.phone,
-          roomNumber: newDoc.roomNumber,
-          shift: newDoc.shift || 'صباحي',
-          status: newDoc.status,
-          rating: String(newDoc.rating),
-        }).onConflictDoNothing();
-      } catch (err) {
-        console.warn('DB insert failed:', err);
-      }
-    }
-
-    doctorsData.unshift(newDoc);
+    dbStore.doctors.unshift(newDoc);
+    saveDb();
     res.status(201).json(newDoc);
   });
 
   app.delete('/api/doctors/:id', enforceRole(['admin']), (req, res) => {
     const { id } = req.params;
-    doctorsData = doctorsData.filter(d => d.id !== id);
+    dbStore.doctors = dbStore.doctors.filter(d => d.id !== id);
+    saveDb();
     res.json({ success: true, message: 'تم حذف الطبيب بنجاح' });
   });
 
-  // =================== APPOINTMENTS ===================
+  // =================== REST APPOINTMENTS ===================
   app.get('/api/appointments', async (req, res) => {
     const role = getRequestRole(req);
     const patientId = getRequestPatientId(req);
 
-    let all = appointmentsData;
-    if (process.env.SQL_HOST) {
-      try {
-        const rows = await db.select().from(schema.appointments);
-        if (rows.length > 0) all = rows as any;
-      } catch (err) {
-        console.warn('DB read failed:', err);
-      }
-    }
-
-    // Role-based filtering: Patients only receive their own appointments
     if (role === 'patient') {
-      const patientAppointments = all.filter(a => a.patientId === patientId || a.patientName?.includes('محمد'));
+      const patientAppointments = dbStore.appointments.filter(a => a.patientId === patientId || a.patientName?.includes('محمد'));
       return res.json(patientAppointments);
     }
 
-    res.json(all);
+    res.json(dbStore.appointments);
   });
 
   app.post('/api/appointments', async (req, res) => {
@@ -499,28 +802,8 @@ async function startServer() {
       ...req.body,
     };
 
-    if (process.env.SQL_HOST) {
-      try {
-        await db.insert(schema.appointments).values({
-          id: newApt.id,
-          patientId: newApt.patientId,
-          patientName: newApt.patientName,
-          doctorId: newApt.doctorId || 'd-1',
-          doctorName: newApt.doctorName,
-          specialty: newApt.specialty || 'طب عام',
-          date: newApt.date,
-          time: newApt.time,
-          type: newApt.type || 'كشف',
-          status: newApt.status,
-          fee: Number(newApt.fee) || 25000,
-          notes: newApt.notes || '',
-        }).onConflictDoNothing();
-      } catch (err) {
-        console.warn('DB appointment insert failed:', err);
-      }
-    }
-
-    appointmentsData.unshift(newApt);
+    dbStore.appointments.unshift(newApt);
+    saveDb();
     res.status(201).json(newApt);
   });
 
@@ -529,36 +812,26 @@ async function startServer() {
     const { status } = req.body;
     const role = getRequestRole(req);
 
-    const apt = appointmentsData.find(a => a.id === id);
+    const apt = dbStore.appointments.find(a => a.id === id);
     if (!apt) {
       return res.status(404).json({ error: 'الموعد غير موجود' });
     }
 
-    // Patients can only cancel their own appointment
-    if (role === 'patient') {
-      if (status !== 'ملغى' && status !== 'ملغي') {
-        return res.status(403).json({
-          error: 'غير مصرح: يحق للمريض إلغاء موعده فقط، بينما تغيير الحالة إلى مكتمل أو تأكيد يتطلب موظف استقبال أو طبيب.',
-          code: 'PATIENT_LIMITED_ACTION'
-        });
-      }
-    }
-
-    if (process.env.SQL_HOST) {
-      try {
-        await db.update(schema.appointments).set({ status }).where(eq(schema.appointments.id, id));
-      } catch (err) {
-        console.warn('DB appointment status update failed:', err);
-      }
+    if (role === 'patient' && status !== 'ملغى' && status !== 'ملغي') {
+      return res.status(403).json({
+        error: 'غير مصرح: يحق للمريض إلغاء موعده فقط.',
+        code: 'PATIENT_LIMITED_ACTION'
+      });
     }
 
     apt.status = status;
+    saveDb();
     res.json(apt);
   });
 
-  // =================== INVENTORY (Strict Staff / Admin / Doctor only) ===================
+  // =================== REST INVENTORY ===================
   app.get('/api/inventory', enforceRole(['admin', 'staff', 'doctor']), (req, res) => {
-    res.json(inventoryData);
+    res.json(dbStore.inventory);
   });
 
   app.post('/api/inventory', enforceRole(['admin', 'staff']), (req, res) => {
@@ -573,26 +846,28 @@ async function startServer() {
       status,
       ...req.body,
     };
-    inventoryData.unshift(newItem);
+    dbStore.inventory.unshift(newItem);
+    saveDb();
     res.status(201).json(newItem);
   });
 
   app.delete('/api/inventory/:id', enforceRole(['admin']), (req, res) => {
     const { id } = req.params;
-    inventoryData = inventoryData.filter(i => i.id !== id);
+    dbStore.inventory = dbStore.inventory.filter(i => i.id !== id);
+    saveDb();
     res.json({ success: true, message: 'تم حذف الصنف من المستودع بنجاح' });
   });
 
-  // =================== LAB RESULTS ===================
+  // =================== REST LAB RESULTS ===================
   app.get('/api/lab-results', (req, res) => {
     const role = getRequestRole(req);
     const patientId = getRequestPatientId(req);
 
     if (role === 'patient') {
-      const myLabs = labResultsData.filter(l => l.patientId === patientId || l.patientName?.includes('محمد'));
+      const myLabs = dbStore.labResults.filter(l => l.patientId === patientId || l.patientName?.includes('محمد'));
       return res.json(myLabs);
     }
-    res.json(labResultsData);
+    res.json(dbStore.labResults);
   });
 
   app.post('/api/lab-results', enforceRole(['doctor', 'admin']), (req, res) => {
@@ -601,20 +876,21 @@ async function startServer() {
       testDate: new Date().toISOString().split('T')[0],
       ...req.body,
     };
-    labResultsData.unshift(newLab);
+    dbStore.labResults.unshift(newLab);
+    saveDb();
     res.status(201).json(newLab);
   });
 
-  // =================== PRESCRIPTIONS ===================
+  // =================== REST PRESCRIPTIONS ===================
   app.get('/api/prescriptions', (req, res) => {
     const role = getRequestRole(req);
     const patientId = getRequestPatientId(req);
 
     if (role === 'patient') {
-      const myRx = prescriptionsData.filter(p => p.patientId === patientId || p.patientName?.includes('محمد'));
+      const myRx = dbStore.prescriptions.filter(p => p.patientId === patientId || p.patientName?.includes('محمد'));
       return res.json(myRx);
     }
-    res.json(prescriptionsData);
+    res.json(dbStore.prescriptions);
   });
 
   app.post('/api/prescriptions', enforceRole(['doctor', 'admin']), (req, res) => {
@@ -623,19 +899,18 @@ async function startServer() {
       date: new Date().toISOString().split('T')[0],
       ...req.body,
     };
-    prescriptionsData.unshift(newRx);
+    dbStore.prescriptions.unshift(newRx);
+    saveDb();
     res.status(201).json(newRx);
   });
 
-  // =================== INVOICES & FINANCIAL REVENUE ===================
-  // Patients can only access their personal invoices; Admin and Staff see all and financial revenue
+  // =================== REST INVOICES ===================
   app.get('/api/invoices', (req, res) => {
     const role = getRequestRole(req);
     const patientId = getRequestPatientId(req);
 
     if (role === 'patient') {
-      // Patient only sees their own bills
-      const myInvoices = invoicesData.filter(i => i.patientId === patientId || i.patientName?.includes('محمد'));
+      const myInvoices = dbStore.invoices.filter(i => i.patientId === patientId || i.patientName?.includes('محمد'));
       return res.json({
         role: 'patient',
         viewType: 'personal_billing',
@@ -644,12 +919,11 @@ async function startServer() {
       });
     }
 
-    // Admin & Staff: Full financial and revenue ledger
     res.json({
       role,
       viewType: 'hospital_revenue',
       title: role === 'admin' ? 'الإيرادات والتقارير المالية الشاملة' : 'فواتير ومحاسبة المرضى',
-      invoices: invoicesData
+      invoices: dbStore.invoices
     });
   });
 
@@ -668,13 +942,23 @@ async function startServer() {
       status: req.body.status || 'معلق',
       ...req.body,
     };
-    invoicesData.unshift(newInv);
+    dbStore.invoices.unshift(newInv);
+    saveDb();
     res.status(201).json(newInv);
   });
 
-  // =================== SHIFTS & BEDS ===================
+  // =================== REST SHIFTS & AUDIT ===================
   app.get('/api/shifts', enforceRole(['admin', 'doctor', 'staff']), (req, res) => {
-    res.json(shiftsData);
+    res.json(dbStore.shifts);
+  });
+
+  app.get('/api/audit-logs', enforceRole(['admin', 'doctor', 'staff']), (req, res) => {
+    res.json({
+      success: true,
+      totalLogs: dbStore.auditLogs.length,
+      logs: dbStore.auditLogs.slice(0, 100),
+      timestamp: new Date().toISOString()
+    });
   });
 
   // Vite middleware or production static
@@ -693,7 +977,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Care Hospital Management Server running on http://0.0.0.0:${PORT}`);
+    console.log(`Care Hospital Management Server running on http://0.0.0.0:${PORT} with Multi-Device Persistent Storage`);
   });
 }
 

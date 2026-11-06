@@ -274,17 +274,15 @@ export const BedsManagementSection: React.FC<BedsManagementSectionProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Header Card */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-sky-500/5 rounded-full blur-3xl pointer-events-none" />
-        
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm relative overflow-hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
           <div>
-            <div className="flex items-center gap-2 text-sky-400 text-xs font-bold uppercase tracking-wider mb-1">
+            <div className="flex items-center gap-2 text-sky-600 dark:text-sky-400 text-xs font-bold uppercase tracking-wider mb-1">
               <BedIcon className="w-4 h-4" />
               <span>نظام التتبع اللحظي للأسِرّة والأجنحة السريرية</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-white">إدارة حالات الأسِرّة والأجنحة</h1>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">إدارة حالات الأسِرّة والأجنحة</h1>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 font-medium">
               متابعة دقيقة للأسرّة الشاغرة، المشغولة، دورات التعقيم الفورية، والحجوزات الجراحية في كافة أقسام المشفى
             </p>
           </div>
@@ -521,9 +519,9 @@ export const BedsManagementSection: React.FC<BedsManagementSectionProps> = ({
                   )}
 
                   {isCleaning && (
-                    <div className="bg-amber-950/30 border border-amber-500/20 rounded-xl p-3 text-center space-y-1.5">
-                      <div className="flex items-center justify-center gap-1.5 text-amber-400 text-xs font-bold">
-                        <Sparkles className="w-4 h-4 animate-spin text-amber-400" />
+                    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-500/20 rounded-xl p-3 text-center space-y-1.5">
+                      <div className="flex items-center justify-center gap-1.5 text-amber-700 dark:text-amber-400 text-xs font-bold">
+                        <Sparkles className="w-4 h-4 text-amber-500" />
                         <span>دورة التعقيم والتطهير جارية</span>
                       </div>
                       <p className="text-[11px] text-amber-200/80">تعقيم بالأشعة فوق البنفسجية وتبديل الأغطية والمستهلكات</p>
@@ -667,42 +665,49 @@ export const BedsManagementSection: React.FC<BedsManagementSectionProps> = ({
 
       {/* Modal Dialogs */}
       {activeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-150">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setActiveModal(null);
+          }}
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden my-auto shadow-2xl text-slate-900 dark:text-slate-100 animate-in fade-in zoom-in-95 duration-200">
             
             {/* Modal Header */}
-            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
+            <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/50 shrink-0">
               <div className="flex items-center gap-2">
-                <BedIcon className="w-5 h-5 text-sky-400" />
+                <BedIcon className="w-5 h-5 text-sky-500" />
                 <div>
-                  <h3 className="font-black text-white text-base">
+                  <h3 className="font-black text-slate-900 dark:text-white text-base">
                     {activeModal.type === 'assign' && `تسكين مريض في السرير (${activeModal.bed.bedNumber})`}
                     {activeModal.type === 'transfer' && `نقل المريض من السرير (${activeModal.bed.bedNumber})`}
                     {activeModal.type === 'reserve' && `حجز مسبق للسرير (${activeModal.bed.bedNumber})`}
                   </h3>
-                  <p className="text-xs text-slate-400">{activeModal.bed.wardName} - {activeModal.bed.roomNumber}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{activeModal.bed.wardName} - {activeModal.bed.roomNumber}</p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setActiveModal(null)}
-                className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"
+                aria-label="إغلاق النافذة"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-4 sm:p-6 space-y-4">
+            {/* Modal Body & Forms */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               {/* ASSIGN PATIENT FORM */}
               {activeModal.type === 'assign' && (
                 <form onSubmit={handleAssignSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">اختر المريض المراد تسكينه *</label>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">اختر المريض المراد تسكينه *</label>
                     <select
                       value={formPatientId}
                       onChange={(e) => setFormPatientId(e.target.value)}
                       required
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-sky-500"
                     >
                       <option value="">-- اختر من قائمة المرضى --</option>
                       {patients.map(p => (
@@ -712,11 +717,11 @@ export const BedsManagementSection: React.FC<BedsManagementSectionProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">الطبيب المعالج والمشرف</label>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">الطبيب المعالج والمشرف</label>
                     <select
                       value={formDoctorName}
                       onChange={(e) => setFormDoctorName(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-sky-500"
                     >
                       <option value="">-- اختر الطبيب المعالج --</option>
                       {doctors.map(d => (
@@ -727,11 +732,11 @@ export const BedsManagementSection: React.FC<BedsManagementSectionProps> = ({
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-slate-300 mb-1">درجة الأولوية السريرية</label>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">درجة الأولوية السريرية</label>
                       <select
                         value={formPriority}
                         onChange={(e) => setFormPriority(e.target.value as any)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500"
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-sky-500"
                       >
                         <option value="stable">مستقر (عناية عادية)</option>
                         <option value="observation">تحت الملاحظة</option>
@@ -741,38 +746,38 @@ export const BedsManagementSection: React.FC<BedsManagementSectionProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-300 mb-1">تاريخ الدخول</label>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">تاريخ الدخول</label>
                       <input
                         type="date"
                         defaultValue={new Date().toISOString().split('T')[0]}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-mono focus:outline-none"
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-slate-200 font-mono focus:outline-none"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">تشخيص الدخول والسبب الطبي *</label>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">تشخيص الدخول والسبب الطبي *</label>
                     <textarea
                       rows={2}
                       value={formDiagnosis}
                       onChange={(e) => setFormDiagnosis(e.target.value)}
                       placeholder="مثال: مراقبة بعد عملية استئصال المرارة، أو احتشاء عضلة قلبية حاد..."
                       required
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-3 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-sky-500"
                     />
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                     <button
                       type="button"
                       onClick={() => setActiveModal(null)}
-                      className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                      className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                     >
                       إلغاء
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-950/50"
+                      className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/30 transition-all cursor-pointer"
                     >
                       تأكيد التسكين في السرير
                     </button>
@@ -783,19 +788,19 @@ export const BedsManagementSection: React.FC<BedsManagementSectionProps> = ({
               {/* TRANSFER BED FORM */}
               {activeModal.type === 'transfer' && (
                 <form onSubmit={handleTransferSubmit} className="space-y-4">
-                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-1">
-                    <div className="text-slate-400 font-medium">المريض الحالي المنقول:</div>
-                    <div className="text-sm font-bold text-white">{activeModal.bed.patientName}</div>
-                    <div className="text-slate-400 text-[11px]">التشخيص: {activeModal.bed.diagnosis}</div>
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs space-y-1">
+                    <div className="text-slate-500 dark:text-slate-400 font-medium">المريض الحالي المنقول:</div>
+                    <div className="text-sm font-bold text-slate-900 dark:text-white">{activeModal.bed.patientName}</div>
+                    <div className="text-slate-500 dark:text-slate-400 text-[11px]">التشخيص: {activeModal.bed.diagnosis}</div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">اختر السرير الشاغر الجديد للتحويل إليه *</label>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">اختر السرير الشاغر الجديد للتحويل إليه *</label>
                     <select
                       value={formTargetBedId}
                       onChange={(e) => setFormTargetBedId(e.target.value)}
                       required
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-sky-500"
                     >
                       <option value="">-- اختر السرير الشاغر --</option>
                       {beds.filter(b => b.status === 'available' && b.id !== activeModal.bed.id).map(b => (
@@ -807,27 +812,27 @@ export const BedsManagementSection: React.FC<BedsManagementSectionProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">سبب التحويل أو ملاحظات النقل السريري</label>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">سبب التحويل أو ملاحظات النقل السريري</label>
                     <input
                       type="text"
                       value={formNotes}
                       onChange={(e) => setFormNotes(e.target.value)}
                       placeholder="مثال: استقرار الحالة والتحويل من العناية للجناح العام..."
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-sky-500"
                     />
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                     <button
                       type="button"
                       onClick={() => setActiveModal(null)}
-                      className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                      className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                     >
                       إلغاء
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-lg shadow-sky-950/50"
+                      className="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-md shadow-sky-600/30 transition-all cursor-pointer"
                     >
                       إتمام نقل المريض وبدء تعقيم السرير القديم
                     </button>
@@ -839,51 +844,51 @@ export const BedsManagementSection: React.FC<BedsManagementSectionProps> = ({
               {activeModal.type === 'reserve' && (
                 <form onSubmit={handleReserveSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">سبب الحجز أو اسم العملية المجدولة *</label>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">سبب الحجز أو اسم العملية المجدولة *</label>
                     <input
                       type="text"
                       value={formReservedFor}
                       onChange={(e) => setFormReservedFor(e.target.value)}
                       placeholder="مثال: عملية استبدال صمام تاجي مجدولة، استقبال مريض قسطرة..."
                       required
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-sky-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">الموعد المتوقع للاستقبال *</label>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">الموعد المتوقع للاستقبال *</label>
                     <input
                       type="text"
                       value={formReservedUntil}
                       onChange={(e) => setFormReservedUntil(e.target.value)}
                       placeholder="مثال: الساعة 12:00 ظهراً، غداً صباحاً..."
                       required
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-sky-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">ملاحظات التجهيز الخاص</label>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">ملاحظات التجهيز الخاص</label>
                     <input
                       type="text"
                       value={formNotes}
                       onChange={(e) => setFormNotes(e.target.value)}
                       placeholder="مثال: تجهيز جهاز مراقبة دقيق ومضخة تسريب..."
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-sky-500"
                     />
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                     <button
                       type="button"
                       onClick={() => setActiveModal(null)}
-                      className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                      className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                     >
                       إلغاء
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-lg shadow-purple-950/50"
+                      className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-md shadow-purple-600/30 transition-all cursor-pointer"
                     >
                       تثبيت حجز السرير
                     </button>
