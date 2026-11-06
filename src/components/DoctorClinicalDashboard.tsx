@@ -10,6 +10,7 @@ import {
   UserRole 
 } from '../types';
 import { formatArabicDate, formatAppointmentsCount } from '../utils/arabicFormatters';
+import { checkDrugAllergyConflict } from '../utils/validation';
 import { 
   Stethoscope, 
   AlertOctagon, 
@@ -779,6 +780,25 @@ export const DoctorClinicalDashboard: React.FC<DoctorClinicalDashboardProps> = (
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
+
+                {/* Real-time Allergy & Safety Check Banner */}
+                {(() => {
+                  if (!rxMedicine.trim() || !activeModal.patient) return null;
+                  const check = checkDrugAllergyConflict(rxMedicine, activeModal.patient.allergies || []);
+                  if (!check.hasConflict) return null;
+
+                  return (
+                    <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl space-y-1 text-xs">
+                      <div className="flex items-center gap-1.5 text-rose-400 font-bold">
+                        <ShieldAlert className="w-4 h-4 text-rose-500 shrink-0" />
+                        <span>تحذير حساسية إكلينيكي حرج</span>
+                      </div>
+                      <p className="text-rose-300 text-[11px] leading-relaxed font-semibold">
+                        {check.message}
+                      </p>
+                    </div>
+                  );
+                })()}
               </form>
             </div>
 

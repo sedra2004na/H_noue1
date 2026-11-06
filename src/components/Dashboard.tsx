@@ -743,24 +743,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {filteredAppointments.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center">
-                    <div className="max-w-xs mx-auto space-y-2">
-                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
-                        <Calendar className="w-5 h-5" />
+                  <td colSpan={6} className="p-10 text-center">
+                    <div className="max-w-sm mx-auto space-y-2.5">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto border border-emerald-500/20 shadow-xs">
+                        <CheckCircle2 className="w-6 h-6" />
                       </div>
-                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                        {timelineScope === 'upcoming' 
-                          ? 'لا توجد مواعيد قادمة مجدولة حالياً' 
-                          : timelineScope === 'past' 
-                            ? 'لا توجد مواعيد سابقة مسجلة' 
-                            : 'لا توجد مواعيد مطابقة حالياً'}
+                      <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                        لا توجد مواعيد نشطة حالياً، جميع الجداول منظمة
                       </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">يمكنك حجز موعد جديد بالضغط على الزر أدناه</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">لا توجد حجوزات معلقة أو تتطلب تدخلاً في الوقت الحالي</p>
                       <button
                         onClick={() => openQuickModal('appointment')}
-                        className="mt-2 px-3.5 py-2 rounded-xl bg-sky-600 text-white font-bold text-xs hover:bg-sky-500 transition-all inline-flex items-center gap-1 cursor-pointer"
+                        className="mt-2 px-4 py-2 rounded-xl bg-sky-600 text-white font-bold text-xs hover:bg-sky-500 transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
                       >
-                        <Plus className="w-3.5 h-3.5" />
+                        <Plus className="w-4 h-4" />
                         <span>جدولة موعد جديد</span>
                       </button>
                     </div>

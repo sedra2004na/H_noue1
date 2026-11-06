@@ -28,6 +28,10 @@ import {
   AlertCircle
 } from 'lucide-react';
 import {
+  checkDrugAllergyConflict,
+  checkDrugDrugInteractions
+} from '../utils/validation';
+import {
   ResponsiveContainer,
   LineChart,
   Line,
@@ -1029,7 +1033,7 @@ export const LabPrescriptionsSection: React.FC<LabPrescriptionsProps> = ({
                           newMeds[idx].medicineName = e.target.value;
                           setRxForm({ ...rxForm, medicines: newMeds });
                         }}
-                        className="w-full p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
+                        className="w-full p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-medium"
                       />
                       <div className="grid grid-cols-2 gap-2">
                         <input
@@ -1058,6 +1062,41 @@ export const LabPrescriptionsSection: React.FC<LabPrescriptionsProps> = ({
                     </div>
                   ))}
                 </div>
+
+                {/* Real-Time Clinical Safety Warning Box (Drug-Allergy & Drug-Drug Interaction Check) */}
+                {(() => {
+                  const selectedPatient = patients.find(p => p.fullName.trim() === rxForm.patientName.trim());
+                  const activeAllergies = selectedPatient?.allergies || [];
+                  const allergyWarnings = rxForm.medicines
+                    .map(m => checkDrugAllergyConflict(m.medicineName, activeAllergies))
+                    .filter(r => r.hasConflict);
+                  const drugDrugCheck = checkDrugDrugInteractions(rxForm.medicines.map(m => m.medicineName));
+
+                  const hasWarnings = allergyWarnings.length > 0 || drugDrugCheck.hasInteraction;
+
+                  if (!hasWarnings) return null;
+
+                  return (
+                    <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-2xl space-y-2 text-xs">
+                      <div className="flex items-center gap-2 text-rose-400 font-bold">
+                        <ShieldAlert className="w-4 h-4 text-rose-500 shrink-0" />
+                        <span>تحذير السلامة الدوائية المباشر (Drug Safety Alert)</span>
+                      </div>
+                      
+                      {allergyWarnings.map((w, i) => (
+                        <p key={i} className="text-rose-300 text-[11px] leading-relaxed font-semibold">
+                          {w.message}
+                        </p>
+                      ))}
+
+                      {drugDrugCheck.warnings.map((w, i) => (
+                        <p key={i} className="text-amber-300 text-[11px] leading-relaxed font-semibold">
+                          {w}
+                        </p>
+                      ))}
+                    </div>
+                  );
+                })()}
 
                 <div>
                   <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">تعليمات الطبيب</label>

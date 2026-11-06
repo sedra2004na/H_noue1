@@ -181,6 +181,19 @@ function initDatabaseStore(): DatabaseStore {
   return freshStore;
 }
 
+const sseClients = new Set<express.Response>();
+
+function broadcastSseEvent(eventData: any) {
+  const message = `data: ${JSON.stringify(eventData)}\n\n`;
+  sseClients.forEach((clientRes) => {
+    try {
+      clientRes.write(message);
+    } catch {
+      sseClients.delete(clientRes);
+    }
+  });
+}
+
 let dbStore: DatabaseStore = initDatabaseStore();
 
 function saveDb() {
@@ -191,6 +204,11 @@ function saveDb() {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
     fs.writeFileSync(DB_FILE_PATH, JSON.stringify(dbStore, null, 2), 'utf-8');
+    broadcastSseEvent({
+      type: 'REALTIME_DB_MUTATION',
+      version: dbStore.version,
+      lastUpdated: dbStore.lastUpdated,
+    });
   } catch (err) {
     console.error('Error saving database to file:', err);
   }
@@ -437,13 +455,30 @@ async function startServer() {
     });
   });
 
+  // Rate limiting store for anti-brute force attacks (5 attempts per 15 minutes)
+  const loginAttemptsStore: Record<string, { attempts: number; lockUntil: number }> = {};
+
   app.post('/api/auth/login', (req, res) => {
     const { email, pass } = req.body;
     if (!email || !pass) {
       return res.status(400).json({ success: false, error: 'يرجى إدخال البريد الإلكتروني وكلمة المرور' });
     }
 
+    const clientIp = (req.headers['x-forwarded-for'] as string || req.ip || '127.0.0.1').split(',')[0].trim();
     const cleanEmail = String(email).trim().toLowerCase();
+    const rateLimitKey = `${clientIp}_${cleanEmail}`;
+    const now = Date.now();
+
+    // Check rate limit lock
+    if (loginAttemptsStore[rateLimitKey] && loginAttemptsStore[rateLimitKey].lockUntil > now) {
+      const remainingMinutes = Math.ceil((loginAttemptsStore[rateLimitKey].lockUntil - now) / 60000);
+      return res.status(429).json({
+        success: false,
+        error: `تم حظر محاولات التخمين (Rate Limiting): تم تجاوز الحد المسموح لمحاولات تسجيل الدخول. يرجى الانتظار ${remainingMinutes} دقيقة.`,
+        code: 'RATE_LIMIT_EXCEEDED'
+      });
+    }
+
     const account = dbStore.accounts[cleanEmail];
 
     if (!account) {
@@ -453,21 +488,36 @@ async function startServer() {
     // Accept plain pass match or passHash
     const isMatch = account.pass === pass || (account.passHash && account.passHash === pass);
     if (!isMatch) {
+      // Record failed attempt
+      const currentRecord = loginAttemptsStore[rateLimitKey] || { attempts: 0, lockUntil: 0 };
+      currentRecord.attempts += 1;
+      if (currentRecord.attempts >= 5) {
+        currentRecord.lockUntil = now + 15 * 60 * 1000; // 15 minutes lockout
+      }
+      loginAttemptsStore[rateLimitKey] = currentRecord;
+
       dbStore.auditLogs.unshift({
         id: `aud-${Date.now()}`,
         timestamp: new Date().toISOString(),
         userId: cleanEmail,
         userName: account.name || cleanEmail,
         userRole: account.role,
-        action: 'LOGIN',
+        action: 'LOGIN_ATTEMPT',
         targetResource: 'AUTH_GATEWAY',
-        details: 'محاولة تسجيل دخول فاشلة: كلمة المرور غير مطابقة',
+        details: `محاولة تسجيل دخول فاشلة (${currentRecord.attempts}/5): كلمة المرور غير مطابقة`,
         status: 'BLOCKED_ALERT',
-        ipAddress: req.ip || '127.0.0.1'
+        ipAddress: clientIp
       });
       saveDb();
-      return res.status(401).json({ success: false, error: 'كلمة المرور غير صحيحة لهذا الحساب' });
+      return res.status(401).json({ 
+        success: false, 
+        error: `كلمة المرور غير صحيحة. المحاولة (${currentRecord.attempts} من 5).`,
+        attemptsLeft: Math.max(0, 5 - currentRecord.attempts)
+      });
     }
+
+    // Successful login -> Reset rate limit counter
+    delete loginAttemptsStore[rateLimitKey];
 
     dbStore.auditLogs.unshift({
       id: `aud-${Date.now()}`,
@@ -524,6 +574,27 @@ async function startServer() {
     res.json({
       version: dbStore.version,
       lastUpdated: dbStore.lastUpdated,
+    });
+  });
+
+  // Real-Time Push Communication via Server-Sent Events (SSE) Stream
+  // Instant zero-delay push for Code Blue emergency alerts, abnormal labs, and live appointments
+  app.get('/api/events', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    if (typeof (res as any).flushHeaders === 'function') {
+      (res as any).flushHeaders();
+    }
+
+    // Send initial connection handshake with current DB version
+    res.write(`data: ${JSON.stringify({ type: 'CONNECTED', version: dbStore.version, lastUpdated: dbStore.lastUpdated })}\n\n`);
+
+    sseClients.add(res);
+
+    req.on('close', () => {
+      sseClients.delete(res);
     });
   });
 
@@ -1046,6 +1117,41 @@ async function startServer() {
   app.post('/api/appointments', async (req, res) => {
     const role = getRequestRole(req);
     const patientId = getRequestPatientId(req);
+
+    // Concurrency / Overlap Race Condition Check
+    const targetDoctor = req.body.doctorName || req.body.doctorId;
+    const targetDate = req.body.date;
+    const targetTime = req.body.time;
+
+    if (targetDoctor && targetDate && targetTime) {
+      const existingConflict = dbStore.appointments.find(a => 
+        (a.doctorName === targetDoctor || a.doctorId === targetDoctor) &&
+        a.date === targetDate &&
+        a.time === targetTime &&
+        a.status !== 'ملغى' && a.status !== 'ملغي'
+      );
+
+      if (existingConflict) {
+        dbStore.auditLogs.unshift({
+          id: `aud-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          userId: req.body.patientId || 'SYSTEM',
+          userName: req.body.patientName || 'مستخدم',
+          userRole: role,
+          action: 'CONCURRENCY_BLOCKED',
+          targetResource: 'APPOINTMENTS',
+          details: `منع تضارب حجز (Race Condition Blocked): الموعد للطبيب (${targetDoctor}) في التاريخ (${targetDate} ${targetTime}) محجوز مسبقاً.`,
+          status: 'BLOCKED_ALERT',
+          ipAddress: req.ip || '127.0.0.1'
+        });
+        saveDb();
+
+        return res.status(409).json({
+          error: 'تضارب في الحجز (Concurrency Conflict): الطبيب المطلوب لديه موعد مؤكد في نفس التاريخ والتوقيت المختار من قِبل مستخدم آخر.',
+          code: 'RACE_CONDITION_CONFLICT'
+        });
+      }
+    }
 
     const newApt = {
       id: `apt-${Date.now()}`,

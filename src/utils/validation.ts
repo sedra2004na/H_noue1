@@ -177,23 +177,22 @@ export function validateAppointmentForm(
   };
 }
 
-// 3. Clinical & Prescription Allergy & Safety Check
+// 3. Clinical & Prescription Allergy & Safety Check (Drug-Allergy & Drug-Drug Interactions)
 export interface PrescriptionCheckInput {
   medicineName: string;
-  patientAllergies: string[];
-  dosage?: string;
-  frequency?: string;
+  patientAllergies?: string[];
+  existingMedicines?: string[];
 }
 
 export function checkDrugAllergyConflict(
   medicineName: string,
-  patientAllergies: string[]
+  patientAllergies: string[] = []
 ): { hasConflict: boolean; message?: string } {
   if (!medicineName || !patientAllergies || patientAllergies.length === 0) {
     return { hasConflict: false };
   }
 
-  const medLower = medicineName.toLowerCase();
+  const medLower = medicineName.toLowerCase().trim();
   const knownAllergies = patientAllergies.map((a) => a.toLowerCase().trim());
 
   // Known medical cross-sensitivities
@@ -213,7 +212,7 @@ export function checkDrugAllergyConflict(
     if (medLower.includes(allergy) || allergy.includes(medLower)) {
       return {
         hasConflict: true,
-        message: `⚠️ تحذير سريري خطير: المريض يعاني من حساسية مسجلة تجاه (${allergy})، وهذا الدواء قد يسبب صدمة حساسية مفرطة!`,
+        message: `🚨 تحذير حساسية خطير: المريض يعاني من حساسية مسجلة تجاه (${allergy})، وهذا الدواء قد يسبب صدمة حساسية مفرطة!`,
       };
     }
 
@@ -233,6 +232,57 @@ export function checkDrugAllergyConflict(
   }
 
   return { hasConflict: false };
+}
+
+export function checkDrugDrugInteractions(
+  medicinesList: string[]
+): { hasInteraction: boolean; warnings: string[] } {
+  const warnings: string[] = [];
+  if (!medicinesList || medicinesList.length < 2) {
+    return { hasInteraction: false, warnings: [] };
+  }
+
+  const cleanList = medicinesList.map(m => m.toLowerCase().trim()).filter(Boolean);
+
+  const interactionRules = [
+    {
+      pair: [['warfarin', 'وارفارين', 'كومادين'], ['aspirin', 'أسبرين', 'ibuprofen', 'بروفين', 'voltaren', 'فولتارين', 'diclofenac']],
+      warning: '⚠️ تحذير تداخل دوائي حرج: الجمع بين الوارفارين (مميّع الدم) والأسبرين/المسكنات يرفع خطر النزيف الداخلي الحاد!'
+    },
+    {
+      pair: [['lisinopril', 'ليسينوبريل', 'captopril', 'كابتوبريل', 'enalapril'], ['spironolactone', 'سبايرونولاكتون', 'aldactone']],
+      warning: '⚠️ تحذير تداخل دوائي حرج: دمج مثبطات الكلية مع السبايرونولاكتون قد يسبب فرط بوتاسيوم الدم (Severe Hyperkalemia) الخطر على القلب!'
+    },
+    {
+      pair: [['clopidogrel', 'كوبيدوجريل', 'plavix', 'بلافيكس'], ['omeprazole', 'أوميبرازول', 'losec']],
+      warning: '⚠️ تحذير تداخل دوائي: دمج بلافيكس مع أوميبرازول يقلل فاعلية بلافيكس في التخثر!'
+    },
+    {
+      pair: [['insulin', 'أنسولين'], ['propranolol', 'بروبرانولول', 'inderal', 'إيندرال', 'atenolol', 'أتينولول']],
+      warning: '⚠️ تحذير سريري: حاصرات بيتا تخفي أعراض هبوط السكر كخفقان القلب لدى مريض السكري!'
+    },
+    {
+      pair: [['ciprofloxacin', 'سيبروفلوكساسين'], ['gaviscon', 'جافيسكون', 'maalox', 'مالوكس', 'antacid', 'حموضة']],
+      warning: '⚠️ تحذير صيدلاني: مضادات الحموضة تقلل امتصاص المضاد الحيوي سيبروفلوكساسين بشكل كبير!'
+    }
+  ];
+
+  for (const rule of interactionRules) {
+    const groupA = rule.pair[0];
+    const groupB = rule.pair[1];
+
+    const hasA = cleanList.some(med => groupA.some(a => med.includes(a)));
+    const hasB = cleanList.some(med => groupB.some(b => med.includes(b)));
+
+    if (hasA && hasB) {
+      warnings.push(rule.warning);
+    }
+  }
+
+  return {
+    hasInteraction: warnings.length > 0,
+    warnings
+  };
 }
 
 // 4. Financial & Invoice Validation

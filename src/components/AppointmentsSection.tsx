@@ -449,10 +449,23 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
             <tbody className="divide-y divide-slate-800">
               {filteredAppointments.length === 0 ? (
                 <tr>
-                  <td colSpan={userRole === 'patient' ? 7 : 8} className="p-8 text-center text-slate-400 whitespace-nowrap">
-                    {userRole === 'patient' 
-                      ? 'لا توجد مواعيد حجز جديدة مسجلة باسمك حالياً. يمكنك الضغط على "حجز موعد جديد" لطلب موعد جديد.' 
-                      : 'لا توجد مواعيد تطابق شروط التصفية الحالية.'}
+                  <td colSpan={userRole === 'patient' ? 7 : 8} className="p-12 text-center">
+                    <div className="max-w-sm mx-auto space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/20 shadow-xs">
+                        <CheckCircle className="w-6 h-6" />
+                      </div>
+                      <p className="text-xs sm:text-sm font-bold text-slate-100">
+                        لا توجد مواعيد نشطة حالياً، جميع الجداول منظمة
+                      </p>
+                      <p className="text-xs text-slate-400">لا توجد حجوزات معلقة أو تتطلب تدخلاً في الوقت الحالي</p>
+                      <button
+                        onClick={handleOpenSmartBooking}
+                        className="mt-2 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-xs transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>حجز موعد جديد</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ) : (

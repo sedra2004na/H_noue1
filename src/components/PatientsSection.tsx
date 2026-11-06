@@ -140,6 +140,9 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 8;
+
   const query = (localSearch || searchQuery).toLowerCase();
 
   const filteredPatients = patients.filter((p) => {
@@ -153,6 +156,9 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
 
     return matchesSearch && matchesBlood;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredPatients.length / pageSize));
+  const paginatedPatients = filteredPatients.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleFileUpload = (patientId: string, event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -436,14 +442,14 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {filteredPatients.length === 0 ? (
+              {paginatedPatients.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="p-8 text-center text-slate-400">
                     لا يوجد مرضى مطابقين لشرط البحث حالياً.
                   </td>
                 </tr>
               ) : (
-                filteredPatients.map((patient) => {
+                paginatedPatients.map((patient) => {
                   const isExpanded = expandedPatientId === patient.id;
                   return (
                     <React.Fragment key={patient.id}>
@@ -632,6 +638,47 @@ export const PatientsSection: React.FC<PatientsSectionProps> = ({
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls Bar */}
+        {totalPages > 1 && (
+          <div className="p-4 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+            <div>
+              <span>عرض الصفحة <strong className="text-white font-mono">{currentPage}</strong> من أصل <strong className="text-white font-mono">{totalPages}</strong> (إجمالي المرضى: <strong className="text-sky-400 font-mono">{filteredPatients.length}</strong>)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-bold cursor-pointer"
+              >
+                السابق
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setCurrentPage(p)}
+                  className={`w-8 h-8 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer ${
+                    currentPage === p
+                      ? 'bg-sky-600 text-white shadow-xs'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-bold cursor-pointer"
+              >
+                التالي
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Comprehensive Patient Medical History Modal */}

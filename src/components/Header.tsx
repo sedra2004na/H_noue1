@@ -324,7 +324,7 @@ export const Header: React.FC<HeaderProps> = ({
               aria-hidden="true"
             />
             <span className="truncate">
-              {syncStatus === 'syncing' ? 'مزامنة...' : syncStatus === 'offline' ? 'غير متصل' : 'سيرفر متزامن'}
+              {syncStatus === 'syncing' ? 'مزامنة...' : syncStatus === 'offline' ? 'غير متصل' : 'مُزامن لحظياً'}
             </span>
           </button>
 

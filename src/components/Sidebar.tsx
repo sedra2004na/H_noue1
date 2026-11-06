@@ -18,8 +18,7 @@ import {
   Bed as BedIcon, 
   HeartPulse,
   Activity,
-  ClipboardList,
-  Database
+  ClipboardList
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -418,21 +417,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </nav>
 
-      {/* Sidebar Footer with Database Manager & Logout */}
-      <div className="p-3 border-t border-slate-800/80 bg-slate-950/40 text-xs mt-auto space-y-2">
-        {onOpenDatabaseManager && (userRole === 'admin' || userRole === 'staff') && (
-          <button
-            onClick={() => {
-              if (onCloseMobile) onCloseMobile();
-              onOpenDatabaseManager();
-            }}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-600/50 text-emerald-300 hover:text-white transition-all text-xs font-bold cursor-pointer"
-          >
-            <Database className="w-4 h-4 text-emerald-400" />
-            <span>إدارة وتدقيق قاعدة البيانات</span>
-          </button>
-        )}
-
+      {/* Sidebar Footer with Logout */}
+      <div className="p-3 border-t border-slate-800/80 bg-slate-950/40 text-xs mt-auto">
         {onLogout && (
           <button
             onClick={() => {

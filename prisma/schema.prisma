@@ -1,5 +1,7 @@
-// Prisma Schema for Hospital Management System (Care & Al-Rahma Hospital)
-// Enforces strict Role-Based Access Control (RBAC) and Medical Data Security
+// ============================================================================
+// Prisma Schema: Full-Stack Hospital Management System (Care & Al-Rahma Medical Center)
+// Standardized Database Architecture with RBAC, Soft Delete, and HIPAA Audit Logging
+// ============================================================================
 
 datasource db {
   provider = "postgresql"
@@ -10,209 +12,469 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// 1. Strict System Roles Enum
+// ============================================================================
+// 1. ENUMS (أنواع البيانات المحددة والقوائم القياسية)
+// ============================================================================
+
+/// أدوار المستخدمين في النظام مع الفصل الصارم بين الموظفين والمرضى
 enum Role {
-  ADMIN         // مدير النظام - صلاحيات كاملة وإنشاء حسابات الكادر
-  DOCTOR        // طبيب معالج - كشوفات، وصفات، تحاليل، ملفات المرضى
-  RECEPTIONIST  // موظف استقبال - حجز مواعيد، تسكين، تدقيق وتوثيق ملفات المرضى
-  PATIENT       // مريض مراجع - حساب ذاتي مقيد لحجز المواعيد واستعراض السجل الشخصي
+  ADMIN        // مدير النظام - صلاحيات كاملة وإنشاء حسابات الطاقم
+  DOCTOR       // طبيب معالج - كشوفات، وصفات، تحاليل، معالجة ملفات المرضى
+  RECEPTIONIST // موظف استقبال - حجز مواعيد، تسكين الأسرّة، وتوثيق ملفات المرضى
+  PATIENT      // مريض مراجع - حساب ذاتي مقيد لحجز المواعيد واستعراض الملف الشخصي
 }
 
-// 2. User & System Credentials Model
+/// حالة الموعد الطبي
+enum AppointmentStatus {
+  UPCOMING  // موعد قادم
+  CONFIRMED // موعد مؤكد
+  PENDING   // موعد بانتظار التأكيد
+  COMPLETED // موعد مكتمل وتم الفحص
+  CANCELLED // موعد ملغى
+  EXPIRED   // موعد منتهي (تاريخ سابق)
+  NO_SHOW   // لم يحضر المريض
+}
+
+/// حالة السرير بالأجنحة
+enum BedStatus {
+  AVAILABLE   // شاغر ومتاح للتسكين
+  OCCUPIED    // مشغول بمريض
+  CLEANING    // قيد التعقيم والتطوير
+  RESERVED    // محجوز مسبقاً لعملية/إجراء
+  MAINTENANCE // قيد الصيانة الفنية
+}
+
+/// درجة الأولوية السريرية للحالات
+enum UrgencyLevel {
+  STABLE      // حالة مستقرة
+  OBSERVATION // تحت الملاحظة
+  URGENT      // حالة عاجلة
+  CRITICAL    // حالة حرجة (إنعاش / عناية حثيثة)
+}
+
+// ============================================================================
+// 2. USER AUTHENTICATION & RBAC (حسابات المستخدمين والاعتمادات)
+// ============================================================================
+
+/// جدول حسابات المستخدمين الرئيسي
 model User {
-  id              String       @id @default(uuid())
-  email           String       @unique
-  passwordHash    String       @map("password_hash")
-  salt            String?
-  fullName        String       @map("full_name")
-  role            Role         @default(PATIENT)
-  phone           String?
-  isActive        Boolean      @default(true) @map("is_active")
-  createdAt       DateTime     @default(now()) @map("created_at")
-  updatedAt       DateTime     @updatedAt @map("updated_at")
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String    @map("password_hash") // كلمة المرور المشفرة بـ Salted SHA256 / bcrypt
+  salt         String?                         // الملح العشوائي للتشفير
+  fullName     String    @map("full_name")
+  role         Role      @default(PATIENT)
+  phone        String?
+  isActive     Boolean   @default(true) @map("is_active")
+
+  // Soft Delete (الحذف الناعم للحفاظ على النزاهة القانونية)
+  isDeleted    Boolean   @default(false) @map("is_deleted")
+  deletedAt    DateTime? @map("deleted_at")
+
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  doctorProfile   Doctor?
-  patientProfile  Patient?
-  auditLogs       AuditLog[]
+  staffProfile   StaffProfile?
+  doctorProfile  DoctorProfile?
+  patientProfile PatientProfile?
+  auditLogs      AuditLog[]
 
+  @@index([email])
+  @@index([role])
   @@map("users")
 }
 
-// 3. Patient Official Medical Record Model
-model Patient {
-  id                    String        @id @default(uuid())
-  userId                String?       @unique @map("user_id")
-  fileNumber            String        @unique @map("file_number") // رقم الملف الطبي الرسمي (MRN)
-  nationalId            String?       @map("national_id")         // رقم الهوية الوطنية / جواز السفر
-  fullName              String        @map("full_name")
-  age                   Int
-  gender                String        // ذكر / أنثى
-  bloodType             String?       @map("blood_type")
-  phone                 String
-  address               String?
-  emergencyContact      String?       @map("emergency_contact")
-  insuranceProvider     String?       @map("insurance_provider")
-  insuranceNumber       String?       @map("insurance_number")
-  medicalHistory        Json?         @map("medical_history")
-  activeAllergies       Json?         @map("active_allergies")
-  vitals                Json?
-  
-  // Security & Reception Verification Status
-  isVerifiedByReception Boolean       @default(false) @map("is_verified_by_reception") // تدقيق الاستقبال
-  verifiedBy            String?       @map("verified_by")                              // اسم موظف الاستقبال
-  verifiedAt            DateTime?     @map("verified_at")                              // تاريخ التوثيق الرسمي
-  verificationStatus    String        @default("بانتظار التحقق والمطابقة بالاستقبال")  @map("verification_status")
+// ============================================================================
+// 3. STAFF & CLINICAL PROFILES (الكادر الطبي والموظفين والمرضى)
+// ============================================================================
 
-  createdAt             DateTime      @default(now()) @map("created_at")
-  updatedAt             DateTime      @updatedAt @map("updated_at")
+/// ملف الموظف الإداري والاستقبال
+model StaffProfile {
+  id         String    @id @default(uuid())
+  userId     String    @unique @map("user_id")
+  staffCode  String    @unique @map("staff_code") // كود الموظف الرسمي
+  department String    @default("الاستقبال والتسجيل")
+  position   String    @default("موظف استقبال")
+  phone      String?
 
-  // Relations
-  user                  User?         @relation(fields: [userId], references: [id])
-  appointments          Appointment[]
-  invoices              Invoice[]
-  prescriptions         Prescription[]
-  labResults            LabResult[]
+  isDeleted  Boolean   @default(false) @map("is_deleted")
+  deletedAt  DateTime? @map("deleted_at")
 
-  @@map("patients")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("staff_profiles")
 }
 
-// 4. Clinical Doctor Model (Provisioned Exclusively by Admin)
-model Doctor {
-  id              String        @id @default(uuid())
-  userId          String?       @unique @map("user_id")
+/// ملف الطبيب المعالج المشتق من حساب المستخدم
+model DoctorProfile {
+  id              String         @id @default(uuid())
+  userId          String?        @unique @map("user_id")
+  clinicId        String?        @map("clinic_id")
   name            String
   specialty       String
   department      String
-  experienceYears Int           @default(5) @map("experience_years")
-  consultingFee   Decimal       @default(25000) @map("consulting_fee")
+  experienceYears Int            @default(5) @map("experience_years")
+  consultingFee   Decimal        @default(25000) @map("consulting_fee") @db.Decimal(10, 2)
   phone           String?
-  roomNumber      String?       @map("room_number")
-  shift           String        @default("صباحي") // صباحي, مسائي, ليلي
-  status          String        @default("active")  // active, on_leave, busy, off_duty
-  rating          Decimal       @default(5.0)
-  createdAt       DateTime      @default(now()) @map("created_at")
-  updatedAt       DateTime      @updatedAt @map("updated_at")
+  roomNumber      String?        @map("room_number")
+  shift           String         @default("صباحي") // صباحي / مسائي / ليلي
+  status          String         @default("active")  // active / busy / on_leave
+  rating          Decimal        @default(5.0) @db.Decimal(3, 2)
+
+  isDeleted       Boolean        @default(false) @map("is_deleted")
+  deletedAt       DateTime?      @map("deleted_at")
+
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
 
   // Relations
-  user            User?         @relation(fields: [userId], references: [id])
+  user            User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  clinic          Clinic?        @relation(fields: [clinicId], references: [id], onDelete: SetNull)
   appointments    Appointment[]
+  medicalRecords  MedicalRecord[]
   prescriptions   Prescription[]
   labResults      LabResult[]
+  abnormalFlags   AbnormalLabFlag[]
 
-  @@map("doctors")
+  @@index([specialty])
+  @@index([department])
+  @@map("doctor_profiles")
 }
 
-// 5. Clinical Appointments
+/// ملف المريض الطبي الرسمي (MRN File)
+model PatientProfile {
+  id                    String            @id @default(uuid())
+  userId                String?           @unique @map("user_id")
+  fileNumber            String            @unique @map("file_number") // رقم الملف الطبي الرسمي (MRN)
+  nationalId            String?           @map("national_id")         // الرقم الوطني / جواز السفر
+  fullName              String            @map("full_name")
+  age                   Int
+  gender                String            // ذكر / أنثى
+  bloodType             String?           @map("blood_type")
+  phone                 String
+  address               String?
+  emergencyContact      String?           @map("emergency_contact")
+  insuranceProvider     String?           @map("insurance_provider")
+  insuranceNumber       String?           @map("insurance_number")
+  medicalHistory        Json?             @map("medical_history")     // السجل الطبي والتاريخ المريض
+  activeAllergies       Json?             @map("active_allergies")    // تحذيرات الحساسية
+  vitals                Json?                                         // العلامات الحيوية الأخيرة
+
+  // توثيق وتدقيق موظف الاستقبال
+  isVerifiedByReception Boolean           @default(false) @map("is_verified_by_reception")
+  verifiedBy            String?           @map("verified_by")
+  verifiedAt            DateTime?         @map("verified_at")
+  verificationStatus    String            @default("بانتظار التحقق والمطابقة بالاستقبال") @map("verification_status")
+
+  isDeleted             Boolean           @default(false) @map("is_deleted")
+  deletedAt             DateTime?         @map("deleted_at")
+
+  createdAt             DateTime          @default(now()) @map("created_at")
+  updatedAt             DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  user                  User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  appointments          Appointment[]
+  medicalRecords        MedicalRecord[]
+  prescriptions         Prescription[]
+  labResults            LabResult[]
+  abnormalFlags         AbnormalLabFlag[]
+  invoices              Invoice[]
+  assignedBeds          Bed[]
+
+  @@index([fileNumber])
+  @@index([nationalId])
+  @@map("patient_profiles")
+}
+
+// ============================================================================
+// 4. CLINICS & APPOINTMENTS (العيادات المباشرة وحجوزات المواعيد)
+// ============================================================================
+
+/// العيادات والأقسام الخارجية
+model Clinic {
+  id          String          @id @default(uuid())
+  name        String          // اسم العيادة (مثال: عيادة القلبية الخارجية)
+  code        String          @unique // كود العيادة (مثال: CLN-CARD-01)
+  department  String
+  roomNumber  String          @map("room_number")
+  isActive    Boolean         @default(true) @map("is_active")
+
+  isDeleted   Boolean         @default(false) @map("is_deleted")
+  deletedAt   DateTime?       @map("deleted_at")
+
+  createdAt   DateTime        @default(now()) @map("created_at")
+  doctors     DoctorProfile[]
+  appointments Appointment[]
+
+  @@map("clinics")
+}
+
+/// حجز موعد كشفية بالعيادات
 model Appointment {
-  id          String    @id @default(uuid())
-  patientId   String    @map("patient_id")
-  doctorId    String    @map("doctor_id")
-  date        String    // YYYY-MM-DD
-  time        String    // HH:MM
-  type        String    @default("كشف عيادة خارجية")
-  status      String    @default("مؤكد") // مؤكد, معلق, مكتمل, ملغى
-  fee         Decimal   @default(25000)
-  notes       String?
-  createdAt   DateTime  @default(now()) @map("created_at")
+  id        String            @id @default(uuid())
+  patientId String            @map("patient_id")
+  doctorId  String            @map("doctor_id")
+  clinicId  String?           @map("clinic_id")
+  date      String            // YYYY-MM-DD
+  time      String            // HH:MM
+  type      String            @default("كشف عيادة خارجية")
+  status    AppointmentStatus @default(CONFIRMED)
+  fee       Decimal           @default(25000) @db.Decimal(10, 2)
+  notes     String?
 
-  patient     Patient   @relation(fields: [patientId], references: [id])
-  doctor      Doctor    @relation(fields: [doctorId], references: [id])
+  isDeleted Boolean           @default(false) @map("is_deleted")
+  deletedAt DateTime?         @map("deleted_at")
 
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  patient   PatientProfile    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor    DoctorProfile     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  clinic    Clinic?           @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([date])
   @@map("appointments")
 }
 
-// 6. Billing & Invoices
-model Invoice {
-  id               String    @id @default(uuid())
-  invoiceNumber    String    @unique @map("invoice_number")
-  patientId        String    @map("patient_id")
-  date             String
-  subtotal         Decimal
-  tax              Decimal   @default(0)
-  insuranceCovered Decimal   @default(0) @map("insurance_covered")
-  netAmount        Decimal   @map("net_amount")
-  status           String    @default("معلق") // مدفوع, معلق, جزئي, ملغى
-  claimStatus      String?   @map("claim_status")
-  paymentMethod    String?   @map("payment_method")
-  createdAt        DateTime  @default(now()) @map("created_at")
+// ============================================================================
+// 5. MEDICAL RECORDS, LABS & PRESCRIPTIONS (السجلات والوصفات والتحاليل)
+// ============================================================================
 
-  patient          Patient   @relation(fields: [patientId], references: [id])
+/// السجل الطبي والكشف السريري (Medical Progress Note)
+model MedicalRecord {
+  id             String         @id @default(uuid())
+  patientId      String         @map("patient_id")
+  doctorId       String         @map("doctor_id")
+  diagnosis      String         // التشخيص السريري
+  clinicalNotes  String         @map("clinical_notes") // ملاحظات الطبيب المعالج
+  vitalsAtVisit  Json?          @map("vitals_at_visit") // علامات الحيوية وقت الزيارة
+  visitDate      DateTime       @default(now()) @map("visit_date")
 
-  @@map("invoices")
+  isDeleted      Boolean        @default(false) @map("is_deleted")
+  deletedAt      DateTime?      @map("deleted_at")
+
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  patient        PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor         DoctorProfile  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@map("medical_records")
 }
 
-// 7. Electronic Prescriptions
+/// الوصفة الطبية الإلكترونية
 model Prescription {
-  id           String    @id @default(uuid())
-  patientId    String    @map("patient_id")
-  doctorId     String    @map("doctor_id")
-  date         String
+  id           String         @id @default(uuid())
+  patientId    String         @map("patient_id")
+  doctorId     String         @map("doctor_id")
+  date         String         // YYYY-MM-DD
   diagnosis    String
-  medicines    Json
-  instructions String?   @map("instructions")
-  status       String    @default("نشطة")
-  createdAt    DateTime  @default(now()) @map("created_at")
+  medicines    Json           // تفاصيل الأدوية، الجرعات، والأوقات
+  instructions String?
+  status       String         @default("نشطة") // نشطة / صُرفت / ملغاة
 
-  patient      Patient   @relation(fields: [patientId], references: [id])
-  doctor       Doctor    @relation(fields: [doctorId], references: [id])
+  isDeleted    Boolean        @default(false) @map("is_deleted")
+  deletedAt    DateTime?      @map("deleted_at")
 
+  createdAt    DateTime       @default(now()) @map("created_at")
+
+  patient      PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor       DoctorProfile  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
   @@map("prescriptions")
 }
 
-// 8. Laboratory Results
+/// نتائج التحاليل والمختبر المركزي
 model LabResult {
-  id           String    @id @default(uuid())
-  patientId    String    @map("patient_id")
-  doctorId     String    @map("doctor_id")
-  testName     String    @map("test_name")
-  testDate     String    @map("test_date")
-  issuedDate   String?   @map("issued_date")
-  status       String    @default("طبيعي") // طبيعي, مرتفع, منخفض, حرج
-  resultValue  String    @map("result_value")
-  normalRange  String    @map("normal_range")
-  unit         String
-  notes        String?
-  createdAt    DateTime  @default(now()) @map("created_at")
+  id          String         @id @default(uuid())
+  patientId   String         @map("patient_id")
+  doctorId    String         @map("doctor_id")
+  testName    String         @map("test_name")
+  testDate    String         @map("test_date")
+  issuedDate  String?        @map("issued_date")
+  status      String         @default("طبيعي") // طبيعي / مرتفع / منخفض / حرج
+  resultValue String         @map("result_value")
+  normalRange String         @map("normal_range")
+  unit        String
+  notes       String?
 
-  patient      Patient   @relation(fields: [patientId], references: [id])
-  doctor       Doctor    @relation(fields: [doctorId], references: [id])
+  isDeleted   Boolean        @default(false) @map("is_deleted")
+  deletedAt   DateTime?      @map("deleted_at")
 
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  patient     PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor      DoctorProfile  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
   @@map("lab_results")
 }
 
-// 9. Pharmacy & Warehouse Inventory
+/// التنبيهات المخبرية غير الطبيعية وتأكيد الاطلاع الرقمي غير القابل للإنكار (Non-Repudiation)
+model AbnormalLabFlag {
+  id                   String         @id @default(uuid())
+  patientId            String         @map("patient_id")
+  doctorId             String         @map("doctor_id")
+  testName             String         @map("test_name")
+  resultValue          String         @map("result_value")
+  normalRange          String         @map("normal_range")
+  severity             String         @default("critical") // critical / warning
+  
+  // عدم الإنكار وتوقيع الطبيب الرقمي
+  acknowledgedByDoctor Boolean        @default(false) @map("acknowledged_by_doctor")
+  doctorNotes          String?        @map("doctor_notes")
+  acknowledgedAt       DateTime?      @map("acknowledged_at")
+  digitalSignature     String?        @map("digital_signature") // بصمة التوقيع SHA256
+
+  isDeleted            Boolean        @default(false) @map("is_deleted")
+  deletedAt            DateTime?      @map("deleted_at")
+
+  createdAt            DateTime       @default(now()) @map("created_at")
+
+  patient              PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor               DoctorProfile  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@map("abnormal_lab_flags")
+}
+
+// ============================================================================
+// 6. INPATIENT & ICU BED MANAGEMENT (تسكين الأسرّة والأجنحة)
+// ============================================================================
+
+/// الأجنحة والأقسام السريرية
+model Ward {
+  id          String    @id @default(uuid())
+  name        String    // اسم الجناح (مثال: جناح العناية القلبية الفائقة)
+  floor       String    // الطابق
+  department  String
+  totalBeds   Int       @default(10) @map("total_beds")
+
+  isDeleted   Boolean   @default(false) @map("is_deleted")
+  deletedAt   DateTime? @map("deleted_at")
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  beds        Bed[]
+
+  @@map("wards")
+}
+
+/// سرير التنويم أو الطوارئ والعناية
+model Bed {
+  id                  String         @id @default(uuid())
+  wardId              String         @map("ward_id")
+  bedNumber           String         @map("bed_number") // رقم السرير (مثال: ICU-101)
+  roomNumber          String         @map("room_number")
+  status              BedStatus      @default(AVAILABLE)
+  
+  patientId           String?        @map("patient_id")
+  attendingDoctorName String?        @map("attending_doctor_name")
+  diagnosis           String?
+  priority            UrgencyLevel?  @default(STABLE)
+  admissionDate       String?        @map("admission_date")
+  oxygenEquipped      Boolean        @default(true) @map("oxygen_equipped")
+  
+  reservedFor         String?        @map("reserved_for")
+  reservedUntil       String?        @map("reserved_until")
+  notes               String?
+
+  isDeleted           Boolean        @default(false) @map("is_deleted")
+  deletedAt           DateTime?      @map("deleted_at")
+
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+
+  ward                Ward           @relation(fields: [wardId], references: [id], onDelete: Cascade)
+  patient             PatientProfile? @relation(fields: [patientId], references: [id], onDelete: SetNull)
+
+  @@index([wardId])
+  @@index([status])
+  @@map("beds")
+}
+
+// ============================================================================
+// 7. BILLING & INVENTORY (الفواتير والمالية ومستودع الصيدلية)
+// ============================================================================
+
+/// الفواتير والخدمات المالية للمريض
+model Invoice {
+  id               String         @id @default(uuid())
+  invoiceNumber    String         @unique @map("invoice_number")
+  patientId        String         @map("patient_id")
+  date             String
+  subtotal         Decimal        @db.Decimal(12, 2)
+  tax              Decimal        @default(0) @db.Decimal(10, 2)
+  insuranceCovered Decimal        @default(0) @map("insurance_covered") @db.Decimal(12, 2)
+  netAmount        Decimal        @map("net_amount") @db.Decimal(12, 2)
+  status           String         @default("معلق") // مدفوع / معلق / جزئي / ملغى
+  claimStatus      String?        @map("claim_status")
+  paymentMethod    String?        @map("payment_method")
+
+  isDeleted        Boolean        @default(false) @map("is_deleted")
+  deletedAt        DateTime?      @map("deleted_at")
+
+  createdAt        DateTime       @default(now()) @map("created_at")
+
+  patient          PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceNumber])
+  @@index([patientId])
+  @@map("invoices")
+}
+
+/// أصناف الصيدلية والمستودع الطبي المركزية
 model InventoryItem {
   id            String    @id @default(uuid())
   itemName      String    @map("item_name")
-  category      String
+  category      String    // أدوية / مستلزمات طبية / محاليل
   quantity      Int
   minStockAlert Int       @default(20) @map("min_stock_alert")
-  price         Decimal
+  price         Decimal   @db.Decimal(10, 2)
   batchNumber   String?   @map("batch_number")
   expiryDate    String    @map("expiry_date")
   unit          String
   status        String    @default("متوفر")
   manufacturer  String?
+
+  isDeleted     Boolean   @default(false) @map("is_deleted")
+  deletedAt     DateTime? @map("deleted_at")
+
   createdAt     DateTime  @default(now()) @map("created_at")
 
+  @@index([itemName])
   @@map("inventory_items")
 }
 
-// 10. Audit Log & Security Traceability (HIPAA & ISO-27001 Standard)
+// ============================================================================
+// 8. AUDIT LOG & CLINICAL TRACEABILITY (سجل التدقيق الأمني - HIPAA & ISO-27001)
+// ============================================================================
+
+/// سجل التدقيق والتتبع الأمني الدقيق
 model AuditLog {
-  id             String    @id @default(uuid())
-  userId         String?   @map("user_id")
-  userName       String    @map("user_name")
-  userRole       Role      @map("user_role")
-  action         String    // LOGIN, VIEW_RECORD, IDOR_BLOCKED, STAFF_ACCOUNT_PROVISIONED, PATIENT_VERIFIED
-  targetResource String    @map("target_resource")
+  id             String   @id @default(uuid())
+  userId         String?  @map("user_id")
+  userName       String   @map("user_name")
+  userRole       Role     @map("user_role")
+  action         String   // LOGIN, VIEW_RECORD, EDIT_RECORD, IDOR_BLOCKED, PATIENT_SELF_REGISTER
+  targetResource String   @map("target_resource")
   details        String
-  status         String    // SUCCESS, BLOCKED_ALERT, WARNING
-  ipAddress      String?   @map("ip_address")
-  timestamp      DateTime  @default(now())
+  status         String   // SUCCESS, BLOCKED_ALERT, WARNING
+  ipAddress      String?  @map("ip_address")
+  timestamp      DateTime @default(now())
 
-  user           User?     @relation(fields: [userId], references: [id])
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+  @@index([userId])
+  @@index([action])
+  @@index([timestamp])
   @@map("audit_logs")
 }
