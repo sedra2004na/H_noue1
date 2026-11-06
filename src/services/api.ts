@@ -120,10 +120,14 @@ export const hospitalApi = {
   createPatient: (data: any) => apiClient.post('/patients', data),
   updatePatient: (id: string, data: any) => apiClient.put(`/patients/${id}`, data),
   deletePatient: (id: string) => apiClient.delete(`/patients/${id}`),
+  verifyPatientReception: (id: string, data: { nationalId?: string; officialFileNumber?: string; bloodType?: string; verifiedBy?: string }) =>
+    apiClient.put(`/patients/${id}/verify-reception`, data),
 
   getDoctors: () => apiClient.get('/doctors'),
   createDoctor: (data: any) => apiClient.post('/doctors', data),
   deleteDoctor: (id: string) => apiClient.delete(`/doctors/${id}`),
+  provisionStaff: (data: { name: string; email: string; password: string; role: UserRole; department?: string; phone?: string }) =>
+    apiClient.post('/staff', data),
 
   getAppointments: () => apiClient.get('/appointments'),
   createAppointment: (data: any) => apiClient.post('/appointments', data),

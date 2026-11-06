@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'doctor' | 'staff' | 'patient';
+export type UserRole = 'admin' | 'doctor' | 'staff' | 'receptionist' | 'patient';
 
 export interface User {
   id: string;
@@ -28,6 +28,7 @@ export interface Doctor {
   clinicHours?: string;
   clinicDays?: string[];
   availableServices?: string[];
+  accountCreated?: boolean;
 }
 
 export interface Patient {
@@ -48,6 +49,11 @@ export interface Patient {
   allergies?: string[];
   chronicConditions?: string[];
   lastVisitDate: string;
+  isVerifiedByReception?: boolean;
+  verifiedBy?: string;
+  verifiedAt?: string;
+  verificationStatus?: string;
+  accountEmail?: string;
   vitals?: {
     bloodPressure: string; // e.g. 120/80
     heartRate: number; // bpm

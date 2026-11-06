@@ -27,6 +27,10 @@ export const patients = pgTable("patients", {
   medicalHistory: jsonb("medical_history").$type<string[]>(),
   allergies: jsonb("allergies").$type<string[]>(),
   admissionDate: text("admission_date").notNull(),
+  isVerifiedByReception: boolean("is_verified_by_reception").default(false),
+  verifiedBy: text("verified_by"),
+  verifiedAt: text("verified_at"),
+  verificationStatus: text("verification_status").default("بانتظار التحقق والمطابقة بالاستقبال"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

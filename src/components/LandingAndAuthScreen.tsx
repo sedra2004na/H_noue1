@@ -60,6 +60,8 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [nationalId, setNationalId] = useState('');
+  const [phone, setPhone] = useState('');
   const [selectedRole, setSelectedRole] = useState<UserRole>('patient');
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -257,9 +259,11 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
           pass: cleanPass,
           fullName: cleanName,
           role: 'patient',
+          phone: phone.trim(),
+          nationalId: nationalId.trim(),
           salt,
           passHash
-        });
+        } as any);
       } catch (err: any) {
         console.warn('Backend registration warning (will mirror locally):', err);
       }
@@ -567,45 +571,6 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
               </p>
             </div>
 
-            {/* Quick Demo Credentials Bar (Essential Human Touch for Exam Presentation) */}
-            {activeTab === 'login' && (
-              <div className="mb-5 p-3 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 space-y-2">
-                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block">
-                  تجربة سريعة للأدوار (اضغط للتعبئة التلقائية):
-                </span>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => fillQuickDemo('m.otaibi@gmail.com', '1234')}
-                    className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-sky-500 text-[11px] font-semibold transition-colors cursor-pointer text-center"
-                  >
-                    👤 مريض (محمد العتيبي)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fillQuickDemo('doctor@hospital.com', 'doctor123')}
-                    className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-sky-500 text-[11px] font-semibold transition-colors cursor-pointer text-center"
-                  >
-                    🩺 طبيب (د. سارة السعيد)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fillQuickDemo('staff@hospital.com', 'staff123')}
-                    className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-sky-500 text-[11px] font-semibold transition-colors cursor-pointer text-center"
-                  >
-                    🏥 استقبال (أحمد البقمي)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fillQuickDemo('admin@hospital.com', 'admin123')}
-                    className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-sky-500 text-[11px] font-semibold transition-colors cursor-pointer text-center"
-                  >
-                    🛡️ مدير (د. خالد العمري)
-                  </button>
-                </div>
-              </div>
-            )}
-
             <form onSubmit={handleFormSubmit} className="space-y-4">
               
               {sessionTimedOut && !errorMessage && !successMessage && (
@@ -634,23 +599,77 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
                 </div>
               )}
               
+              {/* Institutional Security Notice for Self-Registration */}
               {activeTab === 'register' && (
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                    الاسم الكامل للمريض *
-                  </label>
-                  <div className="relative">
-                    <UserIcon className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input
-                      type="text"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="الاسم الثلاثي أو الرباعي..."
-                      required
-                      className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-600 focus:ring-1 focus:ring-sky-600 transition-colors"
-                    />
+                <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 text-xs flex items-start gap-2.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="space-y-1 text-[11px] leading-relaxed">
+                    <span className="font-bold text-white block">بوابة المرضى المراجعين حصراً (Patient Self-Registration)</span>
+                    <p className="text-slate-300">
+                      هذا النموذج مخصص لفتح حسابات المرضى لحجز المواعيد واستعراض السجلات الشخصية فقط (الصلاحية تلقائياً: مريض).
+                    </p>
+                    <p className="text-emerald-400/90 font-medium">
+                      🔒 حسابات الأطباء والموظفين والاستقبال تُنشأ حصراً من قِبل إدارة المشفى عبر لوحة التحكم المركزية.
+                    </p>
                   </div>
                 </div>
+              )}
+
+              {activeTab === 'register' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      الاسم الكامل للمريض *
+                    </label>
+                    <div className="relative">
+                      <UserIcon className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="الاسم الثلاثي أو الرباعي للمريض..."
+                        required
+                        className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-600 focus:ring-1 focus:ring-sky-600 transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                        رقم الهوية الوطنية / جواز السفر
+                      </label>
+                      <div className="relative">
+                        <FileText className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input
+                          type="text"
+                          value={nationalId}
+                          onChange={(e) => setNationalId(e.target.value)}
+                          placeholder="مثال: 01020304050"
+                          className="w-full pr-10 pl-3 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-600 focus:ring-1 focus:ring-sky-600 transition-colors"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                        رقم هاتف التواصل *
+                      </label>
+                      <div className="relative">
+                        <PhoneCall className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="09XXXXXXXX"
+                          required
+                          className="w-full pr-10 pl-3 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-600 focus:ring-1 focus:ring-sky-600 transition-colors"
+                          dir="ltr"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
 
               <div>

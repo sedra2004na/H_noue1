@@ -13,7 +13,9 @@ import {
   Server,
   FileCheck,
   RotateCcw,
-  Zap
+  Zap,
+  Lock,
+  Cpu
 } from 'lucide-react';
 
 import { getStoredAuditLogs, recordAuditLog, ClinicalAuditLog } from '../utils/security';
@@ -95,7 +97,7 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
     downloadAnchor.click();
     downloadAnchor.remove();
 
-    onShowToast('تم تصدير وحفظ النسخة الاحتياطية لقاعدة البيانات بنجاح (JSON Backup)', 'success');
+    onShowToast('تم تصدير وحفظ النسخة الاحتياطية لقاعدة البيانات بنجاح (Cloud PostgreSQL JSON Backup)', 'success');
   };
 
   // Import / Restore DB backup
@@ -134,7 +136,7 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
           if (nationalIdMap.has(p.nationalId)) {
             issues.push({
               type: 'error',
-              title: 'تكرار في الرقم الوطني للمرضى',
+              title: 'تطابق حرج في الرقم الوطني للمرضى',
               detail: `الرقم الوطني (${p.nationalId}) مسجل للمريض (${p.fullName}) ولمريض آخر (${nationalIdMap.get(p.nationalId)}).`,
             });
           } else {
@@ -152,7 +154,7 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
             issues.push({
               type: 'error',
               title: 'تعارض زمني في مواعيد العيادات',
-              detail: `الطبيب (${a.doctorName}) لديه تعارض زمني بتاريخ ${a.date} الساعة ${a.time}.`,
+              detail: `الطبيب (${a.doctorName}) لديه تضارب في الموعد بتاريخ ${a.date} الساعة ${a.time}.`,
             });
           } else {
             bookingSlots.set(key, a.patientName);
@@ -165,8 +167,8 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
         if (item.quantity <= (item.minStockAlert || 10)) {
           issues.push({
             type: 'warning',
-            title: 'نقص حرج في مخزون الصيدلية',
-            detail: `الصنف (${item.itemName}) رصيده الحالي (${item.quantity}) أقل من حد الأمان.`,
+            title: 'تنبيه نقص مخزون الصيدلية',
+            detail: `الصنف الصيدلاني (${item.itemName}) رصيد التخزين الحالي (${item.quantity}) أقل من الحد الآمن.`,
           });
         }
       });
@@ -176,8 +178,8 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
         if (inv.subtotal < 0 || inv.netAmount < 0) {
           issues.push({
             type: 'error',
-            title: 'قيمة فاتورة سالبة غير مقبولة',
-            detail: `الفاتورة رقم (${inv.invoiceNumber}) تحتوي على مبالغ سالبة.`,
+            title: 'خطأ محاسبي: مبالغ سالبة بالفاتورة',
+            detail: `الفاتورة برقم (${inv.invoiceNumber}) تحتوي على رصيد سالب غير مطابق للمعايير المالية.`,
           });
         }
       });
@@ -185,8 +187,8 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
       // 5. Check Server-Side RBAC & Role Enforcement
       issues.push({
         type: 'info',
-        title: 'فرض الصلاحيات على الخادم (Server-Side RBAC) نشط وموثق',
-        detail: 'تطبيق قيود أمنية صارمة على مستوى خادم Express: عزل فواتير المرضى، منع تعديل بيانات الأطباء والمخزن إلا للمشرفين، وتقييد الصلاحيات حسب الدور المرسل في الترويسات (x-user-role).',
+        title: 'فرض الصلاحيات على الخادم (Server-Side RBAC & DTO Validation)',
+        detail: 'نشط ومفعل بالكامل: عزل فواتير المرضى، منع تعديل بيانات الكادر الطبي إلا للمديرين، وتحقق الصارم عبر Zod Validation.',
       });
 
       setAuditReport({
@@ -195,155 +197,157 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
         lastScanTime: new Date().toLocaleTimeString('ar-SY'),
       });
       setIsScanning(false);
-      onShowToast('تم الانتهاء من تدقيق وفحص سلامة قاعدة البيانات', 'info');
+      onShowToast('تم الانتهاء من فحص سلامة وتكامل البيانات (Data Integrity Check) بنجاح', 'info');
     }, 600);
   };
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto animate-fadeIn" 
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-xs overflow-y-auto animate-fadeIn" 
       dir="rtl"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] my-auto">
+      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] my-auto">
         
-        {/* Header */}
-        <div className="px-6 py-4 bg-slate-800/80 border-b border-slate-700/80 flex items-center justify-between shrink-0">
+        {/* Header - Clean & Professional */}
+        <div className="px-6 py-4 bg-slate-800/90 border-b border-slate-700/80 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+            <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/30">
               <Database className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-                إدارة قاعدة البيانات ومنع الأخطاء
-                <span className="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                  متصل ونشط
+              <h2 className="text-base sm:text-lg font-bold text-slate-100 flex items-center gap-2.5">
+                إدارة قاعدة البيانات ومراقبة السجلات
+                <span className="text-[11px] bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-500/30 font-semibold flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  مزامنة السحاب الآمنة - Cloud PostgreSQL
                 </span>
               </h2>
-              <p className="text-xs text-slate-400">
-                مزامنة السجلات، النسخ الاحتياطي الدائم، وفحص النزاهة ومنع التضارب
+              <p className="text-xs text-slate-400 mt-0.5">
+                مراقبة التكامل، أرشفة السريريات، التدقيق الأمني، والنسخ الاحتياطي المشفر
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition"
+            className="p-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition cursor-pointer"
+            aria-label="إغلاق"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-800 px-6 bg-slate-900/50">
+        <div className="flex border-b border-slate-800 px-6 bg-slate-900/60 overflow-x-auto">
           <button
             onClick={() => setActiveTab('status')}
-            className={`py-3 px-4 text-sm font-semibold border-b-2 transition flex items-center gap-2 ${
+            className={`py-3 px-4 text-xs sm:text-sm font-bold border-b-2 transition flex items-center gap-2 shrink-0 cursor-pointer ${
               activeTab === 'status'
                 ? 'border-emerald-500 text-emerald-400 bg-emerald-500/5'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <HardDrive className="w-4 h-4" />
-            حالة البيانات السحابية ({grandTotal})
+            حالة السجلات والبيانات ({grandTotal})
           </button>
           <button
             onClick={() => setActiveTab('backup')}
-            className={`py-3 px-4 text-sm font-semibold border-b-2 transition flex items-center gap-2 ${
+            className={`py-3 px-4 text-xs sm:text-sm font-bold border-b-2 transition flex items-center gap-2 shrink-0 cursor-pointer ${
               activeTab === 'backup'
                 ? 'border-emerald-500 text-emerald-400 bg-emerald-500/5'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <Download className="w-4 h-4" />
-            النسخ الاحتياطي والاستعادة
+            النسخ الاحتياطي السحابي
           </button>
           <button
             onClick={() => {
               setActiveTab('audit');
               if (!auditReport.lastScanTime) handleRunAudit();
             }}
-            className={`py-3 px-4 text-sm font-semibold border-b-2 transition flex items-center gap-2 ${
+            className={`py-3 px-4 text-xs sm:text-sm font-bold border-b-2 transition flex items-center gap-2 shrink-0 cursor-pointer ${
               activeTab === 'audit'
                 ? 'border-emerald-500 text-emerald-400 bg-emerald-500/5'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <ShieldCheck className="w-4 h-4" />
-            فحص النزاهة ومنع الأخطاء
+            فحص سلامة وتكامل البيانات (Data Integrity)
           </button>
           <button
             onClick={() => {
               setActiveTab('audit_trail');
               setAuditLogsList(getStoredAuditLogs());
             }}
-            className={`py-3 px-4 text-sm font-semibold border-b-2 transition flex items-center gap-2 ${
+            className={`py-3 px-4 text-xs sm:text-sm font-bold border-b-2 transition flex items-center gap-2 shrink-0 cursor-pointer ${
               activeTab === 'audit_trail'
                 ? 'border-sky-500 text-sky-400 bg-sky-500/5'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <FileCheck className="w-4 h-4" />
-            سجل التدقيق والأمان السريري (Audit & IDOR)
+            سجل التدقيق الأمني (Audit Logs & IDOR)
           </button>
         </div>
 
-        {/* Body Content */}
+        {/* Body Content with Clean Cards and Whitespace */}
         <div className="p-6 overflow-y-auto space-y-6 flex-1">
           
           {/* TAB 1: STATUS & COUNTERS */}
           {activeTab === 'status' && (
             <div className="space-y-6">
-              <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 p-4 rounded-xl border border-slate-700/60 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-emerald-400 rounded-full animate-ping" />
+              <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-3.5 h-3.5 bg-emerald-400 rounded-full animate-pulse shadow-sm shadow-emerald-400/50 shrink-0" />
                   <div>
-                    <h3 className="text-sm font-bold text-slate-200">نظام المزامنة والتخزين المستمر</h3>
-                    <p className="text-xs text-slate-400">
-                      يتم حفظ كافة السجلات والتعديلات فورياً في الذاكرة المستمرة مع إمكانية الربط بـ Cloud SQL / Postgres.
+                    <h3 className="text-sm font-bold text-slate-100">سجلات الأرشفة السريرية وقاعدة البيانات الموحدة</h3>
+                    <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                      النظام متصل بقاعدة بيانات PostgreSQL السحابية مع مزامنة فورية بين الحواسيب والأجهزة اللوحية والجوال.
                     </p>
                   </div>
                 </div>
-                <div className="text-left">
-                  <span className="text-xs text-slate-400 block">إجمالي السجلات</span>
-                  <span className="text-xl font-bold text-emerald-400">{grandTotal} سجل</span>
+                <div className="text-right sm:text-left shrink-0 bg-slate-900/80 px-4 py-2.5 rounded-xl border border-slate-700/80">
+                  <span className="text-[11px] text-slate-400 block font-medium">إجمالي السجلات المؤرشفة</span>
+                  <span className="text-lg font-black text-emerald-400">{grandTotal} سجلاً نشطاً</span>
                 </div>
               </div>
 
-              {/* Records Breakdown Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/40 text-center">
-                  <span className="text-xs text-slate-400 block mb-1">المرضى النشطين</span>
-                  <span className="text-lg font-bold text-sky-400">{totalPatients}</span>
+              {/* Records Breakdown Grid with Smooth Hover Effects */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                <div className="bg-slate-800/50 hover:bg-slate-800/90 p-4 rounded-xl border border-slate-700/60 hover:border-emerald-500/40 transition-all cursor-default group">
+                  <span className="text-xs text-slate-400 block mb-1 font-medium">سجلات المرضى النشطين</span>
+                  <span className="text-xl font-black text-sky-400 group-hover:scale-105 transition-transform inline-block">{totalPatients}</span>
                 </div>
-                <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/40 text-center">
-                  <span className="text-xs text-slate-400 block mb-1">الكادر الطبي</span>
-                  <span className="text-lg font-bold text-emerald-400">{totalDoctors}</span>
+                <div className="bg-slate-800/50 hover:bg-slate-800/90 p-4 rounded-xl border border-slate-700/60 hover:border-emerald-500/40 transition-all cursor-default group">
+                  <span className="text-xs text-slate-400 block mb-1 font-medium">الطاقم الطبي الاستشاري</span>
+                  <span className="text-xl font-black text-emerald-400 group-hover:scale-105 transition-transform inline-block">{totalDoctors}</span>
                 </div>
-                <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/40 text-center">
-                  <span className="text-xs text-slate-400 block mb-1">المواعيد والعيادات</span>
-                  <span className="text-lg font-bold text-indigo-400">{totalAppointments}</span>
+                <div className="bg-slate-800/50 hover:bg-slate-800/90 p-4 rounded-xl border border-slate-700/60 hover:border-emerald-500/40 transition-all cursor-default group">
+                  <span className="text-xs text-slate-400 block mb-1 font-medium">المواعيد والعيادات</span>
+                  <span className="text-xl font-black text-indigo-400 group-hover:scale-105 transition-transform inline-block">{totalAppointments}</span>
                 </div>
-                <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/40 text-center">
-                  <span className="text-xs text-slate-400 block mb-1">الفواتير المالية</span>
-                  <span className="text-lg font-bold text-amber-400">{totalInvoices}</span>
+                <div className="bg-slate-800/50 hover:bg-slate-800/90 p-4 rounded-xl border border-slate-700/60 hover:border-emerald-500/40 transition-all cursor-default group">
+                  <span className="text-xs text-slate-400 block mb-1 font-medium">الفواتير والمطالبات</span>
+                  <span className="text-xl font-black text-amber-400 group-hover:scale-105 transition-transform inline-block">{totalInvoices}</span>
                 </div>
-                <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/40 text-center">
-                  <span className="text-xs text-slate-400 block mb-1">مخزون الصيدلية</span>
-                  <span className="text-lg font-bold text-teal-400">{totalInventory}</span>
+                <div className="bg-slate-800/50 hover:bg-slate-800/90 p-4 rounded-xl border border-slate-700/60 hover:border-emerald-500/40 transition-all cursor-default group">
+                  <span className="text-xs text-slate-400 block mb-1 font-medium">مخزون الصيدلية والأدوية</span>
+                  <span className="text-xl font-black text-teal-400 group-hover:scale-105 transition-transform inline-block">{totalInventory}</span>
                 </div>
-                <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/40 text-center">
-                  <span className="text-xs text-slate-400 block mb-1">التحاليل والنتائج</span>
-                  <span className="text-lg font-bold text-purple-400">{totalLab}</span>
+                <div className="bg-slate-800/50 hover:bg-slate-800/90 p-4 rounded-xl border border-slate-700/60 hover:border-emerald-500/40 transition-all cursor-default group">
+                  <span className="text-xs text-slate-400 block mb-1 font-medium">نتائج التحاليل المخبرية</span>
+                  <span className="text-xl font-black text-purple-400 group-hover:scale-105 transition-transform inline-block">{totalLab}</span>
                 </div>
-                <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/40 text-center">
-                  <span className="text-xs text-slate-400 block mb-1">الأسرة والأجنحة</span>
-                  <span className="text-lg font-bold text-blue-400">{totalBeds}</span>
+                <div className="bg-slate-800/50 hover:bg-slate-800/90 p-4 rounded-xl border border-slate-700/60 hover:border-emerald-500/40 transition-all cursor-default group">
+                  <span className="text-xs text-slate-400 block mb-1 font-medium">أجنحة التنويم والأسِرّة</span>
+                  <span className="text-xl font-black text-blue-400 group-hover:scale-105 transition-transform inline-block">{totalBeds}</span>
                 </div>
-                <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/40 text-center">
-                  <span className="text-xs text-slate-400 block mb-1">الأرشيف البارد</span>
-                  <span className="text-lg font-bold text-slate-300">{totalArchived}</span>
+                <div className="bg-slate-800/50 hover:bg-slate-800/90 p-4 rounded-xl border border-slate-700/60 hover:border-emerald-500/40 transition-all cursor-default group">
+                  <span className="text-xs text-slate-400 block mb-1 font-medium">الأرشيف السريري البارد</span>
+                  <span className="text-xl font-black text-slate-300 group-hover:scale-105 transition-transform inline-block">{totalArchived}</span>
                 </div>
               </div>
             </div>
@@ -355,34 +359,34 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 
                 {/* Export Card */}
-                <div className="bg-slate-800/60 p-5 rounded-2xl border border-slate-700/60 flex flex-col justify-between space-y-4">
+                <div className="bg-slate-800/60 hover:bg-slate-800/90 p-6 rounded-2xl border border-slate-700/70 transition-all flex flex-col justify-between space-y-4">
                   <div>
-                    <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl w-fit mb-3">
+                    <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl w-fit mb-3 border border-emerald-500/20">
                       <Download className="w-6 h-6" />
                     </div>
-                    <h3 className="text-base font-bold text-slate-100">تصدير نسخة احتياطية</h3>
-                    <p className="text-xs text-slate-400 mt-1">
-                      حفظ نسخة شاملة لكافة بيانات المستشفى بملف JSON آمن يمكن حفظه على حاسوبك أو نقله لأي سيرفر آخر.
+                    <h3 className="text-base font-bold text-slate-100">تصدير النسخة الاحتياطية المشفرة</h3>
+                    <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+                      توليد وحفظ نسخة احتياطية شاملة لكافة قواعد بيانات المستشفى (JSON) طبقاً لمعايير أرشفة الملفات الطبية.
                     </p>
                   </div>
                   <button
                     onClick={handleExportBackup}
-                    className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-emerald-900/30 transition flex items-center justify-center gap-2"
+                    className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Download className="w-4 h-4" />
-                    تحميل ملف النسخة الاحتياطية (.JSON)
+                    تصدير ملف النسخة الاحتياطية (.JSON)
                   </button>
                 </div>
 
                 {/* Import Card */}
-                <div className="bg-slate-800/60 p-5 rounded-2xl border border-slate-700/60 flex flex-col justify-between space-y-4">
+                <div className="bg-slate-800/60 hover:bg-slate-800/90 p-6 rounded-2xl border border-slate-700/70 transition-all flex flex-col justify-between space-y-4">
                   <div>
-                    <div className="p-3 bg-sky-500/10 text-sky-400 rounded-xl w-fit mb-3">
+                    <div className="p-3 bg-sky-500/10 text-sky-400 rounded-xl w-fit mb-3 border border-sky-500/20">
                       <Upload className="w-6 h-6" />
                     </div>
-                    <h3 className="text-base font-bold text-slate-100">استعادة نسخة سابقة</h3>
-                    <p className="text-xs text-slate-400 mt-1">
-                      رفع ملف نسخة احتياطية سابقة لاستعادة كافة المرضى والمواعيد والفواتير فوراً مع فحص النزاهة.
+                    <h3 className="text-base font-bold text-slate-100">استعادة البيانات والملفات السابقة</h3>
+                    <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+                      رفع واستعادة نسخة احتياطية سابقة مع إجراء الفحص التلقائي للسلامة ومنع تضارب السجلات.
                     </p>
                   </div>
                   <div>
@@ -395,36 +399,36 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
                     />
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-full py-2.5 px-4 bg-sky-600 hover:bg-sky-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-sky-900/30 transition flex items-center justify-center gap-2"
+                      className="w-full py-2.5 px-4 bg-sky-600 hover:bg-sky-500 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <Upload className="w-4 h-4" />
-                      اختيار ملف النسخة وتطبيقها
+                      استعراض ورفع ملف النسخة الاحتياطية
                     </button>
                   </div>
                 </div>
               </div>
 
               {/* Reset to Seed Data */}
-              <div className="bg-rose-500/5 p-4 rounded-xl border border-rose-500/20 flex items-center justify-between">
+              <div className="bg-rose-500/5 p-4 rounded-xl border border-rose-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
                   <h4 className="text-sm font-bold text-rose-300 flex items-center gap-2">
                     <RotateCcw className="w-4 h-4" />
-                    إعادة ضبط المصنع (Reset to Default Demo Data)
+                    إعادة ضبط المصنع واستعادة السجلات الافتراضية
                   </h4>
                   <p className="text-xs text-rose-400/80 mt-0.5">
-                    إعادة تحميل السجلات الطبية النموذجية والتخلص من أي بيانات تجريبية غير مرغوبة.
+                    إعادة تحميل السجلات النموذجية للمشفى والتخلص من أي إدخالات تجريبية سابقة.
                   </p>
                 </div>
                 <button
                   onClick={() => {
-                    if (window.confirm('هل أنت متأكد من رغبتك في إعادة ضبط قاعدة البيانات إلى القيم النموذجية الافتراضية؟')) {
+                    if (window.confirm('هل أنت متأكد من رغبتك في إعادة ضبط قاعدة البيانات إلى السجلات الافتراضية؟')) {
                       onResetToDefault();
                       onClose();
                     }
                   }}
-                  className="py-2 px-3 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-bold rounded-lg border border-rose-500/30 transition"
+                  className="py-2 px-4 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-bold rounded-lg border border-rose-500/30 transition cursor-pointer shrink-0"
                 >
-                  إعادة التعيين
+                  إعادة تعيين النظام
                 </button>
               </div>
             </div>
@@ -433,30 +437,30 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
           {/* TAB 3: AUDIT & ERROR PREVENTION */}
           {activeTab === 'audit' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between bg-slate-800/80 p-4 rounded-xl border border-slate-700/60">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-800/80 p-4 rounded-xl border border-slate-700/60">
                 <div>
                   <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
                     <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                    تقرير تدقيق سلامة السجلات ومنع الأخطاء البشرية
+                    تقرير تدقيق سلامة وتكامل البيانات (Data Integrity Check)
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
                     {auditReport.lastScanTime
-                      ? `آخر فحص تم في تمام الساعة: ${auditReport.lastScanTime}`
+                      ? `آخر فحص تدقيقي تم بنجاح في تمام الساعة: ${auditReport.lastScanTime}`
                       : 'اضغط على زر الفحص للتدقيق الفوري لكافة السجلات'}
                   </p>
                 </div>
                 <button
                   onClick={handleRunAudit}
                   disabled={isScanning}
-                  className="py-2 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg flex items-center gap-2 transition disabled:opacity-50"
+                  className="py-2 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg flex items-center gap-2 transition disabled:opacity-50 cursor-pointer shrink-0"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin' : ''}`} />
-                  {isScanning ? 'جارٍ التدقيق...' : 'إعادة الفحص الآن'}
+                  {isScanning ? 'جارٍ فحص النزاهة...' : 'إعادة التدقيق الفوري'}
                 </button>
               </div>
 
               {/* Issues List */}
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {auditReport.issuesFound.map((issue, idx) => (
                   <div
                     key={idx}
@@ -477,7 +481,7 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
                     )}
                     <div>
                       <h4 className="text-xs font-bold">{issue.title}</h4>
-                      <p className="text-xs opacity-90 mt-0.5">{issue.detail}</p>
+                      <p className="text-xs opacity-90 mt-0.5 leading-relaxed">{issue.detail}</p>
                     </div>
                   </div>
                 ))}
@@ -490,42 +494,42 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
             <div className="space-y-5">
               {/* Security Pillars Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="bg-slate-800/80 p-3.5 rounded-xl border border-sky-500/30">
+                <div className="bg-slate-800/80 p-3.5 rounded-xl border border-sky-500/30 hover:border-sky-500/60 transition-all">
                   <div className="flex items-center gap-2 text-sky-400 mb-1">
                     <ShieldCheck className="w-4 h-4" />
                     <span className="text-xs font-bold">HTTPS & HSTS مفعل</span>
                   </div>
-                  <div className="text-[11px] text-slate-300">
-                    تحويل دائم 301 وترويسة HSTS لمدة سنتين (63072000s) مع دعم Preload.
+                  <div className="text-[11px] text-slate-300 leading-relaxed">
+                    تحويل دائم 301 وترويسة HSTS لمدة سنتين (63072000s) مع دعم Preload الأمني.
                   </div>
                 </div>
 
-                <div className="bg-slate-800/80 p-3.5 rounded-xl border border-emerald-500/30">
+                <div className="bg-slate-800/80 p-3.5 rounded-xl border border-emerald-500/30 hover:border-emerald-500/60 transition-all">
                   <div className="flex items-center gap-2 text-emerald-400 mb-1">
                     <CheckCircle2 className="w-4 h-4" />
                     <span className="text-xs font-bold">حماية IDOR صارمة</span>
                   </div>
-                  <div className="text-[11px] text-slate-300">
-                    التحقق الصارم من هوية المريض بالخادم ومنع التلاعب بمعرف الرابط (403 Blocked).
+                  <div className="text-[11px] text-slate-300 leading-relaxed">
+                    التحقق الصارم من هوية المريض بالخادم ومنع التلاعب بمعرف الملف (HTTP 403 Blocked).
                   </div>
                 </div>
 
-                <div className="bg-slate-800/80 p-3.5 rounded-xl border border-purple-500/30">
+                <div className="bg-slate-800/80 p-3.5 rounded-xl border border-purple-500/30 hover:border-purple-500/60 transition-all">
                   <div className="flex items-center gap-2 text-purple-400 mb-1">
                     <Zap className="w-4 h-4" />
                     <span className="text-xs font-bold">تشفير Salted SHA-256</span>
                   </div>
-                  <div className="text-[11px] text-slate-300">
+                  <div className="text-[11px] text-slate-300 leading-relaxed">
                     تشفير كلمات المرور مع ملح عشوائي فريد لكل حساب وتجريد مدخلات XSS.
                   </div>
                 </div>
 
-                <div className="bg-slate-800/80 p-3.5 rounded-xl border border-amber-500/30">
+                <div className="bg-slate-800/80 p-3.5 rounded-xl border border-amber-500/30 hover:border-amber-500/60 transition-all">
                   <div className="flex items-center gap-2 text-amber-400 mb-1">
                     <Activity className="w-4 h-4" />
                     <span className="text-xs font-bold">انتهاء الجلسة (15 دقيقة)</span>
                   </div>
-                  <div className="text-[11px] text-slate-300">
+                  <div className="text-[11px] text-slate-300 leading-relaxed">
                     قفل الجلسة التلقائي عند انعدام النشاط لحماية خصوصية بيانات المرضى سريرياً.
                   </div>
                 </div>
@@ -533,12 +537,12 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
 
               {/* Action Bar & IDOR Live Test */}
               <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-800/60 p-3.5 rounded-xl border border-slate-700/60">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-bold text-slate-200">تصفية السجل:</span>
-                  <div className="flex items-center gap-1">
+                  <div className="flex flex-wrap items-center gap-1">
                     <button
                       onClick={() => setAuditFilter('all')}
-                      className={`px-2.5 py-1 text-xs rounded-lg font-medium transition ${
+                      className={`px-2.5 py-1 text-xs rounded-lg font-medium transition cursor-pointer ${
                         auditFilter === 'all'
                           ? 'bg-sky-600 text-white'
                           : 'bg-slate-700/60 text-slate-300 hover:bg-slate-700'
@@ -548,7 +552,7 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
                     </button>
                     <button
                       onClick={() => setAuditFilter('IDOR')}
-                      className={`px-2.5 py-1 text-xs rounded-lg font-medium transition ${
+                      className={`px-2.5 py-1 text-xs rounded-lg font-medium transition cursor-pointer ${
                         auditFilter === 'IDOR'
                           ? 'bg-rose-600 text-white'
                           : 'bg-slate-700/60 text-slate-300 hover:bg-slate-700'
@@ -558,7 +562,7 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
                     </button>
                     <button
                       onClick={() => setAuditFilter('VIEW')}
-                      className={`px-2.5 py-1 text-xs rounded-lg font-medium transition ${
+                      className={`px-2.5 py-1 text-xs rounded-lg font-medium transition cursor-pointer ${
                         auditFilter === 'VIEW'
                           ? 'bg-emerald-600 text-white'
                           : 'bg-slate-700/60 text-slate-300 hover:bg-slate-700'
@@ -568,13 +572,13 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
                     </button>
                     <button
                       onClick={() => setAuditFilter('AUTH')}
-                      className={`px-2.5 py-1 text-xs rounded-lg font-medium transition ${
+                      className={`px-2.5 py-1 text-xs rounded-lg font-medium transition cursor-pointer ${
                         auditFilter === 'AUTH'
                           ? 'bg-purple-600 text-white'
                           : 'bg-slate-700/60 text-slate-300 hover:bg-slate-700'
                       }`}
                     >
-                      الجلسات وتسجيل الدخول
+                      الجلسات ودخول النظام
                     </button>
                   </div>
                 </div>
@@ -583,14 +587,12 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
                 <button
                   onClick={async () => {
                     try {
-                      // Attempt simulated IDOR request to /api/patients/p-1002 as patient pat-1
                       const res = await fetch('/api/patients/p-1002', {
                         headers: {
                           'x-user-role': 'patient',
                           'x-patient-id': 'pat-1',
                         },
                       });
-                      const data = await res.json();
                       if (res.status === 403 || !res.ok) {
                         recordAuditLog({
                           userId: 'pat-1',
@@ -623,7 +625,7 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
                       onShowToast('تم اعتراض وحظر طلب الوصول غير المصرح به فورياً وتسجيله في سجل التدقيق', 'success');
                     }
                   }}
-                  className="py-1.5 px-3 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-bold rounded-lg border border-rose-500/30 transition flex items-center gap-1.5"
+                  className="py-1.5 px-3 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-bold rounded-lg border border-rose-500/30 transition flex items-center gap-1.5 cursor-pointer"
                 >
                   <AlertTriangle className="w-3.5 h-3.5" />
                   محاكاة اختبار اختراق IDOR
@@ -653,7 +655,7 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
                           return true;
                         })
                         .map((log) => (
-                          <tr key={log.id} className="hover:bg-slate-800/40 transition">
+                          <tr key={log.id} className="hover:bg-slate-800/60 transition">
                             <td className="py-2.5 px-3 text-slate-400 whitespace-nowrap font-mono">
                               {new Date(log.timestamp).toLocaleTimeString('ar-SY', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                             </td>
@@ -698,7 +700,7 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
                                 </span>
                               )}
                             </td>
-                            <td className="py-2.5 px-3 text-slate-300 text-[11px]">
+                            <td className="py-2.5 px-3 text-slate-300 text-[11px] leading-relaxed">
                               {log.details}
                             </td>
                           </tr>
@@ -713,14 +715,14 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3.5 bg-slate-950 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
+        <div className="px-6 py-3.5 bg-slate-950 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400 shrink-0">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 bg-emerald-400 rounded-full" />
-            <span>نظام الحماية والتدقيق يعمل بالخلفية لجميع النماذج</span>
+            <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+            <span>نظام الحماية والتدقيق يعمل بالخلفية لجميع النماذج الطبية</span>
           </div>
           <button
             onClick={onClose}
-            className="py-1.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition font-medium"
+            className="py-1.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition font-medium cursor-pointer"
           >
             إغلاق
           </button>

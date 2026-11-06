@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
+import { z } from 'zod';
 import { 
   mockPatients, 
   mockDoctors, 
@@ -295,6 +296,34 @@ async function startServer() {
     };
   }
 
+  // =================== ZOD DTO VALIDATION SCHEMAS ===================
+  const registerSchema = z.object({
+    email: z.string().email('البريد الإلكتروني غير صالح'),
+    pass: z.string().min(4, 'كلمة المرور يجب أن ألا تقل عن 4 خانات'),
+    fullName: z.string().min(3, 'الاسم الكامل مطلوب'),
+    role: z.string().optional(),
+    phone: z.string().optional(),
+    nationalId: z.string().optional(),
+    salt: z.string().optional(),
+    passHash: z.string().optional(),
+    age: z.number().optional(),
+    gender: z.string().optional(),
+    bloodType: z.string().optional(),
+  });
+
+  const doctorSchema = z.object({
+    name: z.string().min(2, 'اسم الطبيب مطلوب'),
+    specialty: z.string().min(2, 'التخصص مطلوب'),
+    department: z.string().optional(),
+    experienceYears: z.any().optional(),
+    consultingFee: z.any().optional(),
+    phone: z.string().optional(),
+    roomNumber: z.string().optional(),
+    shift: z.string().optional(),
+    email: z.string().optional().or(z.literal('')),
+    password: z.string().optional().or(z.literal('')),
+  });
+
   // =================== MULTI-DEVICE AUTH & USER ACCOUNTS ===================
   app.get('/api/auth/accounts', (req, res) => {
     res.json({
@@ -305,9 +334,36 @@ async function startServer() {
   });
 
   app.post('/api/auth/register', (req, res) => {
-    const { email, pass, fullName, role = 'patient', salt, passHash } = req.body;
-    if (!email || !pass || !fullName) {
-      return res.status(400).json({ success: false, error: 'جميع الحقول مطلوبة' });
+    // 1. Zod Validation & Sanitization DTO
+    const validationResult = registerSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      const errorMsg = validationResult.error.issues.map(e => e.message).join(' - ');
+      return res.status(400).json({ success: false, error: `خطأ في صحة المدخلات (Zod Validation): ${errorMsg}` });
+    }
+
+    const { email, pass, fullName, role, phone, nationalId, salt, passHash } = validationResult.data;
+
+    // Security Rule 1: Public Registration is strictly forbidden for Doctors, Staff, Receptionists, and Admins
+    if (role && role.toLowerCase().trim() !== 'patient') {
+      dbStore.auditLogs.unshift({
+        id: `sec-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        userId: email,
+        userName: fullName,
+        userRole: 'patient',
+        action: 'PRIVILEGE_ESCALATION_BLOCKED',
+        targetResource: 'AUTH_GATEWAY:PUBLIC_REGISTRATION',
+        details: `محاولة محظورة لإنشاء حساب بصلاحية (${role}) عبر بوابة التسجيل العامة. تم حظر الطلب أمنياً.`,
+        status: 'BLOCKED_ALERT',
+        ipAddress: req.ip || '127.0.0.1',
+      });
+      saveDb();
+
+      return res.status(403).json({ 
+        success: false, 
+        error: 'محظور أمنياً: التسجيل العام مخصص لإنشاء حسابات المرضى المراجعين فقط. حسابات الأطباء والكوادر الطبية والإدارية تُنشأ حصراً من قِبل إدارة المشفى عبر لوحة التحكم المركزية.',
+        code: 'ADMIN_PROVISIONING_REQUIRED' 
+      });
     }
 
     const cleanEmail = String(email).trim().toLowerCase();
@@ -315,10 +371,13 @@ async function startServer() {
       return res.status(400).json({ success: false, error: 'هذا البريد مسجل مسبقاً بالنظام' });
     }
 
+    // Always enforce PATIENT role for self-registration
     const newAccount = {
-      role: (role === 'admin' || role === 'doctor' || role === 'staff') ? role : 'patient',
+      role: 'patient',
       name: String(fullName).trim(),
       pass: String(pass),
+      phone: phone ? String(phone).trim() : '',
+      nationalId: nationalId ? String(nationalId).trim() : '',
       salt: salt || '',
       passHash: passHash || '',
       registeredAt: new Date().toISOString(),
@@ -326,27 +385,28 @@ async function startServer() {
 
     dbStore.accounts[cleanEmail] = newAccount;
 
-    // If registered as patient, ensure a patient profile exists in database
-    const patientExists = dbStore.patients.some(p => p.phone === cleanEmail || p.fullName === newAccount.name);
-    if (!patientExists) {
-      const newPatientProfile = {
-        id: `pat-${Date.now()}`,
-        fileNumber: `MED-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-        fullName: newAccount.name,
-        age: 35,
-        gender: 'ذكر',
-        phone: cleanEmail,
-        bloodType: 'O+',
-        createdDate: new Date().toISOString().split('T')[0],
-        lastVisitDate: new Date().toISOString().split('T')[0],
-        status: 'active',
-        assignedDoctor: 'د. سارة السعيد',
-        medicalHistory: ['تسجيل حساب شخصي عبر البوابة الإلكترونية الموحدة'],
-        activeAllergies: [],
-        vitals: { bloodPressure: '120/80', heartRate: 72, temperature: 36.8, weight: 70 },
-      };
-      dbStore.patients.unshift(newPatientProfile);
-    }
+    // Self-registered patients start as Provisional (بانتظار التحقق والمطابقة بالاستقبال)
+    const provisionalPatientProfile = {
+      id: `pat-${Date.now()}`,
+      fileNumber: `PRV-${Math.floor(10000 + Math.random() * 90000)}`, // Provisional File Number until Reception verifies MRN
+      fullName: newAccount.name,
+      age: Number(req.body.age) || 30,
+      gender: req.body.gender || 'ذكر',
+      phone: newAccount.phone || cleanEmail,
+      nationalId: newAccount.nationalId || '',
+      bloodType: req.body.bloodType || 'A+',
+      accountEmail: cleanEmail,
+      isVerifiedByReception: false,
+      verificationStatus: 'بانتظار التحقق والمطابقة بالاستقبال',
+      createdDate: new Date().toISOString().split('T')[0],
+      lastVisitDate: new Date().toISOString().split('T')[0],
+      status: 'active',
+      assignedDoctor: 'د. سارة السعيد',
+      medicalHistory: ['حساب إلكتروني مسجل ذاتياً عبر بوابة المرضى - بانتظار إبراز الهوية وتأكيد الملف بالاستقبال'],
+      activeAllergies: [],
+      vitals: { bloodPressure: '120/80', heartRate: 72, temperature: 36.8, weight: 70 },
+    };
+    dbStore.patients.unshift(provisionalPatientProfile);
 
     // Add audit log
     dbStore.auditLogs.unshift({
@@ -354,10 +414,10 @@ async function startServer() {
       timestamp: new Date().toISOString(),
       userId: cleanEmail,
       userName: newAccount.name,
-      userRole: newAccount.role,
-      action: 'REGISTER',
-      targetResource: 'AUTH_GATEWAY',
-      details: `تسجيل حساب جديد بنجاح (${newAccount.name} - ${newAccount.role}) ومزامنته عبر السيرفر لكل الأجهزة`,
+      userRole: 'patient',
+      action: 'PATIENT_SELF_REGISTER',
+      targetResource: 'PATIENT_PORTAL',
+      details: `تسجيل حساب مريض مراجع جديد (${newAccount.name}) - الملف المبدئي (${provisionalPatientProfile.fileNumber}) بانتظار توثيق الاستقبال`,
       status: 'SUCCESS',
       ipAddress: req.ip || '127.0.0.1',
     });
@@ -366,12 +426,13 @@ async function startServer() {
 
     res.status(201).json({
       success: true,
-      message: 'تم تسجيل الحساب ومزامنته على السيرفر بنجاح',
+      message: 'تم إنشاء حساب المريض بنجاح، ويمكنك حجز المواعيد ومتابعة السجلات فوراً',
       user: {
         email: cleanEmail,
-        role: newAccount.role,
+        role: 'patient',
         name: newAccount.name,
       },
+      patient: provisionalPatientProfile,
       version: dbStore.version,
     });
   });
@@ -585,6 +646,47 @@ async function startServer() {
         );
         break;
 
+      // Reception Patient Verification & Medical File Linking
+      case 'VERIFY_PATIENT_RECEPTION':
+        dbStore.patients = dbStore.patients.map(p => {
+          if (p.id === payload.id) {
+            const verifiedFileNumber = payload.fileNumber || 
+              (p.fileNumber?.startsWith('PRV-') ? `MED-2026-${Math.floor(10000 + Math.random() * 90000)}` : p.fileNumber);
+            return {
+              ...p,
+              fileNumber: verifiedFileNumber,
+              nationalId: payload.nationalId || p.nationalId,
+              bloodType: payload.bloodType || p.bloodType,
+              isVerifiedByReception: true,
+              verificationStatus: 'موثق ومعتمد رسمياً من الاستقبال',
+              verifiedBy: payload.verifiedBy || 'موظف الاستقبال والتسكين',
+              verifiedAt: new Date().toISOString(),
+            };
+          }
+          return p;
+        });
+        break;
+
+      // Admin Provisioning of Staff / Doctor Accounts
+      case 'PROVISION_STAFF':
+        if (payload.account && payload.account.email) {
+          const cleanEmail = payload.account.email.toLowerCase().trim();
+          dbStore.accounts[cleanEmail] = {
+            role: payload.account.role || 'doctor',
+            name: payload.account.name,
+            pass: payload.account.pass || 'doctor123',
+            registeredAt: new Date().toISOString(),
+            provisionedByAdmin: true,
+          };
+        }
+        if (payload.doctor) {
+          dbStore.doctors.unshift(payload.doctor);
+        }
+        if (payload.shift) {
+          dbStore.shifts.unshift(payload.shift);
+        }
+        break;
+
       // Audit Logs
       case 'ADD_AUDIT_LOG':
         dbStore.auditLogs.unshift(payload);
@@ -751,22 +853,174 @@ async function startServer() {
     res.json({ success: true, message: 'تم حذف ملف المريض بنجاح' });
   });
 
-  // =================== REST DOCTORS ===================
+  // Reception Desk Patient Verification & Medical File Number (MRN) Assignment
+  app.put('/api/patients/:id/verify-reception', enforceRole(['admin', 'staff']), (req, res) => {
+    const { id } = req.params;
+    const { nationalId, officialFileNumber, bloodType, verifiedBy } = req.body;
+
+    const patient = dbStore.patients.find(p => p.id === id);
+    if (!patient) {
+      return res.status(404).json({ success: false, error: 'ملف المريض غير موجود' });
+    }
+
+    patient.isVerifiedByReception = true;
+    patient.verificationStatus = 'موثق ومعتمد رسمياً من الاستقبال';
+    patient.verifiedAt = new Date().toISOString();
+    patient.verifiedBy = verifiedBy || 'موظف الاستقبال والتسكين';
+    if (nationalId) patient.nationalId = nationalId;
+    if (bloodType) patient.bloodType = bloodType;
+    if (officialFileNumber) {
+      patient.fileNumber = officialFileNumber;
+    } else if (patient.fileNumber?.startsWith('PRV-') || patient.fileNumber?.startsWith('PENDING-')) {
+      patient.fileNumber = `MED-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+    }
+
+    dbStore.auditLogs.unshift({
+      id: `aud-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      userId: 'reception-desk',
+      userName: patient.verifiedBy,
+      userRole: 'staff',
+      action: 'PATIENT_FILE_VERIFIED',
+      targetResource: `PATIENT_RECORD:${patient.fileNumber}`,
+      patientId: patient.id,
+      patientName: patient.fullName,
+      details: `تم تدقيق وتوثيق هوية المريض (${patient.fullName}) واعتماد الملف الطبي الرسمي (${patient.fileNumber}) في قسم الاستقبال`,
+      status: 'SUCCESS',
+      ipAddress: req.ip || '127.0.0.1',
+    });
+
+    saveDb();
+
+    res.json({
+      success: true,
+      message: `تم توثيق واعتماد الملف الطبي للمريض (${patient.fullName}) رسمياً`,
+      patient,
+      version: dbStore.version,
+    });
+  });
+
+  // =================== REST DOCTORS & STAFF (ADMIN ONLY) ===================
   app.get('/api/doctors', async (req, res) => {
     res.json(dbStore.doctors);
   });
 
+  // POST /api/doctors - Strictly Protected for Admin Only
   app.post('/api/doctors', enforceRole(['admin']), async (req, res) => {
+    const validationResult = doctorSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      const errorMsg = validationResult.error.issues.map(e => e.message).join(' - ');
+      return res.status(400).json({ success: false, error: `خطأ في صحة بيانات الطبيب (Zod Validation): ${errorMsg}` });
+    }
+
+    const { name, email, password, specialty, department, experienceYears, consultingFee, phone, roomNumber, shift } = validationResult.data;
+    
+    if (!name || !specialty) {
+      return res.status(400).json({ error: 'اسم الطبيب والتخصص مطلوبان' });
+    }
+
     const newDoc = {
       id: `doc-${Date.now()}`,
+      name: String(name).trim(),
+      specialty: String(specialty).trim(),
+      department: department || 'العيادات الخارجية',
+      experienceYears: Number(experienceYears) || 5,
+      consultingFee: Number(consultingFee) || 25000,
+      phone: phone || '',
+      roomNumber: roomNumber || '101',
+      shift: shift || 'صباحي',
       status: 'active',
       rating: 5.0,
+      email: email ? String(email).trim().toLowerCase() : '',
+      accountCreated: !!(email && password),
       ...req.body,
     };
+
+    // If Admin supplied email and password, provision their system login account
+    if (newDoc.email && password) {
+      dbStore.accounts[newDoc.email] = {
+        role: 'doctor',
+        name: newDoc.name,
+        pass: String(password),
+        registeredAt: new Date().toISOString(),
+        provisionedByAdmin: true,
+      };
+
+      dbStore.auditLogs.unshift({
+        id: `aud-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        userId: 'admin',
+        userName: 'إدارة المشفى',
+        userRole: 'admin',
+        action: 'DOCTOR_ACCOUNT_PROVISIONED',
+        targetResource: `STAFF_GATEWAY:${newDoc.email}`,
+        details: `إنشاء وتفعيل حساب طبيب رسمي (${newDoc.name} - ${newDoc.specialty}) عبر الإدارة المركزية`,
+        status: 'SUCCESS',
+        ipAddress: req.ip || '127.0.0.1',
+      });
+    }
+
+    // Automatically create shift
+    const newShift = {
+      id: `s-${Date.now()}`,
+      doctorId: newDoc.id,
+      doctorName: newDoc.name,
+      shiftType: newDoc.shift,
+      timeRange: newDoc.shift === 'مسائي' ? '04:00 م - 12:00 م' : newDoc.shift === 'ليلي' ? '12:00 م - 08:00 ص' : '08:00 ص - 04:00 م',
+      department: newDoc.department,
+      days: ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'],
+    };
+    dbStore.shifts.unshift(newShift);
 
     dbStore.doctors.unshift(newDoc);
     saveDb();
     res.status(201).json(newDoc);
+  });
+
+  // POST /api/staff - Strictly Protected for Admin Only
+  app.post('/api/staff', enforceRole(['admin']), async (req, res) => {
+    const { name, email, password, role = 'staff', department, phone } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'الاسم، البريد الإلكتروني، وكلمة المرور مطلوبة لإنشاء موظف' });
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    if (dbStore.accounts[cleanEmail]) {
+      return res.status(400).json({ error: 'البريد الإلكتروني مسجل مسبقاً لمستخدم آخر' });
+    }
+
+    const targetRole: SystemRole = (role === 'doctor' || role === 'staff') ? role : 'staff';
+
+    dbStore.accounts[cleanEmail] = {
+      role: targetRole,
+      name: String(name).trim(),
+      pass: String(password),
+      registeredAt: new Date().toISOString(),
+      department: department || 'الاستقبال والقبول',
+      phone: phone || '',
+      provisionedByAdmin: true,
+    };
+
+    dbStore.auditLogs.unshift({
+      id: `aud-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      userId: 'admin',
+      userName: 'إدارة المشفى',
+      userRole: 'admin',
+      action: 'STAFF_ACCOUNT_PROVISIONED',
+      targetResource: `STAFF_GATEWAY:${cleanEmail}`,
+      details: `إنشاء وتفعيل حساب موظف/استقبال رسمي (${name} - ${targetRole}) عبر الإدارة المركزية`,
+      status: 'SUCCESS',
+      ipAddress: req.ip || '127.0.0.1',
+    });
+
+    saveDb();
+    res.status(201).json({
+      success: true,
+      message: `تم إنشاء حساب الموظف (${name}) بنجاح`,
+      account: { email: cleanEmail, role: targetRole, name },
+      version: dbStore.version,
+    });
   });
 
   app.delete('/api/doctors/:id', enforceRole(['admin']), (req, res) => {
