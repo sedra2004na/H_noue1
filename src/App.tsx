@@ -103,13 +103,20 @@ export function App() {
     };
   }, [isLoggedIn, userRole]);
 
-  // Institutional Theme: Pure Dark Mode Locked
+  // Theme Synchronization with User Preference
   useEffect(() => {
-    document.documentElement.classList.add('dark');
-    document.documentElement.classList.remove('theme-light');
-    document.body.classList.add('dark');
-    document.body.classList.remove('theme-light');
-    localStorage.removeItem('syrian_hosp_theme');
+    try {
+      const savedTheme = localStorage.getItem('care_hospital_theme');
+      if (savedTheme === 'light') {
+        document.documentElement.classList.remove('dark');
+        document.body.classList.remove('dark');
+      } else {
+        document.documentElement.classList.add('dark');
+        document.body.classList.add('dark');
+      }
+    } catch {
+      document.documentElement.classList.add('dark');
+    }
   }, []);
 
   // Emergency SOS and Command Palette State

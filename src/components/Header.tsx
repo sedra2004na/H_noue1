@@ -23,7 +23,9 @@ import {
   Menu,
   Database,
   Wifi,
-  RefreshCw
+  RefreshCw,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 export interface NotificationItem {
@@ -86,6 +88,43 @@ export const Header: React.FC<HeaderProps> = ({
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [isRinging, setIsRinging] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
+
+  // Theme Mode (Dark / Light) State
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    try {
+      const savedTheme = localStorage.getItem('care_hospital_theme');
+      if (savedTheme) {
+        return savedTheme === 'dark';
+      }
+      return document.documentElement.classList.contains('dark');
+    } catch {
+      return true;
+    }
+  });
+
+  const toggleTheme = () => {
+    const nextMode = !isDarkMode;
+    setIsDarkMode(nextMode);
+    try {
+      if (nextMode) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('care_hospital_theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('care_hospital_theme', 'light');
+      }
+    } catch (e) {
+      console.warn('Theme storage note:', e);
+    }
+  };
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
 
   // Close notifications dropdown when clicking outside
   useEffect(() => {
@@ -207,10 +246,10 @@ export const Header: React.FC<HeaderProps> = ({
 
   const getRoleColor = (role: UserRole) => {
     switch (role) {
-      case 'admin': return 'bg-sky-950/60 text-sky-200 border-sky-700/50';
-      case 'doctor': return 'bg-teal-950/60 text-teal-200 border-teal-700/50';
-      case 'staff': return 'bg-slate-800/80 text-slate-200 border-slate-700/60';
-      case 'patient': return 'bg-slate-800/80 text-slate-200 border-slate-700/60';
+      case 'admin': return 'bg-sky-50 dark:bg-sky-950/60 text-sky-800 dark:text-sky-200 border-sky-300 dark:border-sky-700/50';
+      case 'doctor': return 'bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-200 border-teal-300 dark:border-teal-700/50';
+      case 'staff': return 'bg-emerald-50 dark:bg-slate-800/80 text-emerald-800 dark:text-slate-200 border-emerald-300 dark:border-slate-700/60';
+      case 'patient': return 'bg-sky-50 dark:bg-slate-800/80 text-sky-800 dark:text-slate-200 border-sky-300 dark:border-slate-700/60';
     }
   };
 
@@ -225,11 +264,11 @@ export const Header: React.FC<HeaderProps> = ({
           {onToggleMobileMenu && (
             <button
               onClick={onToggleMobileMenu}
-              className="lg:hidden p-1.5 sm:p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer shrink-0"
+              className="lg:hidden p-1.5 sm:p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-950 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer shrink-0"
               aria-label="القائمة"
               title="القائمة الرئيسية"
             >
-              {isMobileMenuOpen ? <X className="w-5 h-5 text-rose-400" /> : <Menu className="w-5 h-5 text-sky-400" />}
+              {isMobileMenuOpen ? <X className="w-5 h-5 text-rose-500 dark:text-rose-400" /> : <Menu className="w-5 h-5 text-sky-600 dark:text-sky-400" />}
             </button>
           )}
 
@@ -262,13 +301,13 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onOpenCommandPalette}
               aria-label="فتح لوحة الأوامر والبحث السريع (اختصار Ctrl+K)"
-              className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-950/80 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs text-slate-400 transition-all text-start focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
+              className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-950/80 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-xs text-slate-600 dark:text-slate-400 transition-all text-start focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
             >
               <div className="flex items-center gap-2">
-                <Search className="w-3.5 h-3.5 text-sky-400" aria-hidden="true" />
-                <span className="text-slate-400">بحث سريع أو أمر...</span>
+                <Search className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" aria-hidden="true" />
+                <span className="text-slate-600 dark:text-slate-400">بحث سريع أو أمر...</span>
               </div>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400">
                 Ctrl K
               </span>
             </button>
@@ -281,7 +320,7 @@ export const Header: React.FC<HeaderProps> = ({
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
                 aria-label="حقل البحث الشامل في النظام"
-                className="w-full pl-4 pr-10 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-500 transition-all"
+                className="w-full pl-4 pr-10 py-2 rounded-xl bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-500 transition-all"
               />
             </div>
           )}
@@ -370,6 +409,21 @@ export const Header: React.FC<HeaderProps> = ({
               {hasActiveSOS && <span className="w-2 h-2 rounded-full bg-rose-400"></span>}
             </button>
           )}
+
+          {/* Theme Mode Switcher Icon (Light / Dark Mode) */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={isDarkMode ? 'التحويل إلى الوضع الفاتح (Light Mode)' : 'التحويل إلى الوضع الليلي المظلم (Dark Mode)'}
+            title={isDarkMode ? 'التبديل إلى المظهر الفاتح (Light Mode)' : 'التبديل إلى المظهر الليلي (Dark Mode)'}
+            className="p-2 sm:p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-950 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-amber-400 hover:text-slate-900 dark:hover:text-amber-300 transition-all cursor-pointer shrink-0 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none shadow-xs"
+          >
+            {isDarkMode ? (
+              <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 animate-in fade-in zoom-in-75 duration-200" aria-hidden="true" />
+            ) : (
+              <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-sky-600 animate-in fade-in zoom-in-75 duration-200" aria-hidden="true" />
+            )}
+          </button>
 
           {/* Interactive Notification Bell */}
           <div className="relative shrink-0" ref={notificationsRef}>

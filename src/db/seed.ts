@@ -6,14 +6,35 @@ let isSeeded = false;
 
 export async function seedDatabaseIfEmpty() {
   if (isSeeded) return;
-  if (!process.env.SQL_HOST) {
+  if (!process.env.SQL_HOST && !process.env.DATABASE_URL) {
     return;
   }
 
   try {
+    // 1. Seed Accounts if empty
+    try {
+      const existingAccounts = await db.select().from(schema.accounts).limit(1);
+      if (existingAccounts.length === 0) {
+        const defaultAccounts = [
+          { email: 'admin@hospital.com', password: 'admin123', fullName: 'د. خالد العمري (المدير العام)', role: 'ADMIN' },
+          { email: 'admin@carehospital.com', password: 'admin123', fullName: 'د. خالد العمري (المدير)', role: 'ADMIN' },
+          { email: 'doctor@hospital.com', password: 'doctor123', fullName: 'د. سارة السعيد (استشارية القلب)', role: 'DOCTOR' },
+          { email: 'sara.s@carehospital.com', password: 'doctor123', fullName: 'د. سارة السعيد', role: 'DOCTOR' },
+          { email: 'staff@hospital.com', password: 'staff123', fullName: 'أحمد البقمي (موظف الاستقبال)', role: 'STAFF' },
+          { email: 'reception@carehospital.com', password: 'staff123', fullName: 'أحمد البقمي (استقبال)', role: 'STAFF' },
+          { email: 'm.otaibi@gmail.com', password: '1234', fullName: 'محمد عبد الله العتيبي', role: 'PATIENT' },
+        ];
+        for (const acc of defaultAccounts) {
+          await db.insert(schema.accounts).values(acc).onConflictDoNothing();
+        }
+      }
+    } catch (accErr) {
+      console.warn('Accounts table check note:', accErr);
+    }
+
     const existingDocs = await db.select().from(schema.doctors).limit(1);
     if (existingDocs.length === 0) {
-      console.log('Seeding initial hospital data into Cloud SQL...');
+      console.log('Seeding initial hospital data into PostgreSQL...');
 
       // Seed Doctors
       for (const d of mockDoctors) {

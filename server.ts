@@ -221,6 +221,17 @@ async function startServer() {
   // Essential for Render, Cloudflare, Cloud Run proxies to correctly identify HTTPS
   app.set('trust proxy', 1);
 
+  // CORS & Preflight Handling for Multi-Host and Cloud Deployments (Render / External Clients)
+  app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-user-role, x-patient-id, role, Accept');
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(204);
+    }
+    next();
+  });
+
   // HTTPS Enforcement & Defensive Security Headers Middleware
   app.use((req, res, next) => {
     res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
@@ -231,7 +242,8 @@ async function startServer() {
 
     const forwardedProto = req.headers['x-forwarded-proto'];
     if (process.env.NODE_ENV === 'production' && forwardedProto && forwardedProto !== 'https') {
-      return res.redirect(301, `https://${req.headers.host}${req.url}`);
+      // 307 preserves HTTP method (POST/PUT) and payload across redirect
+      return res.redirect(req.method === 'GET' ? 301 : 307, `https://${req.headers.host}${req.url}`);
     }
 
     next();

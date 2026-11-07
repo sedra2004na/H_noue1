@@ -499,18 +499,18 @@ export const AppointmentsSection: React.FC<AppointmentsSectionProps> = ({
                     <td className="p-4 whitespace-nowrap min-w-[130px]">
                       <span className={`px-3 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap inline-flex items-center justify-center text-center leading-normal border shadow-xs ${
                         apt.type === 'طوارئ' || apt.type?.includes('طوارئ')
-                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                          ? 'bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-500/40'
                           : apt.type === 'استشارة' || apt.type?.includes('استشارة')
-                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                            ? 'bg-purple-50 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-500/40'
                             : apt.type === 'فحص وقائي' || apt.type?.includes('وقائي')
-                              ? 'bg-teal-500/20 text-teal-300 border-teal-500/40'
-                              : 'bg-slate-800 text-slate-200 border-slate-700'
+                              ? 'bg-teal-50 dark:bg-teal-500/20 text-teal-800 dark:text-teal-300 border-teal-200 dark:border-teal-500/40'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
                       }`}>
                         {apt.type}
                       </span>
                     </td>
 
-                    <td className="p-4 font-bold text-emerald-400 font-mono whitespace-nowrap">
+                    <td className="p-4 font-bold text-emerald-600 dark:text-emerald-400 font-mono whitespace-nowrap">
                       {apt.fee ? Number(apt.fee).toLocaleString('en-US') : '25,000'} ل.س
                     </td>
 

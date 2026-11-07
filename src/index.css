@@ -1,35 +1,49 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Option 2: Deep Teal & Clean Emerald Healthcare Palette */
+/* Dynamic Healthcare Theme Palette (Pure Crisp Light in Light Mode, Deep Teal in Dark Mode) */
 @theme {
-  --color-slate-950: #021714;
-  --color-slate-900: #062420;
-  --color-slate-800: #0e3831;
-  --color-slate-700: #174f46;
-  --color-slate-600: #246a5f;
-  --color-slate-500: #528980;
-  --color-slate-400: #88b7ae;
-  --color-slate-300: #c2e3dc;
-  --color-slate-200: #e2f4f0;
-  --color-slate-100: #f0fdfa;
-
-  --color-sky-950: #032b26;
-  --color-sky-900: #043d36;
-  --color-sky-800: #075249;
-  --color-sky-700: #0c6a5e;
-  --color-sky-600: #0f766e;
-  --color-sky-500: #0d9488;
-  --color-sky-400: #14b8a6;
-  --color-sky-300: #2dd4bf;
-  --color-sky-200: #5eead4;
-  --color-sky-100: #ccfbf1;
-  --color-sky-50: #f0fdfa;
+  --color-slate-950: var(--slate-950);
+  --color-slate-900: var(--slate-900);
+  --color-slate-800: var(--slate-800);
+  --color-slate-700: var(--slate-700);
+  --color-slate-600: var(--slate-600);
+  --color-slate-500: var(--slate-500);
+  --color-slate-400: var(--slate-400);
+  --color-slate-300: var(--slate-300);
+  --color-slate-200: var(--slate-200);
+  --color-slate-100: var(--slate-100);
+  --color-slate-50: var(--slate-50);
 }
 
 :root {
+  --slate-950: #ffffff;
+  --slate-900: #ffffff;
+  --slate-800: #f8fafc;
+  --slate-700: #f1f5f9;
+  --slate-600: #475569;
+  --slate-500: #64748b;
+  --slate-400: #94a3b8;
+  --slate-300: #cbd5e1;
+  --slate-200: #e2e8f0;
+  --slate-100: #0f172a;
+  --slate-50: #ffffff;
   font-family: 'Cairo', 'Tajawal', system-ui, -apple-system, sans-serif;
-  color-scheme: dark;
+  color-scheme: light dark;
+}
+
+html.dark {
+  --slate-950: #021714;
+  --slate-900: #062420;
+  --slate-800: #0e3831;
+  --slate-700: #174f46;
+  --slate-600: #246a5f;
+  --slate-500: #528980;
+  --slate-400: #88b7ae;
+  --slate-300: #c2e3dc;
+  --slate-200: #e2f4f0;
+  --slate-100: #f0fdfa;
+  --slate-50: #021714;
 }
 
 /* Custom Smooth Clean Scrollbar - Deep Teal & Emerald */
@@ -59,14 +73,277 @@
   background: rgba(45, 212, 191, 0.65);
 }
 
-/* Permanent Deep Teal & Clean Emerald Dark Theme */
-html,
-body,
-#root {
+/* Dynamic Healthcare Theme (Dark & Light Mode Switch Support) */
+html.dark,
+html.dark body,
+html.dark #root {
   background-color: #021714 !important;
   color: #f0fdfa !important;
-  min-height: 100vh;
 }
+
+/* =========================================================================
+   LIGHT MODE: 100% Luminous, Clean, Bright, and High Contrast
+   ========================================================================= */
+html:not(.dark),
+html:not(.dark) body,
+html:not(.dark) #root,
+html:not(.dark) main {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Header & Navigation in Light Mode */
+html:not(.dark) header {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+html:not(.dark) header h1,
+html:not(.dark) header span.truncate {
+  color: #0f172a !important;
+}
+
+/* Sidebar in Light Mode */
+html:not(.dark) aside {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 1px 0 3px 0 rgba(0, 0, 0, 0.03) !important;
+}
+
+html:not(.dark) aside button {
+  color: #334155 !important;
+}
+
+html:not(.dark) aside button:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* Primary Containers, Cards & Modals */
+html:not(.dark) .bg-slate-950,
+html:not(.dark) .bg-slate-900,
+html:not(.dark) .bg-slate-950\/80,
+html:not(.dark) .bg-slate-950\/60,
+html:not(.dark) .bg-slate-900\/95,
+html:not(.dark) .bg-slate-900\/90,
+html:not(.dark) .bg-slate-900\/80,
+html:not(.dark) .bg-slate-900\/60,
+html:not(.dark) .bg-slate-900\/50,
+html:not(.dark) .bg-slate-900\/40 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Secondary Panels & Sub-containers */
+html:not(.dark) .bg-slate-800,
+html:not(.dark) .bg-slate-800\/80,
+html:not(.dark) .bg-slate-800\/60,
+html:not(.dark) .bg-slate-800\/50,
+html:not(.dark) .bg-slate-800\/40,
+html:not(.dark) .bg-slate-800\/30 {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+html:not(.dark) .bg-slate-700,
+html:not(.dark) .bg-slate-700\/50 {
+  background-color: #e2e8f0 !important;
+  color: #334155 !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Hover effects in Light Mode */
+html:not(.dark) .hover\:bg-slate-800:hover,
+html:not(.dark) .hover\:bg-slate-800\/60:hover,
+html:not(.dark) .hover\:bg-slate-900:hover {
+  background-color: #e2e8f0 !important;
+}
+
+/* Text Hierarchy in Light Mode */
+html:not(.dark) .text-white {
+  color: #0f172a !important;
+}
+
+html:not(.dark) .text-slate-100,
+html:not(.dark) .text-slate-200 {
+  color: #0f172a !important;
+}
+
+html:not(.dark) .text-slate-300 {
+  color: #1e293b !important;
+}
+
+html:not(.dark) .text-slate-400 {
+  color: #475569 !important;
+}
+
+html:not(.dark) .text-slate-500 {
+  color: #64748b !important;
+}
+
+html:not(.dark) .text-slate-600 {
+  color: #475569 !important;
+}
+
+/* Border Hierarchy in Light Mode */
+html:not(.dark) .border-slate-950,
+html:not(.dark) .border-slate-900,
+html:not(.dark) .border-slate-800,
+html:not(.dark) .border-slate-800\/90,
+html:not(.dark) .border-slate-800\/80,
+html:not(.dark) .border-slate-800\/60,
+html:not(.dark) .border-slate-800\/50,
+html:not(.dark) .border-slate-700,
+html:not(.dark) .border-slate-700\/80,
+html:not(.dark) .border-slate-700\/50,
+html:not(.dark) .border-slate-600 {
+  border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
+html:not(.dark) .divide-slate-700 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e2e8f0 !important;
+}
+
+/* Tables in Light Mode */
+html:not(.dark) table {
+  background-color: #ffffff !important;
+}
+
+html:not(.dark) thead,
+html:not(.dark) thead tr,
+html:not(.dark) thead th {
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+  border-color: #e2e8f0 !important;
+  font-weight: 700 !important;
+}
+
+html:not(.dark) tbody tr {
+  background-color: #ffffff !important;
+  border-color: #f1f5f9 !important;
+}
+
+html:not(.dark) tbody tr:hover {
+  background-color: #f8fafc !important;
+}
+
+html:not(.dark) td {
+  color: #1e293b !important;
+  border-color: #f1f5f9 !important;
+}
+
+/* Form Inputs, Selects & Textareas */
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+html:not(.dark) select,
+html:not(.dark) textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+html:not(.dark) option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Modal Backdrops & Overlays */
+html:not(.dark) .fixed.inset-0.bg-black\/80,
+html:not(.dark) .fixed.inset-0.bg-slate-950\/80,
+html:not(.dark) .fixed.inset-0.bg-black\/70 {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+/* Badges & Status Chips: High Contrast Pastels with Saturated Text */
+html:not(.dark) .bg-teal-500\/20,
+html:not(.dark) .bg-teal-500\/10 {
+  background-color: #ccfbf1 !important;
+  color: #0f766e !important;
+  border-color: #99f6e4 !important;
+}
+html:not(.dark) .text-teal-300,
+html:not(.dark) .text-teal-200 {
+  color: #0f766e !important;
+}
+
+html:not(.dark) .bg-purple-500\/20,
+html:not(.dark) .bg-purple-500\/10 {
+  background-color: #f3e8ff !important;
+  color: #7e22ce !important;
+  border-color: #e9d5ff !important;
+}
+html:not(.dark) .text-purple-300,
+html:not(.dark) .text-purple-200 {
+  color: #7e22ce !important;
+}
+
+html:not(.dark) .bg-rose-500\/20,
+html:not(.dark) .bg-rose-500\/10 {
+  background-color: #ffe4e6 !important;
+  color: #be123c !important;
+  border-color: #fecdd3 !important;
+}
+html:not(.dark) .text-rose-300,
+html:not(.dark) .text-rose-200 {
+  color: #be123c !important;
+}
+
+html:not(.dark) .bg-sky-500\/20,
+html:not(.dark) .bg-sky-500\/10 {
+  background-color: #e0f2fe !important;
+  color: #0369a1 !important;
+  border-color: #bae6fd !important;
+}
+html:not(.dark) .text-sky-300,
+html:not(.dark) .text-sky-200 {
+  color: #0369a1 !important;
+}
+
+html:not(.dark) .bg-amber-500\/20,
+html:not(.dark) .bg-amber-500\/10 {
+  background-color: #fef3c7 !important;
+  color: #b45309 !important;
+  border-color: #fde68a !important;
+}
+html:not(.dark) .text-amber-300,
+html:not(.dark) .text-amber-200 {
+  color: #b45309 !important;
+}
+
+html:not(.dark) .bg-emerald-500\/20,
+html:not(.dark) .bg-emerald-500\/10 {
+  background-color: #d1fae5 !important;
+  color: #047857 !important;
+  border-color: #a7f3d0 !important;
+}
+html:not(.dark) .text-emerald-300,
+html:not(.dark) .text-emerald-200 {
+  color: #047857 !important;
+}
+
+/* Light Mode Custom Scrollbar */
+html:not(.dark) * {
+  scrollbar-color: rgba(13, 148, 136, 0.35) #f1f5f9;
+}
+html:not(.dark) ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+html:not(.dark) ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+html:not(.dark) ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 
 /* Accessible focus ring */
 :focus-visible {

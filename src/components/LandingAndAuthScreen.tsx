@@ -25,7 +25,9 @@ import {
   Bed,
   FileText,
   PhoneCall,
-  FlaskConical
+  FlaskConical,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { UserRole } from '../types';
 import { 
@@ -70,6 +72,35 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
 
   // Password visibility
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+
+  // Theme Mode (Dark / Light) State
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('care_hospital_theme');
+      if (saved) return saved === 'dark';
+      return document.documentElement.classList.contains('dark');
+    } catch {
+      return true;
+    }
+  });
+
+  const toggleTheme = () => {
+    const nextMode = !isDarkMode;
+    setIsDarkMode(nextMode);
+    try {
+      if (nextMode) {
+        document.documentElement.classList.add('dark');
+        document.body.classList.add('dark');
+        localStorage.setItem('care_hospital_theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.body.classList.remove('dark');
+        localStorage.setItem('care_hospital_theme', 'light');
+      }
+    } catch (e) {
+      console.warn('Theme storage note:', e);
+    }
+  };
 
   // Forgot Password / Recovery States
   const [resetEmail, setResetEmail] = useState('');
@@ -443,6 +474,21 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
             >
               <LogIn className="w-4 h-4" />
               <span>تسجيل الدخول</span>
+            </button>
+
+            {/* Light / Dark Mode Toggle Button */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={isDarkMode ? 'التحويل إلى المظهر الفاتح (Light Mode)' : 'التحويل إلى المظهر الليلي (Dark Mode)'}
+              title={isDarkMode ? 'التحويل إلى المظهر الفاتح (Light Mode)' : 'التحويل إلى المظهر الليلي (Dark Mode)'}
+              className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-amber-400 hover:text-slate-900 dark:hover:text-amber-300 transition-colors cursor-pointer shrink-0 border border-slate-200 dark:border-slate-700"
+            >
+              {isDarkMode ? (
+                <Sun className="w-4 h-4 text-amber-400" aria-hidden="true" />
+              ) : (
+                <Moon className="w-4 h-4 text-sky-600" aria-hidden="true" />
+              )}
             </button>
 
           </nav>
