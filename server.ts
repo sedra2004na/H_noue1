@@ -1394,17 +1394,25 @@ async function startServer() {
   });
 
   // Vite middleware or production static
+  const distPath = path.join(process.cwd(), 'dist');
+  const hasDist = fs.existsSync(path.join(distPath, 'index.html'));
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
     app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
+  } else if (hasDist) {
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
+    });
+  } else {
+    // Development fallback if production flag set but dist was just created
+    app.use(express.static(process.cwd()));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(process.cwd(), 'index.html'));
     });
   }
 
