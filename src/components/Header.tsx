@@ -21,7 +21,9 @@ import {
   Calendar,
   Siren,
   Menu,
-  Database
+  Database,
+  Wifi,
+  RefreshCw
 } from 'lucide-react';
 
 export interface NotificationItem {
@@ -300,32 +302,41 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">{formattedDate}</span>
           </div>
 
-          {/* Live Server Sync Indicator (Laptop & Mobile Sync) */}
+          {/* Live Server Sync Icon Indicator (Laptop & Mobile Sync) */}
           <button
             type="button"
             onClick={onManualSync}
+            aria-label="حالة اتصال ومزامنة السيرفر"
             title={
               syncStatus === 'syncing' 
                 ? 'جارِ مزامنة البيانات مع الخادم...' 
                 : syncStatus === 'offline' 
-                  ? 'السيرفر غير متصل حالياً (يعمل بنمط الذاكرة المحلية). اضغط لإعادة المحاولة' 
-                  : 'متصل بالسيرفر ومُزامن لحظياً بين الحاسوب والجوال (اضغط للمزامنة الفورية)'
+                  ? 'السيرفر غير متصل حالياً (اضغط لإعادة المحاولة)' 
+                  : 'متصل بالسيرفر بنجاح (اضغط للمزامنة الفورية)'
             }
-            className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-[11px] font-medium text-slate-300 transition-colors cursor-pointer select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-sky-500"
+            className={`hidden md:flex items-center justify-center p-2 rounded-xl border transition-all cursor-pointer select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-sky-500 shadow-xs ${
+              syncStatus === 'syncing'
+                ? 'bg-amber-950/60 border-amber-600/50 text-amber-400'
+                : syncStatus === 'offline'
+                  ? 'bg-rose-950/60 border-rose-600/50 text-rose-400'
+                  : 'bg-emerald-950/50 border-emerald-600/40 text-emerald-400 hover:bg-emerald-900/60'
+            }`}
           >
-            <span 
-              className={`w-2 h-2 rounded-full shrink-0 ${
-                syncStatus === 'syncing' 
-                  ? 'bg-amber-400 animate-spin' 
-                  : syncStatus === 'offline' 
-                    ? 'bg-rose-400' 
-                    : 'bg-emerald-400 animate-pulse'
-              }`} 
-              aria-hidden="true"
-            />
-            <span className="truncate">
-              {syncStatus === 'syncing' ? 'مزامنة...' : syncStatus === 'offline' ? 'غير متصل' : 'مُزامن لحظياً'}
-            </span>
+            {syncStatus === 'syncing' ? (
+              <RefreshCw className="w-4 h-4 animate-spin text-amber-400" aria-hidden="true" />
+            ) : (
+              <div className="relative flex items-center justify-center">
+                <Wifi className={`w-4 h-4 ${syncStatus === 'offline' ? 'text-rose-400 opacity-60' : 'text-emerald-400'}`} aria-hidden="true" />
+                <span 
+                  className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${
+                    syncStatus === 'offline' 
+                      ? 'bg-rose-500 ring-2 ring-slate-900' 
+                      : 'bg-emerald-400 ring-2 ring-slate-900 animate-pulse'
+                  }`} 
+                  aria-hidden="true"
+                />
+              </div>
+            )}
           </button>
 
           {/* Database Health & Validation Manager Button - visible on sm+ screens */}

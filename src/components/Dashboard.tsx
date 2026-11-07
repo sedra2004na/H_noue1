@@ -784,8 +784,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <span>{formatArabicTime(apt.time)}</span>
                       </div>
                     </td>
-                    <td className="p-3.5">
-                      <span className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-xs border border-slate-200 dark:border-slate-700">
+                    <td className="p-3.5 whitespace-nowrap min-w-[130px]">
+                      <span className={`px-3 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap inline-flex items-center justify-center text-center leading-normal border shadow-xs ${
+                        apt.type === 'طوارئ' || apt.type?.includes('طوارئ')
+                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                          : apt.type === 'استشارة' || apt.type?.includes('استشارة')
+                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                            : apt.type === 'فحص وقائي' || apt.type?.includes('وقائي')
+                              ? 'bg-teal-500/20 text-teal-300 border-teal-500/40'
+                              : 'bg-slate-800 text-slate-200 border-slate-700'
+                      }`}>
                         {apt.type}
                       </span>
                     </td>

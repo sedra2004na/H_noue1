@@ -569,18 +569,6 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
 
             <form onSubmit={handleFormSubmit} className="space-y-4">
               
-              {sessionTimedOut && !errorMessage && !successMessage && (
-                <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2 shadow-xs">
-                  <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                  <div className="space-y-0.5">
-                    <div className="font-bold">تم إغلاق الجلسة تلقائياً لعدم النشاط (15 دقيقة)</div>
-                    <div className="text-[11px] text-amber-800 dark:text-amber-300/90 leading-relaxed">
-                      لحماية الخصوصية وسرية ملفات المرضى، يرجى إعادة تسجيل الدخول لمتابعة العمل في النظام.
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {successMessage && (
                 <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-xs flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
