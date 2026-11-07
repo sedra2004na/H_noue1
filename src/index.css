@@ -17,17 +17,17 @@
 }
 
 :root {
-  --slate-950: #ffffff;
-  --slate-900: #ffffff;
-  --slate-800: #f8fafc;
-  --slate-700: #f1f5f9;
-  --slate-600: #475569;
-  --slate-500: #64748b;
-  --slate-400: #94a3b8;
+  --slate-950: #000000;
+  --slate-900: #020617;
+  --slate-800: #0f172a;
+  --slate-700: #1e293b;
+  --slate-600: #334155;
+  --slate-500: #475569;
+  --slate-400: #64748b;
   --slate-300: #cbd5e1;
   --slate-200: #e2e8f0;
-  --slate-100: #0f172a;
-  --slate-50: #ffffff;
+  --slate-100: #f1f5f9;
+  --slate-50: #f8fafc;
   font-family: 'Cairo', 'Tajawal', system-ui, -apple-system, sans-serif;
   color-scheme: light dark;
 }
@@ -82,26 +82,45 @@ html.dark #root {
 }
 
 /* =========================================================================
-   LIGHT MODE: 100% Luminous, Clean, Bright, and High Contrast
+   LIGHT MODE: 100% Luminous, Clean, Bright, and High Contrast Solid Black Text
    ========================================================================= */
 html:not(.dark),
 html:not(.dark) body,
 html:not(.dark) #root,
 html:not(.dark) main {
   background-color: #f8fafc !important;
-  color: #0f172a !important;
+  color: #000000 !important;
+}
+
+/* Global Headings & Paragraphs in Light Mode: Solid Bold Black */
+html:not(.dark) h1,
+html:not(.dark) h2,
+html:not(.dark) h3,
+html:not(.dark) h4,
+html:not(.dark) h5,
+html:not(.dark) h6 {
+  color: #000000 !important;
+  font-weight: 800 !important;
+}
+
+html:not(.dark) p,
+html:not(.dark) label {
+  color: #000000 !important;
+  font-weight: 600 !important;
 }
 
 /* Header & Navigation in Light Mode */
 html:not(.dark) header {
-  background-color: rgba(255, 255, 255, 0.96) !important;
+  background-color: rgba(255, 255, 255, 0.98) !important;
   border-color: #e2e8f0 !important;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
 }
 
 html:not(.dark) header h1,
-html:not(.dark) header span.truncate {
-  color: #0f172a !important;
+html:not(.dark) header span.truncate,
+html:not(.dark) header bdi {
+  color: #000000 !important;
+  font-weight: 900 !important;
 }
 
 /* Sidebar in Light Mode */
@@ -112,12 +131,13 @@ html:not(.dark) aside {
 }
 
 html:not(.dark) aside button {
-  color: #334155 !important;
+  color: #000000 !important;
+  font-weight: 700 !important;
 }
 
 html:not(.dark) aside button:hover {
   background-color: #f1f5f9 !important;
-  color: #0f172a !important;
+  color: #000000 !important;
 }
 
 /* Primary Containers, Cards & Modals */
@@ -133,7 +153,7 @@ html:not(.dark) .bg-slate-900\/50,
 html:not(.dark) .bg-slate-900\/40 {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
-  color: #0f172a !important;
+  color: #000000 !important;
 }
 
 /* Secondary Panels & Sub-containers */
@@ -145,13 +165,13 @@ html:not(.dark) .bg-slate-800\/40,
 html:not(.dark) .bg-slate-800\/30 {
   background-color: #f1f5f9 !important;
   border-color: #e2e8f0 !important;
-  color: #1e293b !important;
+  color: #000000 !important;
 }
 
 html:not(.dark) .bg-slate-700,
 html:not(.dark) .bg-slate-700\/50 {
   background-color: #e2e8f0 !important;
-  color: #334155 !important;
+  color: #000000 !important;
   border-color: #cbd5e1 !important;
 }
 
@@ -162,30 +182,37 @@ html:not(.dark) .hover\:bg-slate-900:hover {
   background-color: #e2e8f0 !important;
 }
 
-/* Text Hierarchy in Light Mode */
-html:not(.dark) .text-white {
-  color: #0f172a !important;
+/* Text Hierarchy in Light Mode: Solid Deep Bold Black (Except solid colored buttons/badges) */
+html:not(.dark) .text-white:not([class*="bg-sky-"]):not([class*="bg-rose-"]):not([class*="bg-emerald-"]):not([class*="bg-teal-"]):not([class*="bg-blue-"]):not([class*="bg-indigo-"]):not([class*="bg-purple-"]) {
+  color: #000000 !important;
+  font-weight: 800 !important;
+}
+
+/* Ensure solid badges and active buttons retain pure high-contrast white text */
+html:not(.dark) [class*="bg-rose-600"] *,
+html:not(.dark) [class*="bg-rose-600"],
+html:not(.dark) [class*="bg-sky-600"] *,
+html:not(.dark) [class*="bg-sky-600"],
+html:not(.dark) [class*="bg-emerald-600"] *,
+html:not(.dark) [class*="bg-emerald-600"],
+html:not(.dark) [class*="bg-teal-600"] *,
+html:not(.dark) [class*="bg-teal-600"] {
+  color: #ffffff !important;
 }
 
 html:not(.dark) .text-slate-100,
-html:not(.dark) .text-slate-200 {
-  color: #0f172a !important;
-}
-
+html:not(.dark) .text-slate-200,
 html:not(.dark) .text-slate-300 {
-  color: #1e293b !important;
+  color: #000000 !important;
+  font-weight: 700 !important;
 }
 
-html:not(.dark) .text-slate-400 {
-  color: #475569 !important;
-}
-
-html:not(.dark) .text-slate-500 {
-  color: #64748b !important;
-}
-
-html:not(.dark) .text-slate-600 {
-  color: #475569 !important;
+html:not(.dark) .text-slate-400,
+html:not(.dark) .text-slate-500,
+html:not(.dark) .text-slate-600,
+html:not(.dark) .text-slate-700 {
+  color: #18181b !important;
+  font-weight: 600 !important;
 }
 
 /* Border Hierarchy in Light Mode */
@@ -217,9 +244,9 @@ html:not(.dark) thead,
 html:not(.dark) thead tr,
 html:not(.dark) thead th {
   background-color: #f8fafc !important;
-  color: #475569 !important;
+  color: #000000 !important;
   border-color: #e2e8f0 !important;
-  font-weight: 700 !important;
+  font-weight: 800 !important;
 }
 
 html:not(.dark) tbody tr {
@@ -232,8 +259,9 @@ html:not(.dark) tbody tr:hover {
 }
 
 html:not(.dark) td {
-  color: #1e293b !important;
+  color: #000000 !important;
   border-color: #f1f5f9 !important;
+  font-weight: 600 !important;
 }
 
 /* Form Inputs, Selects & Textareas */
@@ -241,10 +269,10 @@ html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="subm
 html:not(.dark) select,
 html:not(.dark) textarea {
   background-color: #ffffff !important;
-  color: #0f172a !important;
+  color: #000000 !important;
+  font-weight: 700 !important;
   border: 1px solid #cbd5e1 !important;
 }
-
 html:not(.dark) input::placeholder,
 html:not(.dark) textarea::placeholder {
   color: #94a3b8 !important;

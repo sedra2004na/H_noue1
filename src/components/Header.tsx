@@ -246,17 +246,17 @@ export const Header: React.FC<HeaderProps> = ({
 
   const getRoleColor = (role: UserRole) => {
     switch (role) {
-      case 'admin': return 'bg-sky-50 dark:bg-sky-950/60 text-sky-800 dark:text-sky-200 border-sky-300 dark:border-sky-700/50';
-      case 'doctor': return 'bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-200 border-teal-300 dark:border-teal-700/50';
-      case 'staff': return 'bg-emerald-50 dark:bg-slate-800/80 text-emerald-800 dark:text-slate-200 border-emerald-300 dark:border-slate-700/60';
-      case 'patient': return 'bg-sky-50 dark:bg-slate-800/80 text-sky-800 dark:text-slate-200 border-sky-300 dark:border-slate-700/60';
+      case 'admin': return 'bg-purple-100 dark:bg-purple-950/70 text-purple-950 dark:text-purple-200 border-purple-300 dark:border-purple-700/60';
+      case 'doctor': return 'bg-teal-100 dark:bg-teal-950/70 text-teal-950 dark:text-teal-200 border-teal-300 dark:border-teal-700/60';
+      case 'staff': return 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-950 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700/60';
+      case 'patient': return 'bg-sky-100 dark:bg-sky-950/70 text-sky-950 dark:text-sky-200 border-sky-300 dark:border-sky-700/60';
     }
   };
 
   const { dateText: formattedDate, timeDigits, period } = formatArabicClock(currentTime);
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/90 text-white shadow-2xl">
+    <header className="sticky top-0 z-40 bg-white dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/90 text-slate-900 dark:text-white shadow-xs transition-colors">
       <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-1.5 sm:gap-4">
         
         {/* Brand & Mobile Toggle */}
@@ -264,11 +264,11 @@ export const Header: React.FC<HeaderProps> = ({
           {onToggleMobileMenu && (
             <button
               onClick={onToggleMobileMenu}
-              className="lg:hidden p-1.5 sm:p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-950 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer shrink-0"
+              className="lg:hidden p-1.5 sm:p-2 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 transition-colors cursor-pointer shrink-0 shadow-xs"
               aria-label="القائمة"
               title="القائمة الرئيسية"
             >
-              {isMobileMenuOpen ? <X className="w-5 h-5 text-rose-500 dark:text-rose-400" /> : <Menu className="w-5 h-5 text-sky-600 dark:text-sky-400" />}
+              {isMobileMenuOpen ? <X className="w-5 h-5 text-rose-600 dark:text-rose-400" /> : <Menu className="w-5 h-5 text-sky-700 dark:text-sky-400" />}
             </button>
           )}
 
@@ -278,17 +278,17 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
           <div className="min-w-0" dir="rtl">
             <div className="flex items-center gap-1 sm:gap-2">
-              <h1 className="text-sm sm:text-lg lg:text-xl font-black text-white tracking-wide whitespace-nowrap">
+              <h1 className="text-sm sm:text-lg lg:text-xl font-black text-slate-900 dark:text-white tracking-wide whitespace-nowrap">
                 <bdi>مشفى الرحمة</bdi>
               </h1>
-              <span dir="ltr" className="hidden md:inline-block px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-extrabold rounded-md bg-sky-500/20 text-sky-300 border border-sky-500/30 whitespace-nowrap font-sans">
+              <span dir="ltr" className="hidden md:inline-block px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-extrabold rounded-md bg-teal-50 dark:bg-sky-500/20 text-teal-900 dark:text-sky-300 border border-teal-200 dark:border-sky-500/30 whitespace-nowrap font-sans">
                 Al-Rahma Hospital
               </span>
             </div>
-            <p className="text-xs text-slate-400 hidden lg:flex items-center gap-1.5 truncate" dir="rtl">
-              <bdi className="font-semibold text-slate-300">المركز الطبي التخصصي الموحد</bdi>
-              <span className="text-slate-600 font-sans select-none" aria-hidden="true">-</span>
-              <bdi dir="ltr" className="font-sans text-[11px] text-slate-400 tracking-wide font-normal">
+            <p className="text-xs text-slate-600 dark:text-slate-400 hidden lg:flex items-center gap-1.5 truncate" dir="rtl">
+              <bdi className="font-bold text-slate-800 dark:text-slate-300">المركز الطبي التخصصي الموحد</bdi>
+              <span className="text-slate-400 font-sans select-none" aria-hidden="true">-</span>
+              <bdi dir="ltr" className="font-sans text-[11px] text-slate-600 dark:text-slate-400 tracking-wide font-medium">
                 Al-Rahma Medical Center
               </bdi>
             </p>
@@ -301,26 +301,26 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onOpenCommandPalette}
               aria-label="فتح لوحة الأوامر والبحث السريع (اختصار Ctrl+K)"
-              className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-950/80 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-xs text-slate-600 dark:text-slate-400 transition-all text-start focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
+              className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 dark:bg-slate-800/80 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-300 transition-all text-start focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none shadow-xs"
             >
               <div className="flex items-center gap-2">
-                <Search className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" aria-hidden="true" />
-                <span className="text-slate-600 dark:text-slate-400">بحث سريع أو أمر...</span>
+                <Search className="w-3.5 h-3.5 text-sky-700 dark:text-sky-400" aria-hidden="true" />
+                <span className="text-slate-800 dark:text-slate-300 font-medium">بحث سريع أو أمر...</span>
               </div>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400">
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
                 Ctrl K
               </span>
             </button>
           ) : onSearchChange && (
             <div className="relative w-full">
-              <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" aria-hidden="true" />
+              <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" aria-hidden="true" />
               <input
                 type="text"
                 placeholder="بحث شامل في النظام..."
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
                 aria-label="حقل البحث الشامل في النظام"
-                className="w-full pl-4 pr-10 py-2 rounded-xl bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-500 transition-all"
+                className="w-full pl-4 pr-10 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-500 transition-all shadow-xs"
               />
             </div>
           )}
@@ -330,15 +330,15 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-1.5 sm:gap-2.5 lg:gap-3 shrink-0">
           
           {/* Live Dynamic Date & Ticking Clock Display (Visible on lg+) */}
-          <div className="hidden lg:flex flex-col items-end px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-800 text-slate-200 shadow-inner" aria-live="polite">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-sky-600 dark:text-sky-400">
-              <Clock className="w-3.5 h-3.5 text-sky-500 shrink-0" aria-hidden="true" />
+          <div className="hidden lg:flex flex-col items-end px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 shadow-xs" aria-live="polite">
+            <div className="flex items-center gap-1.5 text-xs font-black text-sky-700 dark:text-sky-400">
+              <Clock className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" aria-hidden="true" />
               <div className="flex items-center gap-1 font-mono tracking-wider" dir="rtl">
                 <span dir="ltr">{timeDigits}</span>
-                <span className="font-sans text-xs text-sky-600 dark:text-sky-300">{period}</span>
+                <span className="font-sans text-xs text-sky-700 dark:text-sky-300 font-bold">{period}</span>
               </div>
             </div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">{formattedDate}</span>
+            <span className="text-[10px] text-slate-600 dark:text-slate-400 font-bold">{formattedDate}</span>
           </div>
 
           {/* Live Server Sync Icon Indicator (Laptop & Mobile Sync) */}
@@ -353,24 +353,24 @@ export const Header: React.FC<HeaderProps> = ({
                   ? 'السيرفر غير متصل حالياً (اضغط لإعادة المحاولة)' 
                   : 'متصل بالسيرفر بنجاح (اضغط للمزامنة الفورية)'
             }
-            className={`hidden md:flex items-center justify-center p-2 rounded-xl border transition-all cursor-pointer select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-sky-500 shadow-xs ${
+            className={`hidden md:flex items-center justify-center p-2 sm:p-2.5 rounded-xl border transition-all cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 shadow-xs ${
               syncStatus === 'syncing'
-                ? 'bg-amber-950/60 border-amber-600/50 text-amber-400'
+                ? 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 border-amber-300 dark:border-amber-600/50 text-amber-900 dark:text-amber-300'
                 : syncStatus === 'offline'
-                  ? 'bg-rose-950/60 border-rose-600/50 text-rose-400'
-                  : 'bg-emerald-950/50 border-emerald-600/40 text-emerald-400 hover:bg-emerald-900/60'
+                  ? 'bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 border-rose-300 dark:border-rose-600/50 text-rose-900 dark:text-rose-300'
+                  : 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-600/50 text-emerald-900 dark:text-emerald-300'
             }`}
           >
             {syncStatus === 'syncing' ? (
-              <RefreshCw className="w-4 h-4 animate-spin text-amber-400" aria-hidden="true" />
+              <RefreshCw className="w-4 h-4 animate-spin text-amber-700 dark:text-amber-400" aria-hidden="true" />
             ) : (
               <div className="relative flex items-center justify-center">
-                <Wifi className={`w-4 h-4 ${syncStatus === 'offline' ? 'text-rose-400 opacity-60' : 'text-emerald-400'}`} aria-hidden="true" />
+                <Wifi className={`w-4 h-4 ${syncStatus === 'offline' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`} aria-hidden="true" />
                 <span 
-                  className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${
+                  className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full ${
                     syncStatus === 'offline' 
-                      ? 'bg-rose-500 ring-2 ring-slate-900' 
-                      : 'bg-emerald-400 ring-2 ring-slate-900 animate-pulse'
+                      ? 'bg-rose-600 ring-2 ring-white dark:ring-slate-900' 
+                      : 'bg-emerald-500 ring-2 ring-white dark:ring-slate-900 animate-pulse'
                   }`} 
                   aria-hidden="true"
                 />
@@ -384,10 +384,10 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={onOpenDatabaseManager}
               aria-label="إدارة وفحص قاعدة البيانات والنسخ الاحتياطي"
-              className="hidden sm:flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 hover:bg-emerald-100 dark:hover:bg-emerald-900 border border-emerald-300 dark:border-emerald-600/50 text-emerald-800 dark:text-emerald-300 transition-all shadow-xs text-xs font-bold cursor-pointer shrink-0 focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none"
+              className="hidden sm:flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/60 dark:hover:bg-teal-900/70 border border-teal-300 dark:border-teal-600/50 text-teal-950 dark:text-teal-200 transition-all shadow-xs text-xs font-black cursor-pointer shrink-0 focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:outline-none"
               title="فحص وتدقيق سلامة قاعدة البيانات والنسخ الاحتياطي"
             >
-              <Database className="w-4 h-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+              <Database className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden="true" />
               <span className="hidden lg:inline">إدارة البيانات</span>
             </button>
           )}
@@ -397,14 +397,14 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onOpenEmergencyModal}
               aria-label="نداء الطوارئ والإسعاف السريع (110)"
-              className={`flex items-center gap-1 sm:gap-2 p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-extrabold transition-all shadow-xs cursor-pointer shrink-0 focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:outline-none ${
+              className={`flex items-center gap-1 sm:gap-2 p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-black transition-all shadow-xs cursor-pointer shrink-0 focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:outline-none ${
                 hasActiveSOS 
                   ? 'bg-rose-600 text-white ring-2 ring-rose-500/50' 
-                  : 'bg-rose-50 dark:bg-rose-950/80 hover:bg-rose-100 dark:hover:bg-rose-900 text-rose-700 dark:text-rose-200 border border-rose-200 dark:border-rose-700/60'
+                  : 'bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/70 dark:hover:bg-rose-900/80 text-rose-950 dark:text-rose-200 border border-rose-300 dark:border-rose-700/60'
               }`}
               title="مركز الطوارئ والإسعاف السريع (أرقام 110 وحجز غرف الإنعاش)"
             >
-              <Siren className="w-4 h-4 text-rose-500 shrink-0" aria-hidden="true" />
+              <Siren className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" aria-hidden="true" />
               <span className="hidden md:inline">طوارئ (110)</span>
               {hasActiveSOS && <span className="w-2 h-2 rounded-full bg-rose-400"></span>}
             </button>
@@ -416,12 +416,12 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={toggleTheme}
             aria-label={isDarkMode ? 'التحويل إلى الوضع الفاتح (Light Mode)' : 'التحويل إلى الوضع الليلي المظلم (Dark Mode)'}
             title={isDarkMode ? 'التبديل إلى المظهر الفاتح (Light Mode)' : 'التبديل إلى المظهر الليلي (Dark Mode)'}
-            className="p-2 sm:p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-950 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-amber-400 hover:text-slate-900 dark:hover:text-amber-300 transition-all cursor-pointer shrink-0 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none shadow-xs"
+            className="p-2 sm:p-2.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-amber-400 hover:text-slate-950 dark:hover:text-amber-300 transition-all cursor-pointer shrink-0 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none shadow-xs"
           >
             {isDarkMode ? (
               <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 animate-in fade-in zoom-in-75 duration-200" aria-hidden="true" />
             ) : (
-              <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-sky-600 animate-in fade-in zoom-in-75 duration-200" aria-hidden="true" />
+              <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 animate-in fade-in zoom-in-75 duration-200" aria-hidden="true" />
             )}
           </button>
 
@@ -434,8 +434,8 @@ export const Header: React.FC<HeaderProps> = ({
               }}
               aria-label="مركز التنبيهات والإشعارات"
               aria-expanded={showNotifications}
-              className={`relative p-2 sm:p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-950 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none ${
-                unreadNotificationsCount > 0 ? 'ring-2 ring-rose-500/30' : ''
+              className={`relative p-2 sm:p-2.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none shadow-xs ${
+                unreadNotificationsCount > 0 ? 'ring-2 ring-rose-500/40' : ''
               }`}
             >
               <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -458,24 +458,24 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="fixed inset-x-3 top-20 sm:top-auto sm:inset-auto sm:absolute sm:top-full sm:left-0 sm:mt-2.5 w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-2xl shadow-xl z-50 overflow-hidden text-right">
                   <div className="p-3.5 sm:p-4 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 shrink-0">
+                      <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/20 shrink-0">
                         <AlertTriangle className="w-4 h-4" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-xs sm:text-sm text-white flex items-center gap-2">
+                        <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white flex items-center gap-2">
                           <span>مركز التنبيهات الحية</span>
                           {unreadNotificationsCount > 0 && (
-                            <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[10px] font-bold">
+                            <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 text-[10px] font-bold border border-rose-300 dark:border-rose-500/30">
                               {unreadNotificationsCount} جديد
                             </span>
                           )}
                         </h3>
-                        <p className="text-[10px] text-slate-400">إشعارات النظام، المواعيد والتحاليل</p>
+                        <p className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">إشعارات النظام، المواعيد والتحاليل</p>
                       </div>
                     </div>
                     <button 
                       onClick={() => setShowNotifications(false)} 
-                      className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                      className="p-1.5 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                       title="إغلاق التنبيهات"
                     >
                       <X className="w-4 h-4" />
@@ -484,17 +484,17 @@ export const Header: React.FC<HeaderProps> = ({
 
                   {/* Actions Toolbar */}
                   {activeNotifications.length > 0 && (
-                    <div className="px-4 py-2 bg-slate-950/60 border-b border-slate-800 flex items-center justify-between text-[11px]">
+                    <div className="px-4 py-2 bg-slate-50 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px]">
                       <button
                         onClick={handleMarkAllAsRead}
-                        className="text-sky-400 hover:text-sky-300 hover:underline flex items-center gap-1 font-bold cursor-pointer"
+                        className="text-sky-700 dark:text-sky-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
                       >
                         <CheckCheck className="w-3.5 h-3.5" />
                         <span>تحديد الكل كمقروء</span>
                       </button>
                       <button
                         onClick={handleClearAllNotifications}
-                        className="text-rose-400 hover:text-rose-300 hover:underline flex items-center gap-1 font-bold cursor-pointer"
+                        className="text-rose-700 dark:text-rose-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         <span>مسح جميع التنبيهات</span>
@@ -502,39 +502,39 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                   )}
 
-                  <div className="max-h-80 sm:max-h-96 overflow-y-auto divide-y divide-slate-800">
+                  <div className="max-h-80 sm:max-h-96 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
                     {activeNotifications.length === 0 ? (
-                      <div className="p-8 text-center text-slate-400 text-xs flex flex-col items-center gap-2">
-                        <CheckCircle2 className="w-8 h-8 text-emerald-400" />
-                        <p className="font-bold text-slate-200">لا توجد تنبيهات جديدة حالياً</p>
-                        <p className="text-slate-400 text-[11px]">جميع أقسام المستشفى والخدمات تعمل بشكل متكامل.</p>
+                      <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-xs flex flex-col items-center gap-2">
+                        <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                        <p className="font-bold text-slate-900 dark:text-slate-200">لا توجد تنبيهات جديدة حالياً</p>
+                        <p className="text-slate-600 dark:text-slate-400 text-[11px]">جميع أقسام المستشفى والخدمات تعمل بشكل متكامل.</p>
                       </div>
                     ) : (
                       activeNotifications.map((notif) => (
                         <div
                           key={notif.id}
-                          className={`p-3.5 hover:bg-slate-800/60 transition-colors flex items-start justify-between gap-3 ${
-                            !notif.isRead ? 'bg-sky-950/20 border-r-2 border-sky-500' : ''
+                          className={`p-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-start justify-between gap-3 ${
+                            !notif.isRead ? 'bg-sky-50/60 dark:bg-sky-950/20 border-r-2 border-sky-500' : ''
                           }`}
                         >
                           <div className="flex items-start gap-3 flex-1 min-w-0">
                             <div
                               className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 border ${
                                 notif.type === 'danger'
-                                  ? 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                                  ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-500/30'
                                   : notif.type === 'warning'
-                                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                                  : 'bg-sky-500/20 text-sky-400 border-sky-500/30'
+                                  ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-500/30'
+                                  : 'bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400 border-sky-300 dark:border-sky-500/30'
                               }`}
                             >
                               <AlertTriangle className="w-4 h-4" />
                             </div>
                             <div className="flex-1 min-w-0 text-xs">
                               <div className="flex items-center justify-between gap-2">
-                                <p className="font-bold text-slate-100 truncate">{notif.title}</p>
-                                <span className="text-[10px] text-slate-400 font-mono shrink-0">{notif.time}</span>
+                                <p className="font-bold text-slate-900 dark:text-slate-100 truncate">{notif.title}</p>
+                                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono shrink-0 font-bold">{notif.time}</span>
                               </div>
-                              <p className="text-slate-300 mt-0.5 leading-relaxed">{notif.message}</p>
+                              <p className="text-slate-700 dark:text-slate-300 mt-0.5 leading-relaxed">{notif.message}</p>
                               <button
                                 onClick={() => {
                                   handleNavigate(notif.targetTab);

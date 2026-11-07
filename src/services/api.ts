@@ -99,7 +99,11 @@ export const hospitalApi = {
   },
 
   login: async (credentials: { email: string; pass: string }) => {
-    const res = await apiClient.post('/auth/login', credentials);
+    const res = await apiClient.post('/auth/login', {
+      email: credentials.email.trim().toLowerCase(),
+      pass: credentials.pass.trim(),
+      password: credentials.pass.trim(),
+    });
     return res.data;
   },
 

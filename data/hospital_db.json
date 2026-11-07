@@ -1,6 +1,6 @@
 {
-  "version": 4,
-  "lastUpdated": "2026-11-07T14:37:08.079Z",
+  "version": 11,
+  "lastUpdated": "2026-11-07T15:07:49.994Z",
   "accounts": {
     "admin@hospital.com": {
       "role": "admin",
@@ -1908,6 +1908,90 @@
     }
   ],
   "auditLogs": [
+    {
+      "id": "aud-1794064069994",
+      "timestamp": "2026-11-07T15:07:49.994Z",
+      "userId": "admin@hospital.com",
+      "userName": "د. خالد العمري (المدير العام)",
+      "userRole": "admin",
+      "action": "LOGIN",
+      "targetResource": "AUTH_GATEWAY",
+      "details": "تسجيل دخول ناجح للمستخدم (د. خالد العمري (المدير العام)) ومزامنة بياناته",
+      "status": "SUCCESS",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "aud-1794064065274",
+      "timestamp": "2026-11-07T15:07:45.274Z",
+      "userId": "admin@hospital.com",
+      "userName": "د. خالد العمري (المدير العام)",
+      "userRole": "admin",
+      "action": "LOGIN_ATTEMPT",
+      "targetResource": "AUTH_GATEWAY",
+      "details": "محاولة تسجيل دخول فاشلة (1/10): كلمة المرور غير مطابقة",
+      "status": "BLOCKED_ALERT",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "aud-1794064059234",
+      "timestamp": "2026-11-07T15:07:39.234Z",
+      "userId": "staff@hospital.com",
+      "userName": "أحمد البقمي (موظف الاستقبال)",
+      "userRole": "staff",
+      "action": "LOGIN",
+      "targetResource": "AUTH_GATEWAY",
+      "details": "تسجيل دخول ناجح للمستخدم (أحمد البقمي (موظف الاستقبال)) ومزامنة بياناته",
+      "status": "SUCCESS",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "aud-1794064054863",
+      "timestamp": "2026-11-07T15:07:34.863Z",
+      "userId": "doctor@hospital.com",
+      "userName": "د. سارة السعيد (استشارية القلب)",
+      "userRole": "doctor",
+      "action": "LOGIN",
+      "targetResource": "AUTH_GATEWAY",
+      "details": "تسجيل دخول ناجح للمستخدم (د. سارة السعيد (استشارية القلب)) ومزامنة بياناته",
+      "status": "SUCCESS",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "aud-1794064049746",
+      "timestamp": "2026-11-07T15:07:29.746Z",
+      "userId": "admin@hospital.com",
+      "userName": "د. خالد العمري (المدير العام)",
+      "userRole": "admin",
+      "action": "LOGIN",
+      "targetResource": "AUTH_GATEWAY",
+      "details": "تسجيل دخول ناجح للمستخدم (د. خالد العمري (المدير العام)) ومزامنة بياناته",
+      "status": "SUCCESS",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "aud-1794064030900",
+      "timestamp": "2026-11-07T15:07:10.900Z",
+      "userId": "m.otaibi@gmail.com",
+      "userName": "محمد عبد الله العتيبي",
+      "userRole": "patient",
+      "action": "LOGIN",
+      "targetResource": "AUTH_GATEWAY",
+      "details": "تسجيل دخول ناجح للمستخدم (محمد عبد الله العتيبي) ومزامنة بياناته",
+      "status": "SUCCESS",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "aud-1794063922635",
+      "timestamp": "2026-11-07T15:05:22.635Z",
+      "userId": "admin@hospital.com",
+      "userName": "د. خالد العمري (المدير العام)",
+      "userRole": "admin",
+      "action": "LOGIN",
+      "targetResource": "AUTH_GATEWAY",
+      "details": "تسجيل دخول ناجح للمستخدم (د. خالد العمري (المدير العام)) ومزامنة بياناته",
+      "status": "SUCCESS",
+      "ipAddress": "169.254.169.126"
+    },
     {
       "id": "aud-1793957899185",
       "timestamp": "2026-11-06T09:38:19.185Z",

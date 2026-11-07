@@ -784,18 +784,40 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <span>{formatArabicTime(apt.time)}</span>
                       </div>
                     </td>
-                    <td className="p-3.5 whitespace-nowrap min-w-[130px]">
-                      <span className={`px-3 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap inline-flex items-center justify-center text-center leading-normal border shadow-xs ${
-                        apt.type === 'طوارئ' || apt.type?.includes('طوارئ')
-                          ? 'bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-500/40'
-                          : apt.type === 'استشارة' || apt.type?.includes('استشارة')
-                            ? 'bg-purple-50 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-500/40'
-                            : apt.type === 'فحص وقائي' || apt.type?.includes('وقائي')
-                              ? 'bg-teal-50 dark:bg-teal-500/20 text-teal-800 dark:text-teal-300 border-teal-200 dark:border-teal-500/40'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
-                      }`}>
-                        {apt.type}
-                      </span>
+                    <td className="p-3.5 whitespace-nowrap">
+                      {(() => {
+                        const val = apt.type || 'كشف عيادة';
+                        if (val.includes('طوارئ')) {
+                          return (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black whitespace-nowrap bg-rose-50 text-rose-950 border border-rose-300 dark:bg-rose-950/60 dark:text-rose-200 dark:border-rose-700/60 shadow-xs">
+                              <span className="w-2 h-2 rounded-full bg-rose-600 dark:bg-rose-400 shrink-0 animate-ping" />
+                              <span>{val}</span>
+                            </span>
+                          );
+                        }
+                        if (val.includes('استشارة')) {
+                          return (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black whitespace-nowrap bg-purple-50 text-purple-950 border border-purple-300 dark:bg-purple-950/60 dark:text-purple-200 dark:border-purple-700/60 shadow-xs">
+                              <span className="w-2 h-2 rounded-full bg-purple-600 dark:bg-purple-400 shrink-0" />
+                              <span>{val}</span>
+                            </span>
+                          );
+                        }
+                        if (val.includes('وقائي') || val.includes('فحص')) {
+                          return (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black whitespace-nowrap bg-emerald-50 text-emerald-950 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-200 dark:border-emerald-700/60 shadow-xs">
+                              <span className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-400 shrink-0" />
+                              <span>{val}</span>
+                            </span>
+                          );
+                        }
+                        return (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black whitespace-nowrap bg-sky-50 text-sky-950 border border-sky-300 dark:bg-sky-950/60 dark:text-sky-200 dark:border-sky-700/60 shadow-xs">
+                            <span className="w-2 h-2 rounded-full bg-sky-600 dark:bg-sky-400 shrink-0" />
+                            <span>{val}</span>
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="p-3.5">
                       <div className="flex items-center gap-1.5 flex-wrap">

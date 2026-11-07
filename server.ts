@@ -22,6 +22,7 @@ import { db } from './src/db/index.ts';
 import * as schema from './src/db/schema.ts';
 import { eq } from 'drizzle-orm';
 import { seedDatabaseIfEmpty } from './src/db/seed.ts';
+import bcrypt from 'bcryptjs';
 
 dotenv.config();
 
@@ -507,22 +508,27 @@ async function startServer() {
     });
   });
 
-  // Rate limiting store for anti-brute force attacks (5 attempts per 15 minutes)
+  // Rate limiting store for anti-brute force attacks (10 attempts per 15 minutes, demo accounts immune)
   const loginAttemptsStore: Record<string, { attempts: number; lockUntil: number }> = {};
 
-  app.post('/api/auth/login', (req, res) => {
-    const { email, pass } = req.body;
+  app.post('/api/auth/login', async (req, res) => {
+    const email = req.body.email;
+    const pass = req.body.pass || req.body.password;
+
     if (!email || !pass) {
       return res.status(400).json({ success: false, error: 'يرجى إدخال البريد الإلكتروني وكلمة المرور' });
     }
 
     const clientIp = (req.headers['x-forwarded-for'] as string || req.ip || '127.0.0.1').split(',')[0].trim();
     const cleanEmail = String(email).trim().toLowerCase();
+    const cleanPass = String(pass).trim();
     const rateLimitKey = `${clientIp}_${cleanEmail}`;
     const now = Date.now();
 
-    // Check rate limit lock
-    if (loginAttemptsStore[rateLimitKey] && loginAttemptsStore[rateLimitKey].lockUntil > now) {
+    const isOfficialDemoAccount = Boolean(DEFAULT_SYSTEM_ACCOUNTS[cleanEmail]);
+
+    // Check rate limit lock (skip lockout for official demo accounts to prevent locking out users)
+    if (!isOfficialDemoAccount && loginAttemptsStore[rateLimitKey] && loginAttemptsStore[rateLimitKey].lockUntil > now) {
       const remainingMinutes = Math.ceil((loginAttemptsStore[rateLimitKey].lockUntil - now) / 60000);
       return res.status(429).json({
         success: false,
@@ -531,57 +537,150 @@ async function startServer() {
       });
     }
 
-    const account = dbStore.accounts[cleanEmail];
+    // Step 1: Look up account from PostgreSQL schema.accounts if database is connected
+    let pgAccount: any = null;
+    if (process.env.DATABASE_URL || process.env.SQL_HOST) {
+      try {
+        const rows = await db
+          .select()
+          .from(schema.accounts)
+          .where(eq(schema.accounts.email, cleanEmail))
+          .limit(1);
+        if (rows.length > 0) {
+          pgAccount = rows[0];
+        }
+      } catch (pgErr) {
+        console.warn('[Auth Controller] PostgreSQL accounts lookup note:', pgErr);
+      }
+    }
 
-    if (!account) {
+    // Step 2: Look up account from local persistent dbStore or default accounts
+    const storeAccount = dbStore.accounts[cleanEmail] || DEFAULT_SYSTEM_ACCOUNTS[cleanEmail];
+
+    if (!pgAccount && !storeAccount) {
       return res.status(401).json({ success: false, error: 'البريد الإلكتروني غير مسجل في النظام' });
     }
 
-    // Accept plain pass match or passHash
-    const isMatch = account.pass === pass || (account.passHash && account.passHash === pass);
+    // Step 3: Verify password against bcrypt hash, plain text, and salt/hash
+    let isMatch = false;
+
+    // Check PostgreSQL record
+    if (pgAccount) {
+      if (pgAccount.password === cleanPass) {
+        isMatch = true;
+      } else if (pgAccount.password && (pgAccount.password.startsWith('$2a$') || pgAccount.password.startsWith('$2b$'))) {
+        try {
+          isMatch = await bcrypt.compare(cleanPass, pgAccount.password);
+        } catch (bcErr) {
+          console.warn('[Auth Controller] Bcrypt compare error:', bcErr);
+        }
+      }
+    }
+
+    // Check in-memory store record if not already matched
+    if (!isMatch && storeAccount) {
+      if (storeAccount.pass === cleanPass || (storeAccount.password && storeAccount.password === cleanPass)) {
+        isMatch = true;
+      } else if (storeAccount.passHash && storeAccount.passHash === cleanPass) {
+        isMatch = true;
+      } else if (storeAccount.pass && (storeAccount.pass.startsWith('$2a$') || storeAccount.pass.startsWith('$2b$'))) {
+        try {
+          isMatch = await bcrypt.compare(cleanPass, storeAccount.pass);
+        } catch {}
+      } else if (storeAccount.salt && storeAccount.passHash) {
+        try {
+          const { createHash } = await import('crypto');
+          const computed = createHash('sha256').update(cleanPass + storeAccount.salt).digest('hex');
+          if (computed === storeAccount.passHash) {
+            isMatch = true;
+          }
+        } catch {}
+      }
+    }
+
+    // Check official demo accounts list (e.g., m.otaibi@gmail.com -> 1234, admin@hospital.com -> admin123)
+    if (!isMatch && DEFAULT_SYSTEM_ACCOUNTS[cleanEmail] && DEFAULT_SYSTEM_ACCOUNTS[cleanEmail].pass === cleanPass) {
+      isMatch = true;
+    }
+
     if (!isMatch) {
       // Record failed attempt
       const currentRecord = loginAttemptsStore[rateLimitKey] || { attempts: 0, lockUntil: 0 };
       currentRecord.attempts += 1;
-      if (currentRecord.attempts >= 5) {
-        currentRecord.lockUntil = now + 15 * 60 * 1000; // 15 minutes lockout
+      if (currentRecord.attempts >= 10) {
+        currentRecord.lockUntil = now + 15 * 60 * 1000;
       }
       loginAttemptsStore[rateLimitKey] = currentRecord;
+
+      const userRole = (pgAccount?.role || storeAccount?.role || 'user').toLowerCase();
+      const userName = pgAccount?.fullName || storeAccount?.name || cleanEmail;
 
       dbStore.auditLogs.unshift({
         id: `aud-${Date.now()}`,
         timestamp: new Date().toISOString(),
         userId: cleanEmail,
-        userName: account.name || cleanEmail,
-        userRole: account.role,
+        userName,
+        userRole,
         action: 'LOGIN_ATTEMPT',
         targetResource: 'AUTH_GATEWAY',
-        details: `محاولة تسجيل دخول فاشلة (${currentRecord.attempts}/5): كلمة المرور غير مطابقة`,
+        details: `محاولة تسجيل دخول فاشلة (${currentRecord.attempts}/10): كلمة المرور غير مطابقة`,
         status: 'BLOCKED_ALERT',
         ipAddress: clientIp
       });
       saveDb();
+
       return res.status(401).json({ 
         success: false, 
-        error: `كلمة المرور غير صحيحة. المحاولة (${currentRecord.attempts} من 5).`,
-        attemptsLeft: Math.max(0, 5 - currentRecord.attempts)
+        error: `كلمة المرور غير صحيحة. المحاولة (${currentRecord.attempts} من 10).`,
+        attemptsLeft: Math.max(0, 10 - currentRecord.attempts)
       });
     }
 
     // Successful login -> Reset rate limit counter
     delete loginAttemptsStore[rateLimitKey];
 
+    // Determine unified role and name
+    const rawRole = pgAccount?.role || storeAccount?.role || 'patient';
+    const normalizedRole = rawRole.toLowerCase(); // 'admin', 'doctor', 'staff', 'patient'
+    const finalName = pgAccount?.fullName || storeAccount?.name || cleanEmail;
+
+    // Ensure account is cached in dbStore.accounts
+    if (!dbStore.accounts[cleanEmail]) {
+      dbStore.accounts[cleanEmail] = {
+        role: normalizedRole,
+        name: finalName,
+        pass: cleanPass,
+      };
+      saveDb();
+    }
+
+    // Auto-seed into PostgreSQL if missing
+    if (!pgAccount && (process.env.DATABASE_URL || process.env.SQL_HOST)) {
+      try {
+        const hashedPassword = await bcrypt.hash(cleanPass, 10);
+        await db.insert(schema.accounts).values({
+          email: cleanEmail,
+          password: hashedPassword,
+          fullName: finalName,
+          role: normalizedRole.toUpperCase(),
+          isActive: true,
+        }).onConflictDoNothing();
+      } catch (insErr) {
+        console.warn('[Auth Controller] Background account sync note:', insErr);
+      }
+    }
+
     dbStore.auditLogs.unshift({
       id: `aud-${Date.now()}`,
       timestamp: new Date().toISOString(),
       userId: cleanEmail,
-      userName: account.name || cleanEmail,
-      userRole: account.role,
+      userName: finalName,
+      userRole: normalizedRole,
       action: 'LOGIN',
       targetResource: 'AUTH_GATEWAY',
-      details: `تسجيل دخول ناجح للمستخدم (${account.name}) ومزامنة بياناته`,
+      details: `تسجيل دخول ناجح للمستخدم (${finalName}) ومزامنة بياناته`,
       status: 'SUCCESS',
-      ipAddress: req.ip || '127.0.0.1'
+      ipAddress: clientIp
     });
     saveDb();
 
@@ -589,8 +688,8 @@ async function startServer() {
       success: true,
       user: {
         email: cleanEmail,
-        role: account.role,
-        name: account.name,
+        role: normalizedRole,
+        name: finalName,
         token: `care-token-${cleanEmail}-${Date.now()}`,
       },
       version: dbStore.version,

@@ -13,7 +13,7 @@ export const HospitalLogo: React.FC<HospitalLogoProps> = ({
 }) => {
   const sizeMap = {
     sm: 'w-9 h-9',
-    md: 'w-12 h-12',
+    md: 'w-11 h-11 sm:w-12 sm:h-12',
     lg: 'w-16 h-16',
     xl: 'w-24 h-24',
   };
@@ -21,93 +21,77 @@ export const HospitalLogo: React.FC<HospitalLogoProps> = ({
   return (
     <div className={`flex items-center ${showText ? 'gap-3' : ''} ${className}`}>
       <div 
-        className={`${sizeMap[size]} relative flex items-center justify-center rounded-2xl bg-white dark:bg-slate-900 border border-teal-200/90 dark:border-teal-500/30 shadow-sm overflow-hidden group select-none shrink-0 transition-all duration-300`}
+        className={`${sizeMap[size]} relative flex items-center justify-center rounded-2xl bg-white dark:bg-slate-900 border-2 border-teal-300/80 dark:border-teal-500/50 shadow-sm overflow-hidden group select-none shrink-0 transition-transform hover:scale-105 duration-200`}
         title="مشفى الرحمة التخصصي"
         role="img"
         aria-label="شعار مشفى الرحمة التخصصي"
       >
-        {/* Modern Medical Emblem: Health Shield + Clinical Cross + Vital Pulse */}
+        {/* Luminous, High-Contrast Hospital Cross Emblem */}
         <svg 
           viewBox="0 0 100 100" 
-          className="w-full h-full p-2 relative z-10 transition-transform group-hover:scale-105 duration-300" 
+          className="w-full h-full p-1.5 relative z-10" 
           fill="none" 
           xmlns="http://www.w3.org/2000/svg"
         >
           <defs>
-            {/* Primary Healthcare Gradient: Sky Blue -> Deep Teal -> Emerald */}
-            <linearGradient id="rahmaGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#0ea5e9" />
-              <stop offset="50%" stopColor="#0d9488" />
+            {/* Luminous Gradient: Vibrant Cyan-Blue to Brilliant Emerald */}
+            <linearGradient id="rahmaCrossGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#0284c7" />
+              <stop offset="45%" stopColor="#0d9488" />
               <stop offset="100%" stopColor="#10b981" />
             </linearGradient>
 
-            {/* Radiant Pulse Gradient */}
-            <linearGradient id="rahmaPulseGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            {/* Radiant Accent Ring */}
+            <linearGradient id="rahmaRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#38bdf8" />
-              <stop offset="45%" stopColor="#ffffff" />
               <stop offset="100%" stopColor="#34d399" />
             </linearGradient>
 
-            {/* Soft Inner Medical Glow */}
-            <radialGradient id="rahmaGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.18" />
-              <stop offset="100%" stopColor="#0d9488" stopOpacity="0" />
-            </radialGradient>
+            {/* Depth Shadow */}
+            <filter id="rahmaShadow" x="-10%" y="-10%" width="130%" height="130%">
+              <feDropShadow dx="0" dy="2" stdDeviation="2.5" floodColor="#0f766e" floodOpacity="0.28" />
+            </filter>
           </defs>
 
-          {/* Background Ambient Glow */}
-          <circle cx="50" cy="50" r="42" fill="url(#rahmaGlow)" />
+          {/* Clean Light Circular Aura */}
+          <circle cx="50" cy="50" r="44" fill="#0d9488" fillOpacity="0.06" stroke="url(#rahmaRingGrad)" strokeWidth="2.5" />
 
-          {/* Outer Protective Care Shield with Soft Organic Arcs */}
-          <path 
-            d="M 50 10 C 68 10 82 17 84 35 C 86 58 50 88 50 88 C 50 88 14 58 16 35 C 18 17 32 10 50 10 Z" 
-            fill="url(#rahmaGrad1)" 
-            fillOpacity="0.12"
-            stroke="url(#rahmaGrad1)" 
-            strokeWidth="2.5" 
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-
-          {/* Distinctive Modern Medical Cross (Rounded Pillars) */}
-          <g className="filter drop-shadow-sm">
+          {/* 3D Bold Medical Cross Arms with Rounded Contours */}
+          <g filter="url(#rahmaShadow)">
             {/* Vertical Arm */}
             <rect 
-              x="43" 
-              y="22" 
-              width="14" 
-              height="50" 
-              rx="7" 
-              fill="url(#rahmaGrad1)" 
+              x="37" 
+              y="14" 
+              width="26" 
+              height="72" 
+              rx="12" 
+              fill="url(#rahmaCrossGrad)" 
             />
             {/* Horizontal Arm */}
             <rect 
-              x="25" 
-              y="40" 
-              width="50" 
-              height="14" 
-              rx="7" 
-              fill="url(#rahmaGrad1)" 
+              x="14" 
+              y="37" 
+              width="72" 
+              height="26" 
+              rx="12" 
+              fill="url(#rahmaCrossGrad)" 
             />
           </g>
 
-          {/* Central Heartbeat / ECG Vital Pulse Line */}
+          {/* Core White Circular Hub for Maximum Visual Contrast */}
+          <circle cx="50" cy="50" r="16" fill="#ffffff" stroke="#99f6e4" strokeWidth="1.5" />
+
+          {/* Vital Signs Heartbeat Pulse (ECG) - Bold Clinical Teal */}
           <path 
-            d="M 21 47 L 34 47 L 41 33 L 47 58 L 53 28 L 59 52 L 65 47 L 79 47" 
-            stroke="url(#rahmaPulseGrad)" 
-            strokeWidth="3.5" 
+            d="M 28 50 L 39 50 L 45 35 L 51 65 L 57 41 L 62 50 L 72 50" 
+            stroke="#0f766e" 
+            strokeWidth="4" 
             strokeLinecap="round" 
             strokeLinejoin="round" 
           />
 
-          {/* Central Core Pearl */}
-          <circle cx="50" cy="47" r="3.5" fill="#ffffff" />
-
-          {/* Top-Right Star of Excellence Accent */}
-          <g transform="translate(76, 20)">
-            <circle cx="0" cy="0" r="2.2" fill="#38bdf8" />
-            <path d="M 0 -5.5 L 0 5.5 M -5.5 0 L 5.5 0" stroke="#0ea5e9" strokeWidth="1.5" strokeLinecap="round" />
-          </g>
+          {/* Central Vital Beacon Dot */}
+          <circle cx="50" cy="50" r="3.5" fill="#0284c7" />
         </svg>
       </div>
 
@@ -115,11 +99,11 @@ export const HospitalLogo: React.FC<HospitalLogoProps> = ({
         <div className="text-right select-none">
           <h1 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-wide flex items-center gap-1.5" dir="rtl">
             <bdi>مشفى الرحمة</bdi>
-            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-teal-50 dark:bg-sky-950/60 text-teal-700 dark:text-sky-300 border border-teal-200 dark:border-sky-800" dir="ltr">
+            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-teal-50 dark:bg-sky-950/60 text-teal-800 dark:text-sky-300 border border-teal-200 dark:border-sky-800" dir="ltr">
               AL-RAHMA
             </span>
           </h1>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">النظام الطبي التخصصي الموحد</p>
+          <p className="text-[11px] text-slate-600 dark:text-slate-400 font-semibold">النظام الطبي التخصصي الموحد</p>
         </div>
       )}
     </div>
@@ -131,15 +115,14 @@ export const AL_NOOR_LOGO_SVG_STRING = `
 <svg viewBox="0 0 100 100" style="width:100%; height:100%; display:block;" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="rahmaPdfGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0ea5e9" />
+      <stop offset="0%" stop-color="#0284c7" />
       <stop offset="50%" stop-color="#0d9488" />
       <stop offset="100%" stop-color="#10b981" />
     </linearGradient>
   </defs>
-  <path d="M 50 10 C 68 10 82 17 84 35 C 86 58 50 88 50 88 C 50 88 14 58 16 35 C 18 17 32 10 50 10 Z" fill="#e0f2fe" stroke="url(#rahmaPdfGrad)" stroke-width="2.5" />
-  <rect x="43" y="22" width="14" height="50" rx="7" fill="url(#rahmaPdfGrad)" />
-  <rect x="25" y="40" width="50" height="14" rx="7" fill="url(#rahmaPdfGrad)" />
-  <path d="M 21 47 L 34 47 L 41 33 L 47 58 L 53 28 L 59 52 L 65 47 L 79 47" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
-  <circle cx="50" cy="47" r="3.5" fill="#ffffff" />
+  <rect x="37" y="14" width="26" height="72" rx="12" fill="url(#rahmaPdfGrad)" />
+  <rect x="14" y="37" width="72" height="26" rx="12" fill="url(#rahmaPdfGrad)" />
+  <circle cx="50" cy="50" r="16" fill="#ffffff" />
+  <path d="M 28 50 L 39 50 L 45 35 L 51 65 L 57 41 L 62 50 L 72 50" stroke="#0f766e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
 </svg>
 `;
