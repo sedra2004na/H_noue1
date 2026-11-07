@@ -342,11 +342,51 @@ async function startServer() {
     password: z.string().optional().or(z.literal('')),
   });
 
+  const patientSchema = z.object({
+    fullName: z.string().min(3, 'الاسم الكامل للمريض يجب أن يتكون من 3 أحرف على الأقل'),
+    nationalId: z.string().optional(),
+    age: z.any().optional(),
+    gender: z.string().optional(),
+    phone: z.string().optional(),
+    bloodType: z.string().optional(),
+    assignedDoctor: z.string().optional(),
+    roomNumber: z.string().optional(),
+    status: z.string().optional(),
+    notes: z.string().optional(),
+    medicalHistory: z.array(z.string()).optional(),
+    activeAllergies: z.array(z.string()).optional(),
+    vitals: z.any().optional(),
+    insuranceProvider: z.string().optional(),
+    insuranceNumber: z.string().optional(),
+    emergencyContact: z.string().optional(),
+  });
+
+  const appointmentSchema = z.object({
+    patientId: z.string().optional(),
+    patientName: z.string().min(2, 'اسم المريض إلزامي لحجز الموعد'),
+    doctorId: z.string().optional(),
+    doctorName: z.string().min(2, 'اختيار الطبيب المعالج إلزامي'),
+    date: z.string().min(8, 'يرجى تحديد تاريخ صحيح للموعد'),
+    time: z.string().min(2, 'يرجى تحديد توقيت الموعد'),
+    type: z.string().optional(),
+    fee: z.any().optional(),
+    notes: z.string().optional(),
+    status: z.string().optional(),
+  });
+
   // =================== MULTI-DEVICE AUTH & USER ACCOUNTS ===================
   app.get('/api/auth/accounts', (req, res) => {
+    // Sanitize accounts list to prevent exposing passwords
+    const sanitizedAccounts: Record<string, { role: string; name: string }> = {};
+    for (const [key, acc] of Object.entries(dbStore.accounts)) {
+      sanitizedAccounts[key] = {
+        role: acc.role,
+        name: acc.name,
+      };
+    }
     res.json({
       success: true,
-      accounts: dbStore.accounts,
+      accounts: sanitizedAccounts,
       version: dbStore.version,
     });
   });
@@ -868,14 +908,22 @@ async function startServer() {
   });
 
   app.post('/api/patients', enforceRole(['admin', 'staff', 'doctor']), async (req, res) => {
+    // 1. Zod DTO Validation
+    const validation = patientSchema.safeParse(req.body);
+    if (!validation.success) {
+      const errorMsg = validation.error.issues.map(e => e.message).join(' - ');
+      return res.status(400).json({ success: false, error: `خطأ في صحة بيانات المريض (Zod Validation): ${errorMsg}` });
+    }
+
+    const validatedData = validation.data;
     const newPatient = {
       id: `pat-${Date.now()}`,
       fileNumber: `MED-2026-${Math.floor(1000 + Math.random() * 9000)}`,
       lastVisitDate: new Date().toISOString().split('T')[0],
       createdDate: new Date().toISOString().split('T')[0],
-      medicalHistory: req.body.medicalHistory || [],
-      activeAllergies: req.body.activeAllergies || [],
-      vitals: req.body.vitals || { bloodPressure: '120/80', heartRate: 75, temperature: 37.0, weight: 70 },
+      medicalHistory: validatedData.medicalHistory || [],
+      activeAllergies: validatedData.activeAllergies || [],
+      vitals: validatedData.vitals || { bloodPressure: '120/80', heartRate: 75, temperature: 37.0, weight: 70 },
       ...req.body,
     };
 
@@ -1115,13 +1163,21 @@ async function startServer() {
   });
 
   app.post('/api/appointments', async (req, res) => {
+    // 1. Zod DTO Validation
+    const validation = appointmentSchema.safeParse(req.body);
+    if (!validation.success) {
+      const errorMsg = validation.error.issues.map(e => e.message).join(' - ');
+      return res.status(400).json({ success: false, error: `خطأ في بيانات الموعد الطبي (Zod Validation): ${errorMsg}` });
+    }
+
+    const validatedData = validation.data;
     const role = getRequestRole(req);
     const patientId = getRequestPatientId(req);
 
     // Concurrency / Overlap Race Condition Check
-    const targetDoctor = req.body.doctorName || req.body.doctorId;
-    const targetDate = req.body.date;
-    const targetTime = req.body.time;
+    const targetDoctor = validatedData.doctorName || req.body.doctorId;
+    const targetDate = validatedData.date;
+    const targetTime = validatedData.time;
 
     if (targetDoctor && targetDate && targetTime) {
       const existingConflict = dbStore.appointments.find(a => 
@@ -1317,6 +1373,22 @@ async function startServer() {
       success: true,
       totalLogs: dbStore.auditLogs.length,
       logs: dbStore.auditLogs.slice(0, 100),
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  // =================== CENTRALIZED GLOBAL API ERROR HANDLER ===================
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('Unhandled Server Exception on', req.method, req.path, err);
+    if (res.headersSent) {
+      return next(err);
+    }
+    const statusCode = err.status || err.statusCode || 500;
+    res.status(statusCode).json({
+      success: false,
+      error: err.message || 'حدث خطأ غير متوقع في معالجة طلب المستشفى السريري.',
+      code: err.code || 'INTERNAL_SERVER_ERROR',
+      endpoint: req.originalUrl || req.path,
       timestamp: new Date().toISOString()
     });
   });

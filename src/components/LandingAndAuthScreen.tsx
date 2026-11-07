@@ -184,56 +184,52 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
 
     const accounts = getRegisteredAccounts();
 
-    // LOGIN LOGIC
+    // LOGIN LOGIC - Authenticate strictly via Backend API
     if (activeTab === 'login') {
-      const existingAccount = accounts[cleanEmail];
-      if (!existingAccount) {
-        setErrorMessage('البريد الإلكتروني غير مسجل في النظام. يمكنك إنشاء حساب مريض جديد بالأسفل.');
-        return;
-      }
-
-      let isPasswordValid = false;
-      if (existingAccount.salt && existingAccount.passHash) {
-        isPasswordValid = await verifyPassword(cleanPass, existingAccount.passHash, existingAccount.salt);
-      } else {
-        isPasswordValid = existingAccount.pass === cleanPass;
-      }
-
-      if (!isPasswordValid) {
-        recordAuditLog({
-          userId: cleanEmail,
-          userName: existingAccount.name || cleanEmail,
-          userRole: existingAccount.role,
-          action: 'LOGIN',
-          targetResource: 'AUTH_GATEWAY',
-          details: 'محاولة تسجيل دخول فاشلة: كلمة المرور غير مطابقة',
-          status: 'BLOCKED_ALERT',
-        });
-        setErrorMessage('كلمة المرور غير صحيحة لهذا الحساب. يرجى التأكد والمحاولة مجدداً.');
-        return;
-      }
-
-      // Notify backend of successful login
       try {
-        await hospitalApi.login({ email: cleanEmail, pass: cleanPass });
-      } catch (e) {
-        console.warn('Backend login notification note:', e);
+        const loginRes = await hospitalApi.login({ email: cleanEmail, pass: cleanPass });
+        if (loginRes?.success && loginRes?.user) {
+          const userRole = loginRes.user.role as UserRole;
+          const userName = loginRes.user.name || cleanEmail;
+          
+          if (loginRes.user.token) {
+            localStorage.setItem('care_hospital_token', loginRes.user.token);
+          }
+          localStorage.removeItem('syrian_hosp_session_timeout');
+          localStorage.setItem('syrian_hosp_userEmail', cleanEmail);
+          onLogin(userRole, userName);
+          return;
+        } else {
+          setErrorMessage(loginRes?.error || 'فشل تسجيل الدخول. يرجى التحقق من صحة البيانات.');
+          return;
+        }
+      } catch (err: any) {
+        console.error('Backend login error:', err);
+        const serverError = err?.response?.data?.error;
+        if (serverError) {
+          setErrorMessage(serverError);
+          return;
+        }
+
+        // Local emergency fallback if server is unreachable
+        const existingAccount = accounts[cleanEmail];
+        if (existingAccount) {
+          let isPasswordValid = false;
+          if (existingAccount.salt && existingAccount.passHash) {
+            isPasswordValid = await verifyPassword(cleanPass, existingAccount.passHash, existingAccount.salt);
+          } else {
+            isPasswordValid = existingAccount.pass === cleanPass;
+          }
+          if (isPasswordValid) {
+            localStorage.removeItem('syrian_hosp_session_timeout');
+            localStorage.setItem('syrian_hosp_userEmail', cleanEmail);
+            onLogin(existingAccount.role, existingAccount.name || fullName || email.split('@')[0]);
+            return;
+          }
+        }
+        setErrorMessage('تعذر الاتصال بالخادم، أو كلمة المرور غير صحيحة لهذا الحساب.');
+        return;
       }
-
-      recordAuditLog({
-        userId: cleanEmail,
-        userName: existingAccount.name || cleanEmail,
-        userRole: existingAccount.role,
-        action: 'LOGIN',
-        targetResource: 'AUTH_GATEWAY',
-        details: 'تسجيل دخول ناجح وموثق عبر المنظومة',
-        status: 'SUCCESS',
-      });
-
-      localStorage.removeItem('syrian_hosp_session_timeout');
-      localStorage.setItem('syrian_hosp_userEmail', cleanEmail);
-      onLogin(existingAccount.role, existingAccount.name || fullName || email.split('@')[0]);
-      return;
     }
 
     // REGISTER LOGIC (Strictly locked to Patient role for public safety)
