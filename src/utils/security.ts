@@ -37,11 +37,22 @@ export async function verifyPassword(password: string, storedHash: string, salt:
 }
 
 /**
+ * Convert Arabic-Indic and Persian digits to standard Western ASCII digits (e.g., ١٢٣ -> 123)
+ * Essential for mobile keyboards in the Arab world
+ */
+export function normalizeDigits(input: string): string {
+  if (!input || typeof input !== 'string') return '';
+  return input
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776));
+}
+
+/**
  * Sanitize user input to neutralize XSS and script injections
  */
 export function sanitizeInput(input: string): string {
   if (!input || typeof input !== 'string') return '';
-  return input
+  return normalizeDigits(input)
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/javascript:/gi, '')
     .replace(/on\w+="[^"]*"/gi, '')

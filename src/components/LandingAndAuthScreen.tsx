@@ -32,6 +32,7 @@ import {
 import { UserRole } from '../types';
 import { 
   sanitizeInput, 
+  normalizeDigits,
   hashPasswordWithSalt, 
   verifyPassword, 
   recordAuditLog 
@@ -226,7 +227,7 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
     setSuccessMessage('');
 
     const cleanEmail = sanitizeInput(email).trim().toLowerCase();
-    const cleanPass = password.trim();
+    const cleanPass = normalizeDigits(password).trim();
 
     if (!validateEmail(cleanEmail)) {
       setErrorMessage('يرجى إدخال بريد إلكتروني صحيح ومعتمد (مثل: user@hospital.com)');
