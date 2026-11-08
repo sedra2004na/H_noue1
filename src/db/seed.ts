@@ -166,6 +166,116 @@ export async function ensureDatabaseTablesExist() {
           ip_address TEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE TABLE IF NOT EXISTS beds (
+          id TEXT PRIMARY KEY,
+          ward_name TEXT NOT NULL,
+          bed_number TEXT NOT NULL UNIQUE,
+          room_number TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'AVAILABLE',
+          patient_id TEXT,
+          patient_name TEXT,
+          attending_doctor_name TEXT,
+          diagnosis TEXT,
+          priority TEXT DEFAULT 'stable',
+          admission_date TEXT,
+          oxygen_equipped BOOLEAN DEFAULT TRUE,
+          notes TEXT,
+          is_deleted BOOLEAN DEFAULT FALSE,
+          deleted_at TIMESTAMP,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS invoices (
+          id TEXT PRIMARY KEY,
+          invoice_number TEXT NOT NULL UNIQUE,
+          patient_id TEXT NOT NULL,
+          patient_name TEXT NOT NULL,
+          date TEXT NOT NULL,
+          amount NUMERIC DEFAULT 0,
+          tax NUMERIC DEFAULT 0,
+          insurance_covered NUMERIC DEFAULT 0,
+          net_amount NUMERIC DEFAULT 0,
+          total_amount INTEGER DEFAULT 0,
+          paid_amount INTEGER DEFAULT 0,
+          remaining_amount INTEGER DEFAULT 0,
+          status TEXT NOT NULL DEFAULT 'PENDING',
+          payment_method TEXT,
+          items JSONB,
+          is_deleted BOOLEAN DEFAULT FALSE,
+          deleted_at TIMESTAMP,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS prescriptions (
+          id TEXT PRIMARY KEY,
+          patient_id TEXT NOT NULL,
+          patient_name TEXT NOT NULL,
+          doctor_name TEXT NOT NULL,
+          date TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'فعالة',
+          diagnosis TEXT NOT NULL,
+          medications JSONB,
+          notes TEXT,
+          is_deleted BOOLEAN DEFAULT FALSE,
+          deleted_at TIMESTAMP,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS lab_requests (
+          id TEXT PRIMARY KEY,
+          patient_id TEXT NOT NULL,
+          patient_name TEXT NOT NULL,
+          doctor_id TEXT,
+          doctor_name TEXT NOT NULL,
+          test_name TEXT NOT NULL,
+          category TEXT NOT NULL,
+          date TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'قيد التحليل',
+          result TEXT,
+          reference_range TEXT,
+          result_value TEXT,
+          normal_range TEXT,
+          unit TEXT,
+          is_abnormal BOOLEAN DEFAULT FALSE,
+          notes TEXT,
+          is_deleted BOOLEAN DEFAULT FALSE,
+          deleted_at TIMESTAMP,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS inventory (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          category TEXT NOT NULL,
+          quantity INTEGER NOT NULL DEFAULT 0,
+          min_threshold INTEGER NOT NULL DEFAULT 10,
+          unit TEXT NOT NULL DEFAULT 'علبة',
+          price INTEGER NOT NULL DEFAULT 0,
+          unit_price NUMERIC DEFAULT 0,
+          expiry_date TEXT,
+          batch_number TEXT,
+          location TEXT,
+          is_deleted BOOLEAN DEFAULT FALSE,
+          deleted_at TIMESTAMP,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS notifications (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          title TEXT NOT NULL,
+          message TEXT NOT NULL,
+          type TEXT DEFAULT 'info',
+          is_read BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
       `);
       console.log('[Database Schema] Verified/Created all PostgreSQL tables successfully.');
     } finally {

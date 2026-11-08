@@ -1,6 +1,6 @@
 {
-  "version": 17,
-  "lastUpdated": "2026-11-08T09:44:57.975Z",
+  "version": 18,
+  "lastUpdated": "2026-11-08T10:05:37.324Z",
   "accounts": {
     "admin@hospital.com": {
       "role": "admin",
@@ -1982,6 +1982,18 @@
     }
   ],
   "auditLogs": [
+    {
+      "id": "aud-1794132337324",
+      "timestamp": "2026-11-08T10:05:37.324Z",
+      "userId": "admin@hospital.com",
+      "userName": "د. خالد العمري (المدير العام)",
+      "userRole": "admin",
+      "action": "LOGIN",
+      "targetResource": "AUTH_GATEWAY",
+      "details": "تسجيل دخول ناجح للمستخدم (د. خالد العمري (المدير العام)) ومزامنة بياناته",
+      "status": "SUCCESS",
+      "ipAddress": "127.0.0.1"
+    },
     {
       "id": "aud-1794131097975",
       "timestamp": "2026-11-08T09:44:57.975Z",
