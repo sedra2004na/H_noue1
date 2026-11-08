@@ -1,6 +1,6 @@
 {
-  "version": 11,
-  "lastUpdated": "2026-11-07T15:07:49.994Z",
+  "version": 17,
+  "lastUpdated": "2026-11-08T09:44:57.975Z",
   "accounts": {
     "admin@hospital.com": {
       "role": "admin",
@@ -44,9 +44,83 @@
       "salt": "",
       "passHash": "",
       "registeredAt": "2026-11-06T09:38:14.652Z"
+    },
+    "newpatient@gmail.com": {
+      "role": "patient",
+      "name": "أحمد خالد السوري",
+      "pass": "password123",
+      "phone": "+963987654321",
+      "nationalId": "",
+      "salt": "",
+      "passHash": "",
+      "registeredAt": "2026-11-08T09:41:39.054Z"
+    },
+    "test.mobile@example.com": {
+      "role": "patient",
+      "name": "أحمد المحمود",
+      "pass": "secret123",
+      "phone": "",
+      "nationalId": "",
+      "salt": "",
+      "passHash": "",
+      "registeredAt": "2026-11-08T09:44:50.543Z"
     }
   },
   "patients": [
+    {
+      "id": "pat-1794131090543",
+      "fileNumber": "PRV-33124",
+      "fullName": "أحمد المحمود",
+      "age": 30,
+      "gender": "ذكر",
+      "phone": "test.mobile@example.com",
+      "nationalId": "",
+      "bloodType": "A+",
+      "accountEmail": "test.mobile@example.com",
+      "isVerifiedByReception": false,
+      "verificationStatus": "بانتظار التحقق والمطابقة بالاستقبال",
+      "createdDate": "2026-11-08",
+      "lastVisitDate": "2026-11-08",
+      "status": "active",
+      "assignedDoctor": "د. سارة السعيد",
+      "medicalHistory": [
+        "حساب إلكتروني مسجل ذاتياً عبر بوابة المرضى - بانتظار إبراز الهوية وتأكيد الملف بالاستقبال"
+      ],
+      "activeAllergies": [],
+      "vitals": {
+        "bloodPressure": "120/80",
+        "heartRate": 72,
+        "temperature": 36.8,
+        "weight": 70
+      }
+    },
+    {
+      "id": "pat-1794130899054",
+      "fileNumber": "PRV-91129",
+      "fullName": "أحمد خالد السوري",
+      "age": 30,
+      "gender": "ذكر",
+      "phone": "+963987654321",
+      "nationalId": "",
+      "bloodType": "A+",
+      "accountEmail": "newpatient@gmail.com",
+      "isVerifiedByReception": false,
+      "verificationStatus": "بانتظار التحقق والمطابقة بالاستقبال",
+      "createdDate": "2026-11-08",
+      "lastVisitDate": "2026-11-08",
+      "status": "active",
+      "assignedDoctor": "د. سارة السعيد",
+      "medicalHistory": [
+        "حساب إلكتروني مسجل ذاتياً عبر بوابة المرضى - بانتظار إبراز الهوية وتأكيد الملف بالاستقبال"
+      ],
+      "activeAllergies": [],
+      "vitals": {
+        "bloodPressure": "120/80",
+        "heartRate": 72,
+        "temperature": 36.8,
+        "weight": 70
+      }
+    },
     {
       "id": "pat-1793957894652",
       "fileNumber": "MED-2026-4057",
@@ -1908,6 +1982,78 @@
     }
   ],
   "auditLogs": [
+    {
+      "id": "aud-1794131097975",
+      "timestamp": "2026-11-08T09:44:57.975Z",
+      "userId": "admin@hospital.com",
+      "userName": "د. خالد العمري (المدير العام)",
+      "userRole": "admin",
+      "action": "LOGIN",
+      "targetResource": "AUTH_GATEWAY",
+      "details": "تسجيل دخول ناجح للمستخدم (د. خالد العمري (المدير العام)) ومزامنة بياناته",
+      "status": "SUCCESS",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "aud-1794131097953",
+      "timestamp": "2026-11-08T09:44:57.953Z",
+      "userId": "m.otaibi@gmail.com",
+      "userName": "محمد عبد الله العتيبي",
+      "userRole": "patient",
+      "action": "LOGIN",
+      "targetResource": "AUTH_GATEWAY",
+      "details": "تسجيل دخول ناجح للمستخدم (محمد عبد الله العتيبي) ومزامنة بياناته",
+      "status": "SUCCESS",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "aud-1794131094059",
+      "timestamp": "2026-11-08T09:44:54.059Z",
+      "userId": "test.mobile@example.com",
+      "userName": "أحمد المحمود",
+      "userRole": "patient",
+      "action": "LOGIN",
+      "targetResource": "AUTH_GATEWAY",
+      "details": "تسجيل دخول ناجح للمستخدم (أحمد المحمود) ومزامنة بياناته",
+      "status": "SUCCESS",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "aud-1794131090652",
+      "timestamp": "2026-11-08T09:44:50.652Z",
+      "userId": "test.mobile@example.com",
+      "userName": "أحمد المحمود",
+      "userRole": "patient",
+      "action": "PATIENT_SELF_REGISTER",
+      "targetResource": "PATIENT_PORTAL",
+      "details": "تسجيل حساب مريض مراجع جديد (أحمد المحمود) - الملف المبدئي (PRV-33124) بانتظار توثيق الاستقبال",
+      "status": "SUCCESS",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "aud-1794130918323",
+      "timestamp": "2026-11-08T09:41:58.323Z",
+      "userId": "newpatient@gmail.com",
+      "userName": "أحمد خالد السوري",
+      "userRole": "patient",
+      "action": "LOGIN",
+      "targetResource": "AUTH_GATEWAY",
+      "details": "تسجيل دخول ناجح للمستخدم (أحمد خالد السوري) ومزامنة بياناته",
+      "status": "SUCCESS",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "aud-1794130914158",
+      "timestamp": "2026-11-08T09:41:54.158Z",
+      "userId": "newpatient@gmail.com",
+      "userName": "أحمد خالد السوري",
+      "userRole": "patient",
+      "action": "PATIENT_SELF_REGISTER",
+      "targetResource": "PATIENT_PORTAL",
+      "details": "تسجيل حساب مريض مراجع جديد (أحمد خالد السوري) - الملف المبدئي (PRV-91129) بانتظار توثيق الاستقبال",
+      "status": "SUCCESS",
+      "ipAddress": "127.0.0.1"
+    },
     {
       "id": "aud-1794064069994",
       "timestamp": "2026-11-07T15:07:49.994Z",

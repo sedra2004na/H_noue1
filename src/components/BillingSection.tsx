@@ -964,8 +964,8 @@ export const BillingSection: React.FC<BillingSectionProps> = ({
                 </div>
 
                 {/* QR Code & Sham Cash Card */}
-                <div className="p-4 rounded-2xl bg-gradient-to-b from-slate-950 to-amber-950/20 border border-amber-500/40 text-center space-y-3">
-                  <p className="text-xs font-bold text-amber-300">
+                <div className="p-4 rounded-2xl bg-amber-50/80 dark:bg-gradient-to-b dark:from-slate-950 dark:to-amber-950/20 border border-amber-300 dark:border-amber-500/40 text-center space-y-3">
+                  <p className="text-xs font-bold text-amber-950 dark:text-amber-300">
                     امسح رمز الـ QR أو حول إلى معرف المستشفى:
                   </p>
                   

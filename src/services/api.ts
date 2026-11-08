@@ -10,7 +10,7 @@ export const apiClient = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  timeout: 10000,
+  timeout: 15000,
 });
 
 // Request Interceptor: Attach Active User Role and Patient ID for Server-Side RBAC Enforcement
@@ -107,8 +107,15 @@ export const hospitalApi = {
     return res.data;
   },
 
-  register: async (accountData: { email: string; pass: string; fullName: string; role?: UserRole; salt?: string; passHash?: string }) => {
-    const res = await apiClient.post('/auth/register', accountData);
+  register: async (accountData: { email: string; pass: string; fullName: string; role?: UserRole; phone?: string; nationalId?: string; salt?: string; passHash?: string }) => {
+    const res = await apiClient.post('/auth/register', {
+      ...accountData,
+      email: accountData.email.trim().toLowerCase(),
+      pass: accountData.pass.trim(),
+      password: accountData.pass.trim(),
+      fullName: accountData.fullName.trim(),
+      role: 'patient',
+    });
     return res.data;
   },
 

@@ -1,4 +1,4 @@
-import { db } from './index.ts';
+import { db, pool } from './index.ts';
 import * as schema from './schema.ts';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
@@ -59,6 +59,123 @@ export const DEFAULT_ACCOUNTS_SEED_LIST = [
   },
 ];
 
+/**
+ * Automatically creates all required database tables if they do not exist in PostgreSQL.
+ * This guarantees that new cloud instances (Render, Supabase, Neon) function immediately
+ * without requiring manual migration commands.
+ */
+export async function ensureDatabaseTablesExist() {
+  if (!process.env.SQL_HOST && !process.env.DATABASE_URL) {
+    return;
+  }
+  try {
+    const client = await pool.connect();
+    try {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS accounts (
+          id SERIAL PRIMARY KEY,
+          email TEXT NOT NULL UNIQUE,
+          password TEXT NOT NULL,
+          full_name TEXT NOT NULL,
+          role TEXT NOT NULL DEFAULT 'PATIENT',
+          phone TEXT,
+          refresh_token TEXT,
+          is_active BOOLEAN DEFAULT TRUE,
+          is_deleted BOOLEAN DEFAULT FALSE,
+          deleted_at TIMESTAMP,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS patients (
+          id TEXT PRIMARY KEY,
+          user_id TEXT,
+          file_number TEXT UNIQUE,
+          full_name TEXT NOT NULL,
+          age INTEGER NOT NULL,
+          gender TEXT NOT NULL,
+          phone TEXT NOT NULL,
+          blood_type TEXT,
+          national_id TEXT UNIQUE,
+          address TEXT,
+          emergency_contact TEXT,
+          room_number TEXT,
+          status TEXT NOT NULL DEFAULT 'مستقر',
+          assigned_doctor TEXT,
+          notes TEXT,
+          medical_history JSONB,
+          allergies JSONB,
+          admission_date TEXT NOT NULL,
+          is_verified_by_reception BOOLEAN DEFAULT FALSE,
+          verified_by TEXT,
+          verified_at TEXT,
+          verification_status TEXT DEFAULT 'بانتظار التحقق والمطابقة بالاستقبال',
+          is_deleted BOOLEAN DEFAULT FALSE,
+          deleted_at TIMESTAMP,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS doctors (
+          id TEXT PRIMARY KEY,
+          user_id TEXT,
+          name TEXT NOT NULL,
+          specialty TEXT NOT NULL,
+          department TEXT NOT NULL,
+          license_number TEXT,
+          experience_years INTEGER DEFAULT 5,
+          consulting_fee INTEGER DEFAULT 25000,
+          phone TEXT,
+          room_number TEXT,
+          shift TEXT,
+          status TEXT NOT NULL DEFAULT 'متاح',
+          rating TEXT DEFAULT '5.0',
+          is_deleted BOOLEAN DEFAULT FALSE,
+          deleted_at TIMESTAMP,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS appointments (
+          id TEXT PRIMARY KEY,
+          patient_id TEXT NOT NULL,
+          patient_name TEXT NOT NULL,
+          doctor_id TEXT NOT NULL,
+          doctor_name TEXT NOT NULL,
+          specialty TEXT NOT NULL,
+          date TEXT NOT NULL,
+          time TEXT NOT NULL,
+          type TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'معلق',
+          fee TEXT,
+          notes TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS audit_logs (
+          id TEXT PRIMARY KEY,
+          timestamp TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          user_name TEXT NOT NULL,
+          user_role TEXT NOT NULL,
+          action TEXT NOT NULL,
+          target_resource TEXT NOT NULL,
+          details TEXT NOT NULL,
+          status TEXT NOT NULL,
+          ip_address TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      console.log('[Database Schema] Verified/Created all PostgreSQL tables successfully.');
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.warn('[Database Schema] DDL table creation note (safe fallback):', err);
+  }
+}
+
 export async function seedDatabaseIfEmpty() {
   if (isSeeded) return;
   if (!process.env.SQL_HOST && !process.env.DATABASE_URL) {
@@ -66,6 +183,9 @@ export async function seedDatabaseIfEmpty() {
   }
 
   try {
+    // 0. Ensure tables exist in PostgreSQL
+    await ensureDatabaseTablesExist();
+
     // 1. Seed & Validate Accounts (Ensure bcrypt hashing and account availability)
     try {
       for (const acc of DEFAULT_ACCOUNTS_SEED_LIST) {

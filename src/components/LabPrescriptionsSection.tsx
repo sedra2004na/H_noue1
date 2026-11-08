@@ -332,15 +332,15 @@ export const LabPrescriptionsSection: React.FC<LabPrescriptionsProps> = ({
       </div>
 
       {/* Reassuring Clinical Disclaimer Banner */}
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-sky-950/60 via-slate-900 to-indigo-950/40 border border-sky-500/30 text-sky-200 text-xs flex items-start gap-3 shadow-md" role="alert">
-        <div className="p-2 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30 shrink-0 mt-0.5">
+      <div className="p-4 rounded-2xl bg-sky-50/90 dark:bg-gradient-to-r dark:from-sky-950/60 dark:via-slate-900 dark:to-indigo-950/40 border border-sky-200 dark:border-sky-500/30 text-sky-950 dark:text-sky-200 text-xs flex items-start gap-3 shadow-sm dark:shadow-md" role="alert">
+        <div className="p-2 rounded-xl bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-500/30 shrink-0 mt-0.5">
           <Info className="w-4 h-4" />
         </div>
         <div className="space-y-0.5">
-          <strong className="text-white font-bold block text-sm">
+          <strong className="text-sky-950 dark:text-white font-black block text-sm">
             تنبيه طبي استرشادي:
           </strong>
-          <p className="text-slate-300 leading-relaxed text-[11px]">
+          <p className="text-sky-900 dark:text-slate-300 leading-relaxed text-[11px] font-semibold">
             هذه النتائج المخبرية والمعلومات الإرشادية لا تغني بأي حال من الأحوال عن استشارة الطبيب المعالج والتقييم السريري المباشر. يرجى مراجعة عيادة الطبيب المختص لمناقشة الخطة العلاجية والدوائية.
           </p>
         </div>

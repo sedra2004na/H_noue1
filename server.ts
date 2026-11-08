@@ -21,7 +21,7 @@ import {
 import { db } from './src/db/index.ts';
 import * as schema from './src/db/schema.ts';
 import { eq } from 'drizzle-orm';
-import { seedDatabaseIfEmpty } from './src/db/seed.ts';
+import { seedDatabaseIfEmpty, ensureDatabaseTablesExist } from './src/db/seed.ts';
 import bcrypt from 'bcryptjs';
 
 dotenv.config();
@@ -252,8 +252,10 @@ async function startServer() {
 
   app.use(express.json({ limit: '10mb' }));
 
-  // Try seed database if PostgreSQL / Cloud SQL is connected
-  seedDatabaseIfEmpty().catch(e => console.warn('Seed error (safe fallback):', e));
+  // Automatically provision database tables and seed accounts
+  ensureDatabaseTablesExist()
+    .then(() => seedDatabaseIfEmpty())
+    .catch(e => console.warn('[Database] Initialization error (safe fallback):', e));
 
   // =================== SYSTEM HEALTH & SECURITY ===================
   app.get('/api/health', (req, res) => {
@@ -388,7 +390,7 @@ async function startServer() {
   });
 
   // =================== MULTI-DEVICE AUTH & USER ACCOUNTS ===================
-  app.get('/api/auth/accounts', (req, res) => {
+  app.get('/api/auth/accounts', async (req, res) => {
     // Sanitize accounts list to prevent exposing passwords
     const sanitizedAccounts: Record<string, { role: string; name: string }> = {};
     for (const [key, acc] of Object.entries(dbStore.accounts)) {
@@ -397,6 +399,30 @@ async function startServer() {
         name: acc.name,
       };
     }
+
+    // Also include accounts from PostgreSQL if connected (ensures sync across devices)
+    if (process.env.DATABASE_URL || process.env.SQL_HOST) {
+      try {
+        const pgRows = await db
+          .select({
+            email: schema.accounts.email,
+            role: schema.accounts.role,
+            fullName: schema.accounts.fullName,
+          })
+          .from(schema.accounts);
+
+        for (const row of pgRows) {
+          const emailKey = row.email.trim().toLowerCase();
+          sanitizedAccounts[emailKey] = {
+            role: (row.role || 'patient').toLowerCase(),
+            name: row.fullName,
+          };
+        }
+      } catch (pgErr) {
+        // Safe fallback
+      }
+    }
+
     res.json({
       success: true,
       accounts: sanitizedAccounts,
@@ -404,7 +430,7 @@ async function startServer() {
     });
   });
 
-  app.post('/api/auth/register', (req, res) => {
+  app.post('/api/auth/register', async (req, res) => {
     // 1. Zod Validation & Sanitization DTO
     const validationResult = registerSchema.safeParse(req.body);
     if (!validationResult.success) {
@@ -438,15 +464,35 @@ async function startServer() {
     }
 
     const cleanEmail = String(email).trim().toLowerCase();
+    const cleanName = String(fullName).trim();
+    const cleanPass = String(pass);
+
+    // Check duplicate in dbStore
     if (dbStore.accounts[cleanEmail]) {
       return res.status(400).json({ success: false, error: 'هذا البريد مسجل مسبقاً بالنظام' });
+    }
+
+    // Check duplicate in PostgreSQL
+    if (process.env.DATABASE_URL || process.env.SQL_HOST) {
+      try {
+        const existing = await db
+          .select()
+          .from(schema.accounts)
+          .where(eq(schema.accounts.email, cleanEmail))
+          .limit(1);
+        if (existing.length > 0) {
+          return res.status(400).json({ success: false, error: 'هذا البريد مسجل مسبقاً بالنظام' });
+        }
+      } catch (err) {
+        // Safe fallback
+      }
     }
 
     // Always enforce PATIENT role for self-registration
     const newAccount = {
       role: 'patient',
-      name: String(fullName).trim(),
-      pass: String(pass),
+      name: cleanName,
+      pass: cleanPass,
       phone: phone ? String(phone).trim() : '',
       nationalId: nationalId ? String(nationalId).trim() : '',
       salt: salt || '',
@@ -454,6 +500,7 @@ async function startServer() {
       registeredAt: new Date().toISOString(),
     };
 
+    // 1. Save in local memory/file store
     dbStore.accounts[cleanEmail] = newAccount;
 
     // Self-registered patients start as Provisional (بانتظار التحقق والمطابقة بالاستقبال)
@@ -478,6 +525,39 @@ async function startServer() {
       vitals: { bloodPressure: '120/80', heartRate: 72, temperature: 36.8, weight: 70 },
     };
     dbStore.patients.unshift(provisionalPatientProfile);
+
+    // 2. Persist to PostgreSQL cloud database with bcrypt hashing (Vital for Render persistence)
+    if (process.env.DATABASE_URL || process.env.SQL_HOST) {
+      try {
+        const hashedPassword = await bcrypt.hash(cleanPass, 10);
+        await db.insert(schema.accounts).values({
+          email: cleanEmail,
+          password: hashedPassword,
+          fullName: cleanName,
+          role: 'PATIENT',
+          phone: newAccount.phone,
+          isActive: true,
+        }).onConflictDoNothing();
+
+        await db.insert(schema.patients).values({
+          id: provisionalPatientProfile.id,
+          fileNumber: provisionalPatientProfile.fileNumber,
+          fullName: cleanName,
+          age: provisionalPatientProfile.age,
+          gender: provisionalPatientProfile.gender,
+          phone: provisionalPatientProfile.phone,
+          nationalId: provisionalPatientProfile.nationalId || `NID-${Date.now()}`,
+          bloodType: provisionalPatientProfile.bloodType,
+          status: 'مستقر',
+          admissionDate: provisionalPatientProfile.createdDate,
+          verificationStatus: provisionalPatientProfile.verificationStatus,
+        }).onConflictDoNothing();
+
+        console.log(`[Register] Successfully stored patient (${cleanEmail}) into PostgreSQL database with bcrypt hash.`);
+      } catch (pgErr) {
+        console.warn('[Register] PostgreSQL insert note (safe fallback):', pgErr);
+      }
+    }
 
     // Add audit log
     dbStore.auditLogs.unshift({
@@ -541,12 +621,18 @@ async function startServer() {
     let pgAccount: any = null;
     if (process.env.DATABASE_URL || process.env.SQL_HOST) {
       try {
-        const rows = await db
+        const queryPromise = db
           .select()
           .from(schema.accounts)
           .where(eq(schema.accounts.email, cleanEmail))
           .limit(1);
-        if (rows.length > 0) {
+
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('PostgreSQL Query Timeout')), 2500)
+        );
+
+        const rows = (await Promise.race([queryPromise, timeoutPromise])) as any[];
+        if (rows && rows.length > 0) {
           pgAccount = rows[0];
         }
       } catch (pgErr) {

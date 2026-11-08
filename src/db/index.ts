@@ -17,7 +17,7 @@ export const createPool = () => {
         connectionString,
         ssl: isLocal ? false : { rejectUnauthorized: false },
         max: 10,
-        connectionTimeoutMillis: 15000,
+        connectionTimeoutMillis: 4000,
       });
     } else {
       // Local or Cloud SQL discrete credentials
@@ -27,7 +27,7 @@ export const createPool = () => {
         password: process.env.SQL_PASSWORD,
         database: process.env.SQL_DB_NAME,
         max: 10,
-        connectionTimeoutMillis: 15000,
+        connectionTimeoutMillis: 4000,
       });
     }
 
@@ -38,6 +38,6 @@ export const createPool = () => {
   return global._postgresPool;
 };
 
-const pool = createPool();
+export const pool = createPool();
 
 export const db = drizzle(pool, { schema });

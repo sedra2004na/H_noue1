@@ -231,28 +231,53 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
           onLogin(userRole, userName);
           return;
         } else {
+          // Check emergency local fallback if user was registered on this device
+          const localStored = localStorage.getItem('syrian_hosp_accounts');
+          const localAccounts = localStored ? JSON.parse(localStored) : {};
+          const existingAccount = localAccounts[cleanEmail] || accounts[cleanEmail] || DEFAULT_ACCOUNTS[cleanEmail];
+          if (existingAccount) {
+            let isPasswordValid = false;
+            if (existingAccount.pass === cleanPass || (existingAccount as any).password === cleanPass) {
+              isPasswordValid = true;
+            } else if (existingAccount.salt && existingAccount.passHash) {
+              isPasswordValid = await verifyPassword(cleanPass, existingAccount.passHash, existingAccount.salt);
+            }
+            if (isPasswordValid) {
+              localStorage.removeItem('syrian_hosp_session_timeout');
+              localStorage.setItem('syrian_hosp_userEmail', cleanEmail);
+              onLogin(existingAccount.role, existingAccount.name || fullName || email.split('@')[0]);
+              return;
+            }
+          }
+
           setErrorMessage(loginRes?.error || 'فشل تسجيل الدخول. يرجى التحقق من صحة البيانات.');
           return;
         }
       } catch (err: any) {
-        console.error('Backend login error:', err);
+        console.warn('Backend login fallback notice:', err);
         const serverError = err?.response?.data?.error;
 
-        // Local emergency fallback if server has issue or network drops
-        const existingAccount = accounts[cleanEmail] || DEFAULT_ACCOUNTS[cleanEmail];
-        if (existingAccount) {
-          let isPasswordValid = false;
-          if (existingAccount.pass === cleanPass || (existingAccount as any).password === cleanPass) {
-            isPasswordValid = true;
-          } else if (existingAccount.salt && existingAccount.passHash) {
-            isPasswordValid = await verifyPassword(cleanPass, existingAccount.passHash, existingAccount.salt);
+        // Local emergency fallback if server has issue, cold starts, or network drops
+        try {
+          const localStored = localStorage.getItem('syrian_hosp_accounts');
+          const localAccounts = localStored ? JSON.parse(localStored) : {};
+          const existingAccount = localAccounts[cleanEmail] || accounts[cleanEmail] || DEFAULT_ACCOUNTS[cleanEmail];
+          if (existingAccount) {
+            let isPasswordValid = false;
+            if (existingAccount.pass === cleanPass || (existingAccount as any).password === cleanPass) {
+              isPasswordValid = true;
+            } else if (existingAccount.salt && existingAccount.passHash) {
+              isPasswordValid = await verifyPassword(cleanPass, existingAccount.passHash, existingAccount.salt);
+            }
+            if (isPasswordValid) {
+              localStorage.removeItem('syrian_hosp_session_timeout');
+              localStorage.setItem('syrian_hosp_userEmail', cleanEmail);
+              onLogin(existingAccount.role, existingAccount.name || fullName || email.split('@')[0]);
+              return;
+            }
           }
-          if (isPasswordValid) {
-            localStorage.removeItem('syrian_hosp_session_timeout');
-            localStorage.setItem('syrian_hosp_userEmail', cleanEmail);
-            onLogin(existingAccount.role, existingAccount.name || fullName || email.split('@')[0]);
-            return;
-          }
+        } catch (e) {
+          console.warn('Local fallback error:', e);
         }
 
         if (serverError) {
@@ -283,7 +308,7 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
 
       // Register account on backend server to ensure synchronization across mobile and laptop
       try {
-        await hospitalApi.register({
+        const regRes = await hospitalApi.register({
           email: cleanEmail,
           pass: cleanPass,
           fullName: cleanName,
@@ -293,8 +318,18 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
           salt,
           passHash
         } as any);
+
+        if (regRes && !regRes.success) {
+          setErrorMessage(regRes.error || 'فشل تسجيل الحساب على الخادم.');
+          return;
+        }
       } catch (err: any) {
-        console.warn('Backend registration warning (will mirror locally):', err);
+        console.warn('Backend registration notice:', err);
+        const serverError = err?.response?.data?.error;
+        if (serverError) {
+          setErrorMessage(serverError);
+          return;
+        }
       }
 
       const userAccountsRaw = localStorage.getItem('syrian_hosp_accounts');

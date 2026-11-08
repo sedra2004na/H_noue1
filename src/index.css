@@ -182,6 +182,41 @@ html:not(.dark) .hover\:bg-slate-900:hover {
   background-color: #e2e8f0 !important;
 }
 
+/* Neutralize all dark background gradients in Light Mode to eliminate black-on-dark contrast bugs */
+html:not(.dark) [class*="bg-gradient-to-"][class*="-950"],
+html:not(.dark) [class*="bg-gradient-to-"][class*="-900"],
+html:not(.dark) [class*="from-sky-950"],
+html:not(.dark) [class*="from-slate-950"],
+html:not(.dark) [class*="from-slate-900"],
+html:not(.dark) [class*="from-rose-950"],
+html:not(.dark) [class*="from-amber-950"],
+html:not(.dark) [class*="from-indigo-950"],
+html:not(.dark) [class*="to-slate-950"],
+html:not(.dark) [class*="to-indigo-950"],
+html:not(.dark) [class*="via-slate-900"] {
+  background-image: none !important;
+  background-color: #f8fafc !important;
+}
+
+/* Alert Banners & Informational Disclaimers in Light Mode */
+html:not(.dark) [role="alert"] {
+  background-image: none !important;
+  background-color: #f0f9ff !important;
+  border-color: #bae6fd !important;
+}
+
+html:not(.dark) [role="alert"] strong,
+html:not(.dark) [role="alert"] b {
+  color: #0369a1 !important;
+  font-weight: 900 !important;
+}
+
+html:not(.dark) [role="alert"] p,
+html:not(.dark) [role="alert"] span {
+  color: #0c4a6e !important;
+  font-weight: 600 !important;
+}
+
 /* Text Hierarchy in Light Mode: Solid Deep Bold Black (Except solid colored buttons/badges) */
 html:not(.dark) .text-white:not([class*="bg-sky-"]):not([class*="bg-rose-"]):not([class*="bg-emerald-"]):not([class*="bg-teal-"]):not([class*="bg-blue-"]):not([class*="bg-indigo-"]):not([class*="bg-purple-"]) {
   color: #000000 !important;

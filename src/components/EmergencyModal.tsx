@@ -188,21 +188,21 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({
       <div className="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-4xl w-full overflow-hidden shadow-2xl text-slate-100 flex flex-col max-h-[92vh] my-auto relative">
         
         {/* Header Bar */}
-        <div className="p-4 sm:p-5 bg-gradient-to-r from-rose-950 via-slate-900 to-slate-950 border-b border-rose-900/50 flex items-center justify-between gap-3">
+        <div className="p-4 sm:p-5 bg-rose-50/90 dark:bg-gradient-to-r dark:from-rose-950 dark:via-slate-900 dark:to-slate-950 border-b border-rose-200 dark:border-rose-900/50 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="p-2.5 sm:p-3 rounded-2xl bg-rose-600/20 text-rose-400 border border-rose-500/40 shrink-0">
-              <Siren className="w-5 h-5 sm:w-6 sm:h-6 text-rose-400" />
+            <div className="p-2.5 sm:p-3 rounded-2xl bg-rose-100 dark:bg-rose-600/20 text-rose-600 dark:text-rose-400 border border-rose-300 dark:border-rose-500/40 shrink-0">
+              <Siren className="w-5 h-5 sm:w-6 sm:h-6 text-rose-600 dark:text-rose-400" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-black text-white truncate">
+                <h2 className="text-base sm:text-lg font-black text-rose-950 dark:text-white truncate">
                   مركز الاستجابة للطوارئ والإسعاف السريع
                 </h2>
-                <span className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-rose-600/30 text-rose-300 border border-rose-500/40 text-[10px] font-extrabold font-mono tracking-wider">
+                <span className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-600/30 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-500/40 text-[10px] font-extrabold font-mono tracking-wider">
                   CODE BLUE / ER
                 </span>
               </div>
-              <p className="text-xs text-slate-400 truncate mt-0.5">
+              <p className="text-xs text-rose-900/70 dark:text-slate-400 truncate mt-0.5 font-medium">
                 أرقام الإسعاف الوطنية 110، بروتوكول التدخل السريع، وحجز غرف الإنعاش
               </p>
             </div>

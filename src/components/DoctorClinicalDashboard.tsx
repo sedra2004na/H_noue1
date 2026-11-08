@@ -337,12 +337,12 @@ export const DoctorClinicalDashboard: React.FC<DoctorClinicalDashboardProps> = (
               return (
                 <div
                   key={flag.id}
-                  className={`bg-slate-950/90 border rounded-xl p-4 transition-all duration-200 flex flex-col justify-between ${
+                  className={`border rounded-xl p-4 transition-all duration-200 flex flex-col justify-between ${
                     isCritical
-                      ? 'border-rose-500/40 hover:border-rose-400/60 bg-gradient-to-b from-rose-950/20 to-slate-950/90'
+                      ? 'border-rose-300 dark:border-rose-500/40 hover:border-rose-400 bg-rose-50/70 dark:bg-gradient-to-b dark:from-rose-950/20 dark:to-slate-950/90'
                       : isWarning
-                      ? 'border-amber-500/40 hover:border-amber-400/60 bg-gradient-to-b from-amber-950/20 to-slate-950/90'
-                      : 'border-slate-800'
+                      ? 'border-amber-300 dark:border-amber-500/40 hover:border-amber-400 bg-amber-50/70 dark:bg-gradient-to-b dark:from-amber-950/20 dark:to-slate-950/90'
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/90'
                   }`}
                 >
                   <div className="space-y-2.5">
