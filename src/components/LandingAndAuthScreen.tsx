@@ -195,6 +195,31 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
     return emailRegex.test(emailStr.trim());
   };
 
+  const handleSwitchToRegister = () => {
+    setActiveTab('register');
+    setEmail('');
+    setFullName('');
+    setPassword('');
+    setPhone('');
+    setNationalId('');
+    setSelectedRole('patient');
+    setIsRoleLocked(false);
+    setLockedRoleLabel('');
+    setErrorMessage('');
+    setSuccessMessage('');
+  };
+
+  const handleSwitchToLogin = () => {
+    setActiveTab('login');
+    setEmail('');
+    setFullName('');
+    setPassword('');
+    setIsRoleLocked(false);
+    setLockedRoleLabel('');
+    setErrorMessage('');
+    setSuccessMessage('');
+  };
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -559,14 +584,14 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                 <button
-                  onClick={() => setActiveTab('login')}
+                  onClick={handleSwitchToLogin}
                   className="px-6 py-2.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
                 >
                   <LogIn className="w-4 h-4" />
                   <span>الدخول إلى البوابة الطبية</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('register')}
+                  onClick={handleSwitchToRegister}
                   className="px-5 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
                 >
                   <span>تسجيل ملف مريض جديد</span>
@@ -666,21 +691,6 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
                 </div>
               )}
               
-              {/* Institutional Security Notice for Self-Registration */}
-              {activeTab === 'register' && (
-                <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 text-xs flex items-start gap-2.5">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <div className="space-y-1 text-[11px] leading-relaxed">
-                    <span className="font-bold text-white block">بوابة المرضى المراجعين حصراً (Patient Self-Registration)</span>
-                    <p className="text-slate-300">
-                      هذا النموذج مخصص لفتح حسابات المرضى لحجز المواعيد واستعراض السجلات الشخصية فقط (الصلاحية تلقائياً: مريض).
-                    </p>
-                    <p className="text-emerald-400/90 font-medium">
-                      🔒 حسابات الأطباء والموظفين والاستقبال تُنشأ حصراً من قِبل إدارة المشفى عبر لوحة التحكم المركزية.
-                    </p>
-                  </div>
-                </div>
-              )}
 
               {activeTab === 'register' && (
                 <>
@@ -813,11 +823,7 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
               {activeTab === 'login' ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    setActiveTab('register');
-                    setErrorMessage('');
-                    setSuccessMessage('');
-                  }}
+                  onClick={handleSwitchToRegister}
                   className="text-xs text-sky-600 dark:text-sky-400 hover:underline font-semibold cursor-pointer"
                 >
                   ليس لديك حساب مريض؟ إنشاء حساب جديد
@@ -825,11 +831,7 @@ export const LandingAndAuthScreen: React.FC<LandingAndAuthScreenProps> = ({
               ) : (
                 <button
                   type="button"
-                  onClick={() => {
-                    setActiveTab('login');
-                    setErrorMessage('');
-                    setSuccessMessage('');
-                  }}
+                  onClick={handleSwitchToLogin}
                   className="text-xs text-sky-600 dark:text-sky-400 hover:underline font-semibold cursor-pointer"
                 >
                   لديك حساب مسبقاً؟ العودة لتسجيل الدخول
