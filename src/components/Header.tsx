@@ -23,9 +23,7 @@ import {
   Menu,
   Database,
   Wifi,
-  RefreshCw,
-  Sun,
-  Moon
+  RefreshCw
 } from 'lucide-react';
 
 export interface NotificationItem {
@@ -89,42 +87,6 @@ export const Header: React.FC<HeaderProps> = ({
   const [isRinging, setIsRinging] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
-  // Theme Mode (Dark / Light) State
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    try {
-      const savedTheme = localStorage.getItem('care_hospital_theme');
-      if (savedTheme) {
-        return savedTheme === 'dark';
-      }
-      return document.documentElement.classList.contains('dark');
-    } catch {
-      return true;
-    }
-  });
-
-  const toggleTheme = () => {
-    const nextMode = !isDarkMode;
-    setIsDarkMode(nextMode);
-    try {
-      if (nextMode) {
-        document.documentElement.classList.add('dark');
-        localStorage.setItem('care_hospital_theme', 'dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-        localStorage.setItem('care_hospital_theme', 'light');
-      }
-    } catch (e) {
-      console.warn('Theme storage note:', e);
-    }
-  };
-
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDarkMode]);
 
   // Close notifications dropdown when clicking outside
   useEffect(() => {
@@ -410,20 +372,6 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Theme Mode Switcher Icon (Light / Dark Mode) */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={isDarkMode ? 'التحويل إلى الوضع الفاتح (Light Mode)' : 'التحويل إلى الوضع الليلي المظلم (Dark Mode)'}
-            title={isDarkMode ? 'التبديل إلى المظهر الفاتح (Light Mode)' : 'التبديل إلى المظهر الليلي (Dark Mode)'}
-            className="p-2 sm:p-2.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-amber-400 hover:text-slate-950 dark:hover:text-amber-300 transition-all cursor-pointer shrink-0 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none shadow-xs"
-          >
-            {isDarkMode ? (
-              <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 animate-in fade-in zoom-in-75 duration-200" aria-hidden="true" />
-            ) : (
-              <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 animate-in fade-in zoom-in-75 duration-200" aria-hidden="true" />
-            )}
-          </button>
 
           {/* Interactive Notification Bell */}
           <div className="relative shrink-0" ref={notificationsRef}>

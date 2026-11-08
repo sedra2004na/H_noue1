@@ -103,17 +103,12 @@ export function App() {
     };
   }, [isLoggedIn, userRole]);
 
-  // Theme Synchronization with User Preference
+  // Permanent Dark Theme Enforcement
   useEffect(() => {
     try {
-      const savedTheme = localStorage.getItem('care_hospital_theme');
-      if (savedTheme === 'light') {
-        document.documentElement.classList.remove('dark');
-        document.body.classList.remove('dark');
-      } else {
-        document.documentElement.classList.add('dark');
-        document.body.classList.add('dark');
-      }
+      localStorage.setItem('care_hospital_theme', 'dark');
+      document.documentElement.classList.add('dark');
+      document.body.classList.add('dark');
     } catch {
       document.documentElement.classList.add('dark');
     }

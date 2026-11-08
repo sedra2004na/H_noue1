@@ -9,17 +9,13 @@
     <script>
       (function() {
         try {
-          var t = localStorage.getItem('care_hospital_theme');
-          if (t === 'light') {
-            document.documentElement.classList.remove('dark');
-          } else {
-            document.documentElement.classList.add('dark');
-          }
+          localStorage.setItem('care_hospital_theme', 'dark');
+          document.documentElement.classList.add('dark');
         } catch(e) {}
       })();
     </script>
   </head>
-  <body class="bg-slate-950 text-slate-100 font-sans antialiased selection:bg-sky-500 selection:text-white">
+  <body class="bg-slate-950 text-slate-100 font-sans antialiased selection:bg-sky-500 selection:text-white dark">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
